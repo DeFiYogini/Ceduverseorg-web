@@ -1,0 +1,148 @@
+// ═══════════════════════════════════════════════════════════
+// QUIZZES — CURSOS PSIC. YURIDIA ITURRIAGA (10)
+// Formato TypeScript para Replit / Ceduverse
+// ═══════════════════════════════════════════════════════════
+
+export const yuridiaQuizzes: Record<string, any> = {
+
+"diagnostico-prevencion-bullying": {
+  title: "Evaluación: Diagnóstico, Prevención e Intervención del Bullying",
+  passingScore: 70,
+  questions: [
+    { question: "¿Cuáles son los 4 criterios para identificar bullying?", options: ["Intencionalidad, repetición, desequilibrio de poder, indefensión", "Agresión, duración, jerarquía, daño", "Frecuencia, gravedad, intención, público", "Violencia, aislamiento, poder, repetición"], correctIndex: 0, explanation: "Los 4 criterios clave son: intencionalidad, repetición (patrón sostenido), desequilibrio de poder y situación de indefensión de la víctima." },
+    { question: "El mobbing vertical descendente (bossing) se refiere a:", options: ["Acoso entre compañeros del mismo nivel", "Acoso del jefe hacia el subordinado", "Acoso del subordinado hacia el jefe", "Acoso de clientes hacia empleados"], correctIndex: 1, explanation: "El bossing es el acoso ejercido desde una posición de autoridad hacia un subordinado." },
+    { question: "¿Cuál de estos NO es un factor organizacional que propicia el bullying?", options: ["Cultura permisiva ante la agresión", "Alta productividad del equipo", "Ausencia de protocolos de denuncia", "Liderazgo negligente"], correctIndex: 1, explanation: "La alta productividad no propicia bullying. Los factores organizacionales incluyen culturas permisivas, falta de protocolos y liderazgo negligente." },
+    { question: "En el triángulo del bullying, ¿cuál es el rol más crucial para romper el ciclo?", options: ["El agresor", "La víctima", "Los espectadores/testigos", "El departamento de RH"], correctIndex: 2, explanation: "Los espectadores pueden romper el ciclo al dejar de ser pasivos y convertirse en defensores activos de la víctima." },
+    { question: "¿Cuál es el primer paso del protocolo de intervención organizacional?", options: ["Sancionar al agresor", "Documentar los hechos", "Detección mediante canales confidenciales", "Separar a las partes involucradas"], correctIndex: 2, explanation: "La detección es el primer paso, implementando canales de denuncia confidenciales y capacitando líderes para reconocer señales." },
+    { question: "Los factores de la víctima (introversión, ser nuevo, etc.):", options: ["Justifican parcialmente el acoso", "Nunca justifican el bullying", "Son la causa principal del bullying", "Pueden eliminarse con capacitación"], correctIndex: 1, explanation: "Los factores de la víctima NUNCA justifican el bullying. La responsabilidad siempre es del agresor y del sistema que lo permite." },
+    { question: "El costo estimado del mobbing para una organización por caso es:", options: ["$1,000 a $5,000 USD", "$15,000 a $50,000 USD", "$100,000 a $500,000 USD", "No tiene costo medible"], correctIndex: 1, explanation: "Estudios estiman entre $15,000 y $50,000 USD por caso al sumar ausentismo, rotación, pérdida de productividad y costos legales." }
+  ]
+},
+
+"camino-autodependencia": {
+  title: "Evaluación: Camino a la Autodependencia",
+  passingScore: 70,
+  questions: [
+    { question: "¿Qué es la autodependencia?", options: ["No necesitar a nadie nunca", "Hacerte cargo de tus emociones, decisiones y bienestar", "Ser autosuficiente en todo", "Evitar relaciones para no depender"], correctIndex: 1, explanation: "La autodependencia es la capacidad de hacerte cargo de ti mismo — emociones, decisiones y bienestar — sin depender emocionalmente de otros." },
+    { question: "¿Cuál es la diferencia entre autodependencia y contradependencia?", options: ["Son lo mismo", "La autodependencia elige estar con otros desde la libertad; la contradependencia rechaza toda cercanía por miedo", "La contradependencia es más saludable", "La autodependencia es un estado temporal"], correctIndex: 1, explanation: "La contradependencia ('no necesito a nadie') es miedo a la vulnerabilidad disfrazado de fortaleza. La autodependencia permite elegir relaciones desde la libertad." },
+    { question: "Según el modelo de Kübler-Ross, las etapas del duelo son:", options: ["Tristeza, enojo, aceptación", "Negación, enojo, negociación, tristeza, aceptación", "Shock, llanto, superación", "Rechazo, ira, resignación"], correctIndex: 1, explanation: "Las 5 etapas son: negación, enojo, negociación, tristeza y aceptación. No son lineales ni tienen un tiempo definido." },
+    { question: "Según Viktor Frankl, los tres caminos hacia el sentido de vida son:", options: ["Dinero, poder y fama", "Valores de creación, de experiencia y de actitud", "Trabajo, familia y salud", "Éxito, reconocimiento y trascendencia"], correctIndex: 1, explanation: "Frankl propone: valores de creación (lo que aportas), de experiencia (lo que recibes) y de actitud (tu postura ante el sufrimiento)." },
+    { question: "¿Qué son los 'mandatos' en el contexto de autodependencia?", options: ["Órdenes laborales del jefe", "Mensajes inconscientes recibidos desde la infancia que se convierten en creencias", "Reglas de la cooperativa", "Leyes que debemos cumplir"], correctIndex: 1, explanation: "Los mandatos son mensajes que internalizamos desde la infancia ('no llores', 'sé fuerte') y que guían nuestro comportamiento de forma inconsciente." },
+    { question: "Poner límites en una relación es:", options: ["Ser egoísta", "Ser honesto sobre lo que sí y lo que no estás dispuesto a aceptar", "Rechazar al otro", "Señal de baja autoestima"], correctIndex: 1, explanation: "Poner límites es un acto de honestidad y respeto propio. Los límites claros generan relaciones más sanas al eliminar el resentimiento." },
+    { question: "La completitud, según este curso, significa:", options: ["Ser perfecto en todo", "Aceptar que ya eres completo con lo que eres y tienes", "Lograr todas tus metas", "No tener carencias ni necesidades"], correctIndex: 1, explanation: "Ser completo no es ser perfecto ni no tener carencias. Es aceptar que con lo que eres hoy puedes vivir una vida con sentido." }
+  ]
+},
+
+"valores-humanos-organizacion": {
+  title: "Evaluación: Valores Humanos en la Organización",
+  passingScore: 70,
+  questions: [
+    { question: "Los valores son:", options: ["Opiniones pasajeras sobre lo correcto", "Principios profundos que guían nuestras decisiones y comportamientos", "Reglas impuestas por la empresa", "Sentimientos que cambian según el día"], correctIndex: 1, explanation: "Los valores son principios profundos que guían decisiones, actitudes y comportamientos. Son lo que hacemos cuando nadie nos ve." },
+    { question: "Según Louis Raths, un valor genuino cumple 7 criterios. ¿Cuál NO es uno de ellos?", options: ["Elegido libremente", "Impuesto por la autoridad", "Actuado de manera consistente", "Afirmado públicamente"], correctIndex: 1, explanation: "Un valor genuino debe ser elegido libremente, no impuesto. Los 7 criterios incluyen libre elección, consideración de alternativas, consecuencias, aprecio, afirmación pública y acción consistente." },
+    { question: "Cuando los valores personales y organizacionales están en conflicto:", options: ["No importa, el trabajo es solo trabajo", "Surge malestar, desmotivación y eventualmente la salida", "Los valores personales siempre deben ceder", "Los valores organizacionales no existen realmente"], correctIndex: 1, explanation: "El conflicto de valores genera malestar profundo, desmotivación y eventualmente la persona busca irse o se desconecta emocionalmente." },
+    { question: "La mejor forma de descubrir tus valores REALES (no los declarados) es:", options: ["Hacer un test de personalidad", "Observar en qué gastas tu tiempo y dinero", "Preguntar a tu familia", "Leer libros de autoayuda"], correctIndex: 1, explanation: "Tus prioridades reales se revelan en cómo distribuyes tu tiempo y dinero — ahí están tus valores en acción." },
+    { question: "En una cooperativa, los valores cooperativos incluyen:", options: ["Competencia y jerarquía", "Solidaridad, democracia, equidad y responsabilidad", "Individualismo y eficiencia", "Obediencia y disciplina"], correctIndex: 1, explanation: "Los principios cooperativos de la ACI incluyen solidaridad, democracia, equidad, responsabilidad, transparencia y preocupación por la comunidad." },
+    { question: "Ver el trabajo como 'vocación' significa:", options: ["Trabajar sin cobrar", "Encontrar significado y propósito en el trabajo mismo", "Solo trabajar en lo que te gusta", "Tener un título profesional"], correctIndex: 1, explanation: "La vocación es ver el trabajo como expresión de propósito — 'trabajo porque esto importa y contribuyo a algo mayor'." },
+    { question: "La coherencia entre valores y acciones:", options: ["No importa si actúas diferente a lo que crees", "Fortalece la autoestima y la integridad personal", "Es imposible de lograr", "Solo importa en el trabajo, no en la vida personal"], correctIndex: 1, explanation: "Actuar coherentemente con tus valores fortalece tu autoestima e integridad. Cada vez que los traicionas, tu confianza en ti mismo se erosiona." }
+  ]
+},
+
+"como-es-mi-comunicacion": {
+  title: "Evaluación: Cómo Es Mi Comunicación",
+  passingScore: 70,
+  questions: [
+    { question: "¿Cuál es el estilo de comunicación más efectivo?", options: ["Pasivo", "Agresivo", "Asertivo", "Evasivo"], correctIndex: 2, explanation: "El estilo asertivo expresa necesidades y opiniones con respeto, escucha activamente y pone límites sin agredir." },
+    { question: "El modelo ABC de Albert Ellis establece que nuestras emociones son causadas por:", options: ["Las situaciones directamente", "Nuestra interpretación (creencias) sobre las situaciones", "Otras personas", "Nuestros genes"], correctIndex: 1, explanation: "No son las situaciones (A) las que causan emociones (C), sino las creencias/interpretaciones (B) que hacemos sobre ellas." },
+    { question: "La 'catastrofización' es:", options: ["Un tipo de comunicación asertiva", "Una distorsión cognitiva que imagina el peor escenario posible", "Una técnica de escucha activa", "Un estilo de liderazgo"], correctIndex: 1, explanation: "La catastrofización es una distorsión cognitiva donde imaginamos que todo será 'un desastre total' sin evidencia que lo respalde." },
+    { question: "La escucha activa incluye:", options: ["Pensar en tu respuesta mientras el otro habla", "Parafrasear, no interrumpir y validar emociones", "Dar consejos inmediatamente", "Cambiar de tema cuando no estás de acuerdo"], correctIndex: 1, explanation: "La escucha activa implica parafrasear ('lo que entiendo es que...'), no interrumpir, hacer preguntas abiertas y validar emociones." },
+    { question: "Según la investigación, una persona tiene entre:", options: ["100 y 500 pensamientos al día", "1,000 y 5,000 pensamientos al día", "12,000 y 60,000 pensamientos al día", "Más de 100,000 pensamientos al día"], correctIndex: 2, explanation: "Se estima que tenemos entre 12,000 y 60,000 pensamientos diarios, la mayoría automáticos y repetitivos." },
+    { question: "¿Qué factor es el predictor más fuerte de bienestar y longevidad?", options: ["El dinero", "El estatus social", "La calidad de las relaciones y la comunicación", "La genética"], correctIndex: 2, explanation: "Investigaciones como el Harvard Study of Adult Development muestran que las relaciones sólidas predicen más el bienestar que el dinero, estatus o genética." },
+    { question: "Para cambiar el diálogo interior negativo, el primer paso es:", options: ["Ignorar los pensamientos negativos", "Detectar el pensamiento automático negativo", "Pensar solo cosas positivas", "Dejar de pensar"], correctIndex: 1, explanation: "El primer paso es detectar y hacer consciente el pensamiento automático. Luego se cuestiona y finalmente se reemplaza con uno más realista." }
+  ]
+},
+
+"relaciones-humanas": {
+  title: "Evaluación: Relaciones Humanas",
+  passingScore: 70,
+  questions: [
+    { question: "Según Maslow, la necesidad de pertenencia se ubica en:", options: ["El primer nivel (necesidades básicas)", "El segundo nivel (seguridad)", "El tercer nivel, después de las necesidades básicas y de seguridad", "El quinto nivel (autorrealización)"], correctIndex: 2, explanation: "Maslow ubicó la pertenencia en el tercer nivel: después de las necesidades fisiológicas y de seguridad, necesitamos pertenecer." },
+    { question: "La Ventana de Johari tiene 4 áreas. El 'área ciega' es:", options: ["Lo que yo sé de mí y otros también saben", "Lo que otros ven de mí pero yo no veo", "Lo que yo sé de mí pero otros no saben", "Lo que nadie conoce"], correctIndex: 1, explanation: "El área ciega contiene aspectos de nuestra persona que otros perciben pero nosotros no — como hábitos inconscientes o el impacto que generamos." },
+    { question: "Para expandir el 'área abierta' de la Ventana de Johari necesitas:", options: ["Guardar más secretos", "Auto-revelación y retroalimentación", "Evitar la comunicación personal", "Controlar la información que otros tienen"], correctIndex: 1, explanation: "Se expande el área abierta mediante auto-revelación (compartir del área oculta) y retroalimentación (aprender del área ciega)." },
+    { question: "¿Cuál de estos factores DETERIORA las relaciones humanas?", options: ["Empatía", "Chismes y comunicación indirecta", "Cooperación", "Tolerancia a las diferencias"], correctIndex: 1, explanation: "Los chismes y la comunicación indirecta deterioran la confianza y generan conflictos. La comunicación directa y respetuosa fortalece las relaciones." },
+    { question: "Adaptar tu estilo de comunicación según la personalidad del otro significa:", options: ["Ser falso o manipulador", "Comunicar de forma que el otro pueda recibir mejor tu mensaje", "Cambiar tu personalidad", "Hacer siempre lo que el otro quiere"], correctIndex: 1, explanation: "Adaptarse no es falsedad — es inteligencia relacional. Es ajustar tu estilo para que la comunicación sea más efectiva." },
+    { question: "En una cooperativa, las relaciones humanas son especialmente importantes porque:", options: ["Hay un jefe que obliga a llevarse bien", "Todos son socios y la convivencia se construye por acuerdo democrático", "No importan las relaciones, solo la productividad", "Las cooperativas no tienen conflictos"], correctIndex: 1, explanation: "En la cooperativa todos son socios — no hay un jefe que imponga. La convivencia se construye por acuerdo, requiriendo más madurez relacional." },
+    { question: "La apertura gradual en relaciones laborales significa:", options: ["Contar tu vida entera al primer encuentro", "Ir profundizando la confianza progresivamente, de lo superficial a lo significativo", "Nunca compartir nada personal", "Solo hablar de trabajo"], correctIndex: 1, explanation: "La apertura es gradual — empiezas con lo superficial y profundizas conforme la confianza crece. Como quitar capas de una cebolla." }
+  ]
+},
+
+"autoestima": {
+  title: "Evaluación: Autoestima",
+  passingScore: 70,
+  questions: [
+    { question: "Según Nathaniel Branden, los dos componentes de la autoestima son:", options: ["Inteligencia y belleza", "Autoeficacia y autodignidad", "Éxito y reconocimiento", "Confianza y popularidad"], correctIndex: 1, explanation: "Autoeficacia ('puedo' — confianza en tu capacidad) y autodignidad ('merezco' — convicción de que mereces respeto y bienestar)." },
+    { question: "¿Cuál de estos es un pilar de la autoestima según Branden?", options: ["Acumular riqueza", "Vivir conscientemente", "Tener muchos amigos", "Evitar todo riesgo"], correctIndex: 1, explanation: "Los 6 pilares incluyen: vivir conscientemente, aceptarse, responsabilidad personal, autoafirmación, vivir con propósito e integridad." },
+    { question: "La autoestima alta es diferente del narcisismo porque:", options: ["Son lo mismo", "La autoestima genuina es silenciosa y firme; el narcisismo es una máscara que necesita demostrar", "El narcisismo es mejor", "La autoestima alta siempre es arrogante"], correctIndex: 1, explanation: "La autoestima saludable no necesita presumir ni menospreciar. El narcisismo es una máscara de seguridad que esconde inseguridad profunda." },
+    { question: "El autoconcepto se forma principalmente a través de:", options: ["Solo la genética", "El espejo de los demás, experiencias de éxito/fracaso y comparación social", "Solo la educación formal", "Solo las experiencias laborales"], correctIndex: 1, explanation: "El autoconcepto se forma por cómo nos vieron nuestras figuras significativas, nuestras experiencias, la comparación social y los roles que desempeñamos." },
+    { question: "Para transformar una creencia limitante, el primer paso es:", options: ["Ignorarla", "Identificar la creencia y cuestionar su origen", "Pensar solo en positivo", "Pedir a otros que te digan cosas bonitas"], correctIndex: 1, explanation: "El proceso es: identificar la creencia, cuestionar su origen y validez, buscar evidencia contraria, reformular y actuar en consecuencia." },
+    { question: "'Separar identidad de rol' en el trabajo significa:", options: ["No involucrarte en tu trabajo", "Entender que tú no ERES tu trabajo — tu valor no depende de tu puesto", "Tener dos personalidades", "No importar si te despiden"], correctIndex: 1, explanation: "Tu valor como persona es independiente de tu puesto laboral. Puedes perder un trabajo sin perder tu identidad ni tu valor." },
+    { question: "Un registro semanal de logros sirve para:", options: ["Presumir ante los demás", "Fortalecer la autoestima con evidencia real de tus capacidades", "Pedir aumento de sueldo", "Compararte con otros"], correctIndex: 1, explanation: "El registro de logros es una herramienta de autoestima: cuando dudes de ti, tienes evidencia concreta de lo que has logrado." }
+  ]
+},
+
+"manejo-conflictos-toma-decisiones": {
+  title: "Evaluación: Manejo de Conflictos y Toma de Decisiones",
+  passingScore: 70,
+  questions: [
+    { question: "¿Cuál es el primer paso del proceso de toma de decisiones?", options: ["Generar alternativas", "Identificar y definir el problema", "Establecer criterios", "Evaluar opciones"], correctIndex: 1, explanation: "Antes de buscar soluciones, necesitas definir correctamente el problema. Es el paso más importante y más frecuentemente omitido." },
+    { question: "La técnica de los '5 Porqués' sirve para:", options: ["Generar alternativas de solución", "Encontrar la causa raíz de un problema", "Evaluar el desempeño del equipo", "Seleccionar la mejor alternativa"], correctIndex: 1, explanation: "Los 5 Porqués profundizan preguntando 'por qué' repetidamente hasta llegar a la causa raíz, no solo al síntoma." },
+    { question: "El sesgo de confirmación nos hace:", options: ["Tomar decisiones rápidas y correctas", "Buscar solo información que confirme lo que ya creemos", "Ser más objetivos", "Consultar con más personas"], correctIndex: 1, explanation: "El sesgo de confirmación nos lleva a buscar, interpretar y recordar selectivamente la información que apoya nuestras creencias previas." },
+    { question: "Según Thomas-Kilmann, el estilo 'Colaborar' se caracteriza por:", options: ["Baja asertividad y baja cooperación", "Alta asertividad y alta cooperación", "Alta asertividad y baja cooperación", "Baja asertividad y alta cooperación"], correctIndex: 1, explanation: "Colaborar combina alta asertividad (expresar tus necesidades) con alta cooperación (atender las del otro) para buscar ganar-ganar." },
+    { question: "En la Comunicación No Violenta, la estructura correcta es:", options: ["Acusar → Exigir → Amenazar", "Observación → Sentimiento → Necesidad → Petición", "Problema → Solución → Implementación", "Queja → Ultimátum → Consecuencia"], correctIndex: 1, explanation: "La CNV de Rosenberg sigue: observar sin juzgar, expresar sentimiento, identificar necesidad y hacer petición concreta." },
+    { question: "¿Cuántas alternativas mínimo debes generar antes de tomar una decisión?", options: ["1", "2", "Al menos 3", "5 o más"], correctIndex: 2, explanation: "La regla es generar al menos 3 alternativas. La primera idea rara vez es la mejor — es solo la más obvia." },
+    { question: "El sesgo de 'status quo' nos hace:", options: ["Buscar siempre el cambio", "Preferir no cambiar aunque el cambio sea mejor", "Ser más innovadores", "Cuestionar todo"], correctIndex: 1, explanation: "El status quo nos hace resistir el cambio y preferir lo conocido, incluso cuando la evidencia muestra que cambiar sería mejor." }
+  ]
+},
+
+"integracion-grupos-equipo": {
+  title: "Evaluación: Integración de Grupos y el Equipo",
+  passingScore: 70,
+  questions: [
+    { question: "La diferencia principal entre un grupo y un equipo es:", options: ["El tamaño", "El equipo tiene objetivo compartido, roles complementarios y responsabilidad mutua", "El grupo es más productivo", "No hay diferencia"], correctIndex: 1, explanation: "Un grupo comparte espacio; un equipo tiene objetivo compartido, roles complementarios y responsabilidad mutua por los resultados." },
+    { question: "Según Tuckman, la etapa más incómoda pero más importante es:", options: ["Formación", "Tormenta", "Normalización", "Desempeño"], correctIndex: 1, explanation: "La tormenta (conflictos, choques, lucha por liderazgo) es incómoda pero necesaria. Los equipos que la evitan nunca alcanzan el desempeño real." },
+    { question: "El 'pensamiento grupal' (Groupthink) ocurre cuando:", options: ["El grupo es muy diverso", "La cohesión excesiva impide cuestionar y considerar alternativas", "Hay mucho conflicto", "El líder es débil"], correctIndex: 1, explanation: "Groupthink surge cuando el grupo valora tanto la armonía que evita disentir, resultando en decisiones malas que nadie cuestiona." },
+    { question: "Según Belbin, un equipo efectivo necesita:", options: ["Solo personas muy inteligentes", "Diversidad de roles (acción, sociales, mentales)", "Personas con la misma personalidad", "Solo líderes fuertes"], correctIndex: 1, explanation: "Belbin identificó 9 roles necesarios. Si todos son 'cerebros', habrá ideas pero poca ejecución. La diversidad de roles es clave." },
+    { question: "Ante un participante que habla mucho en reuniones, la mejor estrategia es:", options: ["Ignorarlo hasta que se canse", "Decir 'Gracias por tu aporte, me gustaría escuchar también a los demás'", "Sacarlo de la reunión", "Dejarlo hablar sin límite"], correctIndex: 1, explanation: "Reconocer su aporte y redirigir hacia otros participantes es la técnica de facilitación más efectiva y respetuosa." },
+    { question: "Las 5 disfunciones de un equipo según Lencioni empiezan con:", options: ["Falta de resultados", "Ausencia de confianza", "Evasión de responsabilidad", "Falta de compromiso"], correctIndex: 1, explanation: "La base es la ausencia de confianza. Sin confianza no hay conflicto honesto, sin conflicto no hay compromiso, y así en cascada." },
+    { question: "En una cooperativa, el reto especial de los equipos es:", options: ["Que hay un jefe claro que decide todo", "El doble rol de trabajador y dueño, con decisiones democráticas", "Que no hay necesidad de trabajo en equipo", "Que todos piensan igual"], correctIndex: 1, explanation: "En cooperativas todos son socios con doble rol. Las decisiones democráticas requieren más habilidades de integración y comunicación." }
+  ]
+},
+
+"planeacion-vida-trabajo": {
+  title: "Evaluación: Planeación de Vida y Trabajo",
+  passingScore: 70,
+  questions: [
+    { question: "Las 6 dimensiones de una vida plena incluyen:", options: ["Solo trabajo y dinero", "Profesional, personal, familiar, física, económica y espiritual", "Trabajo, diversión y descanso", "Salud, dinero y amor"], correctIndex: 1, explanation: "Un plan de vida integral atiende 6 dimensiones: profesional, personal/emocional, familiar, física/salud, económica y espiritual/trascendente." },
+    { question: "El FODA Personal analiza:", options: ["Solo fortalezas y debilidades", "Fortalezas y oportunidades (favorables) + debilidades y amenazas (desfavorables)", "Solo factores externos", "Solo factores internos"], correctIndex: 1, explanation: "El FODA combina factores internos (fortalezas y debilidades) con externos (oportunidades y amenazas) para un diagnóstico completo." },
+    { question: "Según Gallup, las personas que desarrollan sus fortalezas son:", options: ["Menos productivas", "6 veces más propensas a estar comprometidas con su trabajo", "Iguales a las demás", "Más arrogantes"], correctIndex: 1, explanation: "La investigación de Gallup muestra que enfocarse en fortalezas produce 6 veces más compromiso laboral que enfocarse solo en corregir debilidades." },
+    { question: "La diferencia entre una necesidad y un deseo es:", options: ["Son lo mismo", "La necesidad es profunda y duradera; el deseo es más superficial y temporal", "Los deseos son más importantes", "Las necesidades no se pueden satisfacer"], correctIndex: 1, explanation: "Las necesidades (seguridad, pertenencia, propósito) son profundas. Los deseos (coche nuevo, título) son medios que pueden o no satisfacer la necesidad real." },
+    { question: "Una meta SMART debe ser:", options: ["Simple, motivadora, atractiva, rápida, temporal", "Específica, medible, alcanzable, relevante y temporal", "Secreta, masiva, agresiva, radical, total", "Solo ambiciosa"], correctIndex: 1, explanation: "SMART: Específica (qué exactamente), Medible (cómo sé que lo logré), Alcanzable (realista), Relevante (contribuye a mi visión), Temporal (con fecha)." },
+    { question: "¿Con qué frecuencia se recomienda revisar un plan de vida?", options: ["Solo una vez al hacerlo", "Semanal (acciones), mensual (metas), trimestral (ajustes), anual (balance completo)", "Cada 5 años", "Nunca, una vez hecho no se cambia"], correctIndex: 1, explanation: "El plan necesita revisión constante: semanal para acciones, mensual para metas, trimestral para ajustes y anual para balance completo." },
+    { question: "La Rueda de la Vida es una herramienta para:", options: ["Planificar las vacaciones", "Evaluar tu satisfacción actual en las 6 dimensiones de vida e identificar prioridades", "Medir la productividad en el trabajo", "Calcular tu salario ideal"], correctIndex: 1, explanation: "La Rueda de la Vida evalúa del 1 al 10 cada dimensión, revelando visualmente dónde están tus áreas de mayor oportunidad." }
+  ]
+},
+
+"capacidad-analitica-resolucion-problemas": {
+  title: "Evaluación: Capacidad Analítica y Resolución de Problemas",
+  passingScore: 70,
+  questions: [
+    { question: "El pensamiento analítico se diferencia del intuitivo en que:", options: ["Es más rápido", "Es deliberado, estructurado y basado en datos y lógica", "Siempre es correcto", "No requiere información"], correctIndex: 1, explanation: "El pensamiento analítico es deliberado y estructurado, basado en datos y lógica. El intuitivo es rápido y automático, útil para lo rutinario." },
+    { question: "El Diagrama de Ishikawa organiza las causas en categorías llamadas:", options: ["Las 3R", "Las 6M (Mano de obra, Método, Maquinaria, Material, Medición, Medio ambiente)", "Los 5 Porqués", "Las 4P"], correctIndex: 1, explanation: "Ishikawa usa las 6M para organizar sistemáticamente todas las posibles causas de un problema." },
+    { question: "El principio de Pareto (80/20) establece que:", options: ["El 80% de los trabajadores hace el 20% del trabajo", "El 80% de los problemas viene del 20% de las causas", "El 80% del presupuesto se gasta en el 20% del tiempo", "Ninguna de las anteriores"], correctIndex: 1, explanation: "Pareto nos dice que identificando y atacando el 20% de las causas principales, resolvemos el 80% del problema." },
+    { question: "¿Cuándo es más apropiado usar la metodología 8D?", options: ["Problemas simples del día a día", "Problemas complejos que requieren equipo y seguimiento formal", "Solo para problemas de calidad", "Cuando no hay tiempo para analizar"], correctIndex: 1, explanation: "Las 8 Disciplinas son para problemas complejos que requieren formar un equipo, investigar a fondo y prevenir recurrencia." },
+    { question: "Que 'correlación no implica causalidad' significa:", options: ["Los datos siempre mienten", "Que dos cosas sucedan juntas no significa que una cause la otra", "No se pueden usar datos para decidir", "Las estadísticas son inútiles"], correctIndex: 1, explanation: "Es un error común: ver que A y B ocurren juntos y concluir que A causa B, cuando puede haber un factor C detrás de ambos." },
+    { question: "En el ciclo datos → información → conocimiento → decisión, la 'información' es:", options: ["Números crudos sin contexto", "Datos con contexto y significado", "La decisión final", "Solo opiniones"], correctIndex: 1, explanation: "Los datos son crudos (500 piezas hoy). La información agrega contexto (500 piezas = 15% menos que el promedio). El conocimiento interpreta (la baja se debe a...)." },
+    { question: "El framework PARA-DEFINE-ANALIZA-OPCIONES-DECIDE-ACTÚA es útil para:", options: ["Solo problemas grandes", "Resolución rápida de problemas cotidianos en el trabajo", "Solo problemas técnicos", "Problemas personales exclusivamente"], correctIndex: 1, explanation: "Este framework simplificado permite resolver problemas del día a día de forma estructurada sin necesitar herramientas complejas." }
+  ]
+}
+
+};

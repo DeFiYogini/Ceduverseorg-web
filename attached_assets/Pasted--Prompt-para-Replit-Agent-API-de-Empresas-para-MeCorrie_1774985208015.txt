@@ -1,0 +1,373 @@
+# Prompt para Replit Agent — API de Empresas para MeCorrieron.mx
+
+Pegar esto completo en el Replit Agent de Ceduverse (ceduverse.replit.app):
+
+```
+CONTEXTO: Ceduverse tiene una base de datos propietaria de ~21,000+ empresas en la
+zona metropolitana de Monterrey (tabla denue_prospects en PostgreSQL). Cada registro 
+tiene: nombre, razón social, sector SCIAN, municipio, colonia, dirección, teléfono, 
+email, sitio web, latitud/longitud, rango de empleados, y un scoring propietario.
+
+Tenemos otra plataforma: MeCorrieron.mx (mecorrieron.mx) — una app de derechos 
+laborales que incluye un "Radar de Ambiente Laboral" (mapa tipo Google Maps donde 
+trabajadores ven y califican empresas como fuentes de trabajo). MeCorrieron necesita 
+una BASE de empresas reales con ubicación geográfica para poblar su Radar.
+
+TAREA: Crear una API REST segura en el servidor Express de Ceduverse que exponga 
+datos de empresas para consumo externo de MeCorrieron.mx. La API debe:
+1. Estar protegida con API key (no pública)
+2. Devolver datos LIMITADOS (no exponer scoring, fuente de datos, ni campos internos)
+3. Ser eficiente para carga por viewport del mapa (consultas por bounding box)
+4. Tener rate limiting
+5. NUNCA exponer: lead_score, priority, estimated_contribution_monthly, 
+   pipeline_stage, assigned_socio_id, clee, codigo_act, ni campos propietarios
+
+NOMENCLATURA: En los responses de la API, los datos se presentan como procedentes
+de "Directorio Empresarial Ceduverse" — NUNCA mencionar DENUE, INEGI, ni la fuente
+real de los datos.
+
+=============================================
+PARTE 1: TABLA DE API KEYS
+=============================================
+
+Crear tabla para gestionar acceso externo:
+
+api_keys:
+  - id: serial primary key
+  - key_hash: varchar(255) NOT NULL  -- bcrypt hash de la API key
+  - name: varchar(100) NOT NULL      -- "mecorrieron-production", "mecorrieron-staging"
+  - owner: varchar(100)              -- "MeCorrieron.mx"
+  - permissions: jsonb DEFAULT '["read:companies"]'
+  - rate_limit_per_minute: integer DEFAULT 60
+  - rate_limit_per_day: integer DEFAULT 10000
+  - allowed_origins: jsonb DEFAULT '["https://mecorrieron.mx", "http://localhost:3000"]'
+  - is_active: boolean DEFAULT true
+  - requests_today: integer DEFAULT 0
+  - requests_today_reset_at: timestamp
+  - last_used_at: timestamp
+  - created_at: timestamp DEFAULT now()
+  - expires_at: timestamp  -- null = no expira
+
+Generar una API key inicial para MeCorrieron:
+- Generar un UUID v4 como raw key (ej: "cv_live_a3f7b2c1d4e5f6...")
+- Guardar el hash bcrypt en la tabla
+- Loggear la key en consola UNA vez para copiarla (no guardarla en plain text)
+- Nombre: "mecorrieron-production"
+- Rate limit: 120/minuto, 50,000/día
+
+=============================================
+PARTE 2: MIDDLEWARE DE AUTENTICACIÓN API
+=============================================
+
+Crear middleware: authenticateApiKey
+
+Lógica:
+1. Leer header: Authorization: Bearer cv_live_xxxxx
+2. Si no hay header → 401 { error: "API key requerida" }
+3. Buscar en api_keys donde is_active=true
+4. Comparar con bcrypt contra todos los key_hash activos
+5. Si no match → 403 { error: "API key inválida" }
+6. Si expirada → 403 { error: "API key expirada" }
+7. Verificar Origin header contra allowed_origins (si hay Origin)
+8. Verificar rate limit:
+   - Si requests_today >= rate_limit_per_day → 429 "Límite diario alcanzado"
+   - Implementar rate limit por minuto con un Map en memoria
+9. Incrementar requests_today y last_used_at
+10. Resetear requests_today si requests_today_reset_at < hoy
+11. Adjuntar apiKey al req para logging
+
+=============================================
+PARTE 3: ENDPOINTS DE LA API
+=============================================
+
+Base path: /api/v1/external/companies
+Todos requieren authenticateApiKey middleware.
+
+--- 3.1: Búsqueda por viewport (para el mapa) ---
+
+GET /api/v1/external/companies/viewport
+  Query params:
+    ne_lat: number (required) — Northeast latitude del viewport
+    ne_lng: number (required) — Northeast longitude
+    sw_lat: number (required) — Southwest latitude
+    sw_lng: number (required) — Southwest longitude
+    limit: number (default 200, max 500)
+    sector: string (optional, comma-separated)
+    min_employees: number (optional)
+  
+  Query SQL: WHERE latitud BETWEEN sw_lat AND ne_lat 
+    AND longitud BETWEEN sw_lng AND ne_lng
+    AND employee_midpoint >= 11  (siempre filtrar a 11+)
+    LIMIT {limit}
+  
+  Response:
+  {
+    "source": "Directorio Empresarial Ceduverse",
+    "count": 187,
+    "viewport": { "ne": [25.72, -100.25], "sw": [25.62, -100.38] },
+    "companies": [
+      {
+        "id": "ceduverse-12345",        // prefijo + id interno (ofuscado)
+        "name": "Grupo Industrial XYZ",
+        "legal_name": "Grupo Industrial XYZ SA de CV",
+        "sector": "Manufactura",         // sector_group simplificado
+        "industry": "Fabricación de productos metálicos",  // nombre_act
+        "location": {
+          "latitude": 25.6714,
+          "longitude": -100.3091,
+          "municipality": "Monterrey",
+          "neighborhood": "Centro",      // nomb_asent
+          "state": "Nuevo León",
+          "postal_code": "64000",
+          "full_address": "Av. Constitución 1234, Centro, Monterrey, NL 64000"
+        },
+        "size": {
+          "range": "51-100",             // rango textual
+          "category": "mediana"          // pequeña/mediana/grande
+        },
+        "contact": {
+          "phone": "818-123-4567",       // o null si no tiene
+          "email": "info@xyz.com",       // o null
+          "website": "https://xyz.com"   // o null
+          "has_phone": true,
+          "has_email": true,
+          "has_website": true
+        },
+        "risk_profile": {
+          "stps_risk": "Alto",           // Alto/Medio/Bajo
+          "applicable_noms": ["NOM-004-STPS", "NOM-010-STPS", "NOM-035-STPS"]
+        },
+        "metadata": {
+          "source": "Directorio Empresarial Ceduverse",
+          "last_updated": "2025-12-01"   // fecha_alta del registro
+        }
+      }
+    ]
+  }
+
+  CAMPOS QUE NO SE EXPONEN:
+  - lead_score, score_size, score_risk, score_digital, score_economic
+  - priority, estimated_contribution_monthly, recommended_plan
+  - pipeline_stage, assigned_socio_id, contact_group_id
+  - clee, codigo_act (código SCIAN numérico)
+  - notes, last_contacted_at
+  - Cualquier dato propietario de scoring o comercial
+
+--- 3.2: Búsqueda por texto ---
+
+GET /api/v1/external/companies/search
+  Query params:
+    q: string (required, min 3 chars) — busca en nom_estab, raz_social, nomb_asent
+    municipality: string (optional) — filtrar por municipio
+    sector: string (optional)
+    limit: number (default 20, max 50)
+    page: number (default 1)
+  
+  Response: misma estructura que viewport pero con paginación:
+  {
+    "source": "Directorio Empresarial Ceduverse",
+    "query": "restaurante",
+    "count": 45,
+    "page": 1,
+    "total_pages": 3,
+    "companies": [...]
+  }
+
+--- 3.3: Detalle de empresa ---
+
+GET /api/v1/external/companies/:id
+  Retorna una empresa completa por su id ofuscado (ceduverse-XXXXX)
+  
+  Response: mismo objeto de company pero con campos adicionales:
+  {
+    ...company,
+    "sector_detail": {
+      "scian_sector": "31-33",           // primeros 2 dígitos
+      "scian_name": "Industrias Manufactureras",
+      "sub_sector": "Fabricación de productos metálicos"
+    },
+    "stps_detail": {
+      "risk_level": "Alto",
+      "risk_reason": "Sector manufactura: alto índice de accidentes laborales",
+      "applicable_noms": [
+        { "code": "NOM-004-STPS-2024", "name": "Sistemas de protección y dispositivos de seguridad en maquinaria" },
+        { "code": "NOM-010-STPS-2024", "name": "Agentes químicos contaminantes del ambiente laboral" },
+        { "code": "NOM-011-STPS-2001", "name": "Condiciones de seguridad donde se genere ruido" },
+        { "code": "NOM-035-STPS-2018", "name": "Factores de riesgo psicosocial en el trabajo" }
+      ],
+      "common_violations": [
+        "Falta de programa de capacitación (Art. 153-A LFT)",
+        "Incumplimiento NOM-035 (factores psicosociales)",
+        "Falta de Comisión Mixta de Capacitación"
+      ]
+    },
+    "labor_context": {
+      "avg_salary_range": "Según zona geográfica y sector, el salario promedio estimado para este tipo de empresa es de $8,000-$15,000 MXN mensuales",
+      "union_likelihood": "Media",       // basado en sector
+      "turnover_risk": "Alto"            // basado en sector + tamaño
+    }
+  }
+
+  Los campos labor_context se generan con lógica basada en sector y tamaño,
+  NO son datos reales del registro — son estimaciones útiles para MeCorrieron.
+
+--- 3.4: Estadísticas por zona ---
+
+GET /api/v1/external/companies/stats
+  Query params:
+    municipality: string (optional)
+    sector: string (optional)
+  
+  Response:
+  {
+    "source": "Directorio Empresarial Ceduverse",
+    "area": "Monterrey Metropolitana",
+    "total_companies": 21341,
+    "by_sector": [
+      { "sector": "Manufactura", "count": 3245, "pct": 15.2 },
+      { "sector": "Comercio Menudeo", "count": 4567, "pct": 21.4 },
+      ...
+    ],
+    "by_municipality": [
+      { "municipality": "Monterrey", "count": 8187, "pct": 38.4 },
+      ...
+    ],
+    "by_size": [
+      { "range": "11-30", "count": 12500, "pct": 58.6 },
+      { "range": "31-50", "count": 4200, "pct": 19.7 },
+      ...
+    ],
+    "by_risk": [
+      { "level": "Alto", "count": 6500, "pct": 30.5 },
+      { "level": "Medio", "count": 8900, "pct": 41.7 },
+      { "level": "Bajo", "count": 5941, "pct": 27.8 }
+    ],
+    "contact_coverage": {
+      "with_phone": { "count": 15234, "pct": 71.4 },
+      "with_email": { "count": 4567, "pct": 21.4 },
+      "with_website": { "count": 3210, "pct": 15.0 }
+    }
+  }
+
+--- 3.5: Empresas cercanas a un punto ---
+
+GET /api/v1/external/companies/nearby
+  Query params:
+    lat: number (required)
+    lng: number (required)
+    radius_km: number (default 2, max 10)
+    limit: number (default 30, max 100)
+    sector: string (optional)
+    min_risk: string (optional — "Alto", "Medio")
+  
+  Uses Haversine formula or PostGIS for distance calculation.
+  Response includes distance_km for each company.
+
+--- 3.6: Sectores y municipios disponibles ---
+
+GET /api/v1/external/companies/filters
+  Response:
+  {
+    "sectors": ["Manufactura", "Construcción", "Comercio Menudeo", ...],
+    "municipalities": ["Monterrey", "San Pedro Garza García", ...],
+    "risk_levels": ["Alto", "Medio", "Bajo"],
+    "size_ranges": ["11-30", "31-50", "51-100", "101-250", "251+"]
+  }
+
+=============================================
+PARTE 4: SEGURIDAD Y RATE LIMITING
+=============================================
+
+1. Rate limiting en memoria (Map):
+   - Por API key: max requests_per_minute
+   - Global: max 1000 req/minuto total
+   - Responder con 429 + Retry-After header
+
+2. Response headers:
+   X-RateLimit-Limit: 120
+   X-RateLimit-Remaining: 85
+   X-RateLimit-Reset: 1711929600
+   X-Source: Directorio Empresarial Ceduverse
+   Cache-Control: public, max-age=3600  (cachear 1 hora)
+
+3. CORS:
+   Permitir solo los origins de la API key (allowed_origins)
+   
+4. Request logging:
+   Crear tabla api_request_logs:
+   - id, api_key_id, endpoint, method, query_params (jsonb), 
+     response_status, response_time_ms, ip_address, user_agent, created_at
+   Log CADA request para analytics y debugging.
+   Cleanup: eliminar logs > 30 días con un cron.
+
+5. ID Ofuscación:
+   Los IDs expuestos en la API NO son los IDs internos directos.
+   Usar formato: "ceduverse-{id}" donde {id} es el serial de denue_prospects.
+   En el endpoint de detalle, parsear el prefijo antes de buscar.
+   (Opción más segura: usar hashids para ofuscar el ID numérico)
+
+=============================================
+PARTE 5: DOCUMENTACIÓN DE LA API
+=============================================
+
+Crear página estática en /api/v1/external/docs (o un JSON para Swagger):
+
+Titulo: "API Directorio Empresarial Ceduverse"
+Versión: v1
+Base URL: https://ceduverse.replit.app/api/v1/external
+
+Secciones:
+- Autenticación (Bearer token)
+- Rate limits
+- Endpoints con ejemplos de request/response
+- Códigos de error
+- Contacto: api@ceduverse.org
+
+Agregar un health check: GET /api/v1/external/health
+Response: { "status": "ok", "version": "1.0", "companies_count": 21341 }
+
+=============================================
+PARTE 6: ADMIN — GESTIÓN DE API KEYS
+=============================================
+
+Agregar en el admin dashboard una sección "API Externa":
+
+/admin/api-keys:
+- Tabla de API keys: nombre, owner, requests hoy, último uso, estado, acciones
+- Crear nueva API key (genera UUID, muestra UNA vez, guarda hash)
+- Desactivar/activar API key
+- Ver logs de uso (gráfica de requests/día últimos 30 días)
+- Editar rate limits y origins permitidos
+
+=============================================
+PARTE 7: WEBHOOK PARA MECORRIERON (OPCIONAL)
+=============================================
+
+Para que MeCorrieron reciba actualizaciones automáticas:
+
+POST /api/v1/external/webhooks
+  Body: { url: "https://mecorrieron.mx/api/webhooks/ceduverse", events: ["company.updated", "company.new"] }
+  Registra un webhook que se dispara cuando:
+  - Se importan nuevas empresas
+  - Se actualiza información de una empresa
+
+Cuando se dispare, enviar:
+POST {webhook_url}
+Body: {
+  "event": "company.new",
+  "data": { ...company object },
+  "timestamp": "2026-04-01T10:00:00Z"
+}
+
+=============================================
+NOTAS FINALES
+=============================================
+
+- La API es READ-ONLY — MeCorrieron no puede escribir en nuestra base
+- MeCorrieron agrega sus propias capas encima: ratings de trabajadores, 
+  casos laborales, opiniones anónimas, análisis IA de Lía
+- Nuestra API solo provee la BASE de empresas reales con ubicación
+- NUNCA exponer: DENUE, INEGI, scoring interno, datos comerciales
+- Cache agresivo: las empresas no cambian frecuentemente, cachear 1-24h
+- Logging completo para facturación futura si se cobra por uso
+```

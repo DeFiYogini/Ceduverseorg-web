@@ -1,0 +1,42 @@
+Crea una sección "Seguros y Beneficios" en Ceduverse para que los socios de la cooperativa contraten seguros vía Betterfly (MetLife/Odontoprev/Chubb). Hay 9 planes: 3 perfiles de riesgo × 3 tiers.
+
+TABLAS: Crear insurance_plans (id, name, profile [administrativo/logistica/pirotecnia], profile_label, tier [basico/medio/premium], price_per_employee, coberturas dental/vida/accidentes/GMM como campos NUMERIC, has_app, has_telemedicine, provider DEFAULT 'Betterfly', is_active) y insurance_enrollments (id, user_id, plan_id, company_id, status [pending/active/suspended/cancelled], start_date, flexible_benefit_1, flexible_benefit_2, monthly_amount, policy_number, certificate_url).
+
+SEED DATA DE LOS 9 PLANES:
+- Administrativo Básico $180/col/mes: Dental $30K, Vida MetLife $100K-$200K, Accidentes $50K, Asistencia Mawdy, SIN GMM
+- Administrativo Medio $219/col/mes: Igual que básico con mejores condiciones
+- Administrativo Premium $783/col/mes: Vida $100K-$200K, GMM MetLife $1,031,838 (deducible $10,318, 10% coaseguro), Asistencia Integral MetLife, SIN dental ni accidentes
+- Logística Básico $200/col/mes (perfil "Operativo Moderado"): Misma estructura que Admin Básico
+- Logística Medio $236/col/mes: Misma estructura que Admin Medio
+- Logística Premium $800/col/mes: Misma estructura que Admin Premium
+- Pirotecnia Básico $210/col/mes (perfil "Operativo Alto"): Misma estructura
+- Pirotecnia Medio $243/col/mes: Misma estructura
+- Pirotecnia Premium $795/col/mes: Misma estructura que Admin Premium
+
+TODOS incluyen: App Betterfly (gamificación, rewards, comunidades), Telemedicina (titular), 2 beneficios flexibles a elegir.
+
+SIDEBAR: Agregar "Seguros" con icono Shield después de "Certificados" para todos los usuarios.
+
+PÁGINA DE SEGUROS (si NO tiene seguro):
+1. Header: "Protege tu bienestar — Seguros exclusivos para socios Ceduverse" + badges Betterfly/MetLife/Odontoprev
+2. Selector de 3 perfiles como cards: 🏢 Administrativo (oficina, admin, ventas) | 🚛 Logística (operarios, almacén, transporte) | 🔥 Pirotecnia (alto riesgo, químicos)
+3. Al seleccionar perfil: tabla comparativa de 3 tiers con checkmarks ✅/❌ para cada cobertura y botón "Contratar" en cada columna
+4. FAQ expandible: quién puede contratar, cómo se paga, cuándo se activa, cancelación, cobertura familiar
+
+PÁGINA DE SEGUROS (si YA tiene seguro):
+- Card con plan activo + badge verde "Activo" + desglose de coberturas
+- Botones: Descargar certificado PDF, Cambiar plan, Cancelar plan
+- Link a App Betterfly, número de póliza
+
+MODAL DE CONTRATACIÓN (5 pasos):
+1. Confirmar datos personales (nombre, CURP, fecha nacimiento, dirección)
+2. Seleccionar 2 beneficios flexibles
+3. Método de pago: descuento de aportación o pago directo
+4. Aceptar términos + firma (checkbox + OTP)
+5. Confirmación: "Solicitud enviada, te contactamos en 48h"
+
+ADMIN: Nueva sección "Seguros" con lista de enrollments, activar/suspender pólizas, subir certificado PDF, stats (total asegurados, por plan, ingresos), export CSV para Betterfly.
+
+INTEGRACIÓN SAM: Los seguros se suman a la aportación mensual. En el SAM mostrar línea: "Seguros Betterfly: $X". El CFDI incluye ambos conceptos.
+
+Empieza por tablas + seed data + vista sidebar + página con selector + comparativa.

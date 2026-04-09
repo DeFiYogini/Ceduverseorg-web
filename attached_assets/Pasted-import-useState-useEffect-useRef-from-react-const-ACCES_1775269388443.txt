@@ -1,0 +1,698 @@
+import { useState, useEffect, useRef } from "react";
+
+const ACCESS_CODE = "ceduverse2026";
+const PRICES = { vault: 2999, tangem2: 1375, tangem3: 1750 };
+const S = { sans: "'Outfit', sans-serif", mono: "'JetBrains Mono', monospace" };
+const fmt = (n) => "$" + n.toLocaleString("es-MX");
+
+function ParticleField() {
+  const ref = useRef(null);
+  useEffect(() => {
+    const c = ref.current;
+    if (!c) return;
+    const ctx = c.getContext("2d");
+    let id, ps = [];
+    const rs = () => { c.width = c.offsetWidth * 2; c.height = c.offsetHeight * 2; };
+    rs();
+    window.addEventListener("resize", rs);
+    for (let i = 0; i < 40; i++) ps.push({ x: Math.random() * c.width, y: Math.random() * c.height, vx: (Math.random() - 0.5) * 0.4, vy: (Math.random() - 0.5) * 0.4, r: Math.random() * 2 + 0.5, o: Math.random() * 0.25 + 0.05 });
+    const draw = () => {
+      ctx.clearRect(0, 0, c.width, c.height);
+      ps.forEach((p) => { p.x += p.vx; p.y += p.vy; if (p.x < 0) p.x = c.width; if (p.x > c.width) p.x = 0; if (p.y < 0) p.y = c.height; if (p.y > c.height) p.y = 0; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fillStyle = `rgba(0,197,212,${p.o})`; ctx.fill(); });
+      for (let i = 0; i < ps.length; i++) for (let j = i + 1; j < ps.length; j++) { const dx = ps[i].x - ps[j].x, dy = ps[i].y - ps[j].y, d = Math.sqrt(dx * dx + dy * dy); if (d < 160) { ctx.beginPath(); ctx.moveTo(ps[i].x, ps[i].y); ctx.lineTo(ps[j].x, ps[j].y); ctx.strokeStyle = `rgba(0,197,212,${0.05 * (1 - d / 160)})`; ctx.lineWidth = 1; ctx.stroke(); } }
+      id = requestAnimationFrame(draw);
+    };
+    draw();
+    return () => { cancelAnimationFrame(id); window.removeEventListener("resize", rs); };
+  }, []);
+  return <canvas ref={ref} style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", zIndex: 0 }} />;
+}
+
+function VaultCard({ side }) {
+  const bg = side === "front" ? "linear-gradient(145deg, #0a0a0a, #151515 40%, #1a1510)" : "linear-gradient(145deg, #0d0d0d, #181818)";
+  return (
+    <div style={{ width: 260, height: 164, borderRadius: 14, background: bg, position: "relative", overflow: "hidden", boxShadow: "0 24px 60px rgba(0,0,0,0.5)", border: "1px solid rgba(196,154,26,0.15)" }}>
+      <svg viewBox="0 0 260 164" width="260" height="164" style={{ position: "absolute", opacity: 0.06 }}>
+        <line x1="20" y1="30" x2="80" y2="30" stroke="#c49a1a" /><line x1="80" y1="30" x2="80" y2="60" stroke="#c49a1a" />
+        <line x1="80" y1="60" x2="140" y2="60" stroke="#c49a1a" /><line x1="180" y1="40" x2="240" y2="40" stroke="#c49a1a" />
+      </svg>
+      {side === "front" ? (
+        <>
+          <svg viewBox="0 0 50 44" width="38" height="33" style={{ position: "absolute", top: 22, left: 22 }}>
+            <polygon points="25,2 47,13 47,33 25,42 3,33 3,13" fill="none" stroke="#c49a1a" strokeWidth="1.5" opacity="0.5" />
+            <text x="25" y="30" textAnchor="middle" fill="#c49a1a" fontSize="14" fontWeight="bold" opacity="0.6">V</text>
+          </svg>
+          <div style={{ position: "absolute", top: 26, right: 18, fontSize: 7, color: "rgba(196,154,26,0.4)", fontFamily: S.mono, textAlign: "right", letterSpacing: 1 }}>ACERO{"\n"}INOXIDABLE</div>
+          <div style={{ position: "absolute", bottom: 44, left: 24, fontSize: 15, fontWeight: 800, color: "#c49a1a", fontFamily: S.sans }}>Ceduverse</div>
+          <div style={{ position: "absolute", bottom: 28, left: 24, fontSize: 8, color: "rgba(196,154,26,0.5)", fontFamily: S.mono, letterSpacing: 2 }}>VAULT · BLACK EDITION</div>
+          <div style={{ position: "absolute", bottom: 12, right: 18, fontSize: 7, color: "rgba(196,154,26,0.35)", fontFamily: S.mono }}>COLD STORAGE ONLY</div>
+        </>
+      ) : (
+        <>
+          <div style={{ position: "absolute", top: 12, left: 18, fontSize: 9, fontWeight: 800, color: "#c49a1a", fontFamily: S.sans }}>Ceduverse</div>
+          <div style={{ position: "absolute", top: 8, right: 14, width: 36, height: 36, border: "1px solid rgba(196,154,26,0.2)", borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <span style={{ fontSize: 6, color: "rgba(196,154,26,0.4)", fontFamily: S.mono, textAlign: "center" }}>QR{"\n"}NFT</span>
+          </div>
+          <div style={{ position: "absolute", top: 50, left: 18, right: 18 }}>
+            <div style={{ fontSize: 6, color: "rgba(196,154,26,0.4)", fontFamily: S.mono, marginBottom: 4 }}>Este certificado pertenece a:</div>
+            <div style={{ borderBottom: "1px solid rgba(196,154,26,0.15)", height: 14 }} />
+          </div>
+          <div style={{ position: "absolute", top: 76, left: 18, right: 18 }}>
+            <div style={{ fontSize: 5, color: "rgba(196,154,26,0.4)", fontFamily: S.mono, textAlign: "center", marginBottom: 3 }}>Frase semilla secreta de recuperación</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 2 }}>
+              {Array.from({ length: 12 }).map((_, i) => (
+                <div key={i} style={{ height: 11, border: "1px solid rgba(196,154,26,0.18)", borderRadius: 2, fontSize: 5, color: "rgba(196,154,26,0.25)", fontFamily: S.mono, display: "flex", alignItems: "center", justifyContent: "center" }}>{i + 1}</div>
+              ))}
+            </div>
+          </div>
+          <div style={{ position: "absolute", bottom: 6, left: 18, fontSize: 5, color: "rgba(196,154,26,0.3)", fontFamily: S.mono }}>Nunca compartas tu frase secreta</div>
+          <div style={{ position: "absolute", bottom: 6, right: 18, fontSize: 5, color: "rgba(196,154,26,0.3)", fontFamily: S.mono }}>ceduverse.org</div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function Qty({ value, onInc, onDec, color = "#c49a1a" }) {
+  const s = { width: 32, height: 32, background: color + "0d", border: "none", color, fontSize: 16, cursor: "pointer" };
+  return (
+    <div style={{ display: "flex", alignItems: "center", border: `1px solid ${color}33`, borderRadius: 8, overflow: "hidden" }}>
+      <button onClick={onDec} style={s}>−</button>
+      <span style={{ width: 36, textAlign: "center", fontSize: 14, fontWeight: 700, color: "#fff", fontFamily: S.mono }}>{value}</span>
+      <button onClick={onInc} style={s}>+</button>
+    </div>
+  );
+}
+
+function Disclosures() {
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={{ background: "rgba(255,255,255,0.01)", border: "1px solid rgba(255,255,255,0.04)", borderRadius: 14, padding: "18px 22px", marginBottom: 36 }}>
+      <button onClick={() => setOpen(!open)} style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+        <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(200,214,224,0.6)", fontFamily: S.sans }}>⚖️ Avisos Legales, Riesgos y Disclaimers</span>
+        <span style={{ color: "rgba(200,214,224,0.4)", fontSize: 16, transition: "transform 0.3s", transform: open ? "rotate(180deg)" : "none" }}>▾</span>
+      </button>
+      {open && (
+        <div style={{ marginTop: 16, fontSize: 10, color: "rgba(200,214,224,0.45)", fontFamily: S.sans, lineHeight: 1.8 }}>
+          <p><strong style={{ color: "rgba(200,214,224,0.55)" }}>1.</strong> Ceduverse es plataforma educativa. NO es institución financiera, exchange, IFPE ni entidad regulada por CNBV.</p>
+          <p><strong style={{ color: "rgba(200,214,224,0.55)" }}>2.</strong> Criptoactivos son volátiles. Valor puede llegar a cero. Sin garantía de rendimientos.</p>
+          <p><strong style={{ color: "rgba(200,214,224,0.55)" }}>3.</strong> Autocustodia: el usuario es único responsable de sus claves. Ceduverse NO puede recuperar frases semilla.</p>
+          <p><strong style={{ color: "rgba(200,214,224,0.55)" }}>4. PLD/FT:</strong> Ceduverse cumple LGSC, LFPIORPI y disposiciones PLD/FT. Rechazamos lavado de dinero, financiamiento al terrorismo, evasión fiscal y toda actividad ilícita.</p>
+          <p><strong style={{ color: "rgba(200,214,224,0.55)" }}>5.</strong> El usuario declara fondos de fuentes lícitas. Incumplimiento = cancelación inmediata + reporte a autoridades.</p>
+          <p><strong style={{ color: "rgba(200,214,224,0.55)" }}>6.</strong> Nada aquí es asesoría financiera, fiscal o legal.</p>
+          <p><strong style={{ color: "rgba(200,214,224,0.55)" }}>7.</strong> Tokapay, Tangem, MercadoPago, Envia.com, OpenSea, Polygon, Mastercard son marcas de sus titulares.</p>
+          <p><strong style={{ color: "rgba(200,214,224,0.55)" }}>8.</strong> Ceduverse no es responsable por pérdida de fondos, fallas blockchain, hackeos o cambios regulatorios.</p>
+          <p><strong style={{ color: "rgba(200,214,224,0.55)" }}>9.</strong> Pagos procesados por pasarela de pago segura. Ceduverse no almacena datos de tarjetas. Envíos vía servicio de paquetería.</p>
+          <p><strong style={{ color: "rgba(200,214,224,0.55)" }}>10.</strong> Tangem: producto importado, entrega 30–60 días, garantía del fabricante (25 años).</p>
+          <p><strong style={{ color: "rgba(200,214,224,0.55)" }}>11.</strong> Jurisdicción: Leyes de México. Tribunales de Monterrey, NL.</p>
+          <p style={{ fontSize: 9, color: "rgba(200,214,224,0.3)", fontFamily: S.mono, marginTop: 10 }}>Abril 2026 · v3.0</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════
+// SECTION: PAGOS
+// ═══════════════════════════════════════════════
+function PagosSection() {
+  const tiers = [
+    { title: "Mastercard TOKAPAY", comm: "0", bg: "linear-gradient(135deg,#1a6fc4,#4ec6e0)", chip: true, mc: true, soldOut: true, feats: ["KYC requerido", "Sin límite depósito", "Retiros $7,300/día", "SPEI $300K diario", "En línea $60K/día", "TPV $100K/día", "40 tx diarias", "Reposición gratis"] },
+    { title: "Black PREMIUM", comm: "2.5", bg: "linear-gradient(135deg,#1a1a2e,#3a3a55)", chip: true, mc: true, badge: "Innominada", feats: ["KYC no obligatorio", "Sin límite depósito", "Retiros $9K/día", "Gasto $135K/día", "En línea $35K/día", "15 tx diarias", "Reposición $100"] },
+    { title: "Ceduverse Vault", comm: "5", bg: "linear-gradient(135deg,#0a0a0a,#2a2020)", chip: false, mc: false, badge: "Cold Storage", hl: true, feats: ["SIN chip bancario", "KYC no obligatorio", "Crypto $2M/día equiv.", "Blockchain sin límite", "Almacenamiento ilimitado", "NFT Certificado Polygon", "→ Ver en Tienda"] },
+  ];
+
+  return (
+    <>
+      <div style={{ textAlign: "center", padding: "72px 0 48px" }}>
+        <div style={{ display: "inline-block", padding: "6px 16px", background: "rgba(0,197,212,0.1)", border: "1px solid rgba(0,197,212,0.2)", borderRadius: 20, fontSize: 10, color: "#00C5D4", fontFamily: S.mono, letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 20 }}>Economía Solidaria · Cooperativismo</div>
+        <h1 style={{ fontSize: "clamp(30px,5vw,48px)", fontWeight: 800, color: "#fff", margin: "0 0 16px", fontFamily: S.sans, lineHeight: 1.1 }}>Medios de Pago<br /><span style={{ color: "#00C5D4" }}>para Socios</span></h1>
+        <p style={{ fontSize: 15, color: "rgba(224,232,240,0.6)", maxWidth: 620, margin: "0 auto", lineHeight: 1.7, fontFamily: S.sans }}>Tú controlas tus recursos educativos y cómo dispersas becas e incentivos a tu organización.</p>
+      </div>
+      <div style={{ display: "flex", gap: 20, justifyContent: "center", flexWrap: "wrap", marginBottom: 60 }}>
+        {tiers.map((t, idx) => (
+          <div key={idx} style={{ flex: "1 1 270px", maxWidth: 340, background: t.hl ? "linear-gradient(180deg,rgba(0,197,212,0.08),rgba(13,27,75,0.12))" : "rgba(255,255,255,0.02)", border: t.hl ? "1px solid rgba(0,197,212,0.3)" : "1px solid rgba(255,255,255,0.06)", borderRadius: 18, padding: 28, position: "relative", opacity: t.soldOut ? 0.5 : 1, filter: t.soldOut ? "grayscale(0.6)" : "none" }}>
+            {t.soldOut && <div style={{ position: "absolute", top: -10, left: 20, background: "linear-gradient(135deg,#ff4466,#cc2244)", color: "#fff", fontSize: 10, fontWeight: 700, padding: "4px 14px", borderRadius: 14, fontFamily: S.mono, zIndex: 2, letterSpacing: 1 }}>AGOTADA</div>}
+            {t.badge && !t.soldOut && <div style={{ position: "absolute", top: -10, right: 20, background: "linear-gradient(135deg,#00C5D4,#0D1B4B)", color: "#fff", fontSize: 9, fontWeight: 700, padding: "3px 12px", borderRadius: 14, fontFamily: S.mono }}>{t.badge}</div>}
+            <div style={{ width: 180, height: 112, borderRadius: 10, background: t.bg, margin: "0 auto 20px", position: "relative", overflow: "hidden", boxShadow: "0 12px 40px rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.08)" }}>
+              {t.chip && <div style={{ position: "absolute", top: 18, left: 16, width: 22, height: 16, borderRadius: 3, background: "#d4af37", opacity: 0.8 }} />}
+              {!t.chip && <svg viewBox="0 0 40 35" width="28" height="24" style={{ position: "absolute", top: 14, left: 14, opacity: 0.25 }}><polygon points="20,2 38,11 38,26 20,34 2,26 2,11" fill="none" stroke="#c49a1a" strokeWidth="1.5" /></svg>}
+              <div style={{ position: "absolute", bottom: 26, left: 16, fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.9)", fontFamily: S.mono, letterSpacing: 1 }}>{t.title.split(" ").pop()}</div>
+              {t.mc && <div style={{ position: "absolute", bottom: 10, right: 12, display: "flex" }}><div style={{ width: 14, height: 14, borderRadius: "50%", background: "#eb001b", opacity: 0.9 }} /><div style={{ width: 14, height: 14, borderRadius: "50%", background: "#f79e1b", opacity: 0.9, marginLeft: -5 }} /></div>}
+              {!t.mc && <div style={{ position: "absolute", bottom: 10, right: 12, fontSize: 6, color: "rgba(196,154,26,0.4)", fontFamily: S.mono }}>COLD STORAGE</div>}
+            </div>
+            <h3 style={{ fontSize: 17, fontWeight: 700, color: "#fff", textAlign: "center", margin: "0 0 4px", fontFamily: S.sans }}>{t.title}</h3>
+            <div style={{ textAlign: "center", fontSize: 30, fontWeight: 800, color: "#00C5D4", fontFamily: S.mono, margin: "6px 0 16px" }}>+{t.comm}%</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {t.feats.map((f, i) => <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 12, color: "rgba(200,214,224,0.85)", fontFamily: S.sans, lineHeight: 1.5 }}><span style={{ color: "#00C5D4", flexShrink: 0, marginTop: 1 }}>◆</span><span>{f}</span></div>)}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div style={{ textAlign: "center", fontSize: 11, color: "rgba(200,214,224,0.4)", fontFamily: S.mono, marginBottom: 40 }}>* Comisiones de dispersión según el medio seleccionado. Consulta con tu gestor cooperativo.</div>
+    </>
+  );
+}
+
+// ═══════════════════════════════════════════════
+// SECTION: TIENDA
+// ═══════════════════════════════════════════════
+function TiendaSection() {
+  const [side, setSide] = useState("front");
+  const [cart, setCart] = useState({ vault: 0, tangem2: 0, tangem3: 0 });
+  const [step, setStep] = useState("browse");
+  const [ship, setShip] = useState({ name: "", email: "", phone: "", street: "", colony: "", city: "", state: "", zip: "" });
+  const [quote, setQuote] = useState(null);
+  const [referral, setReferral] = useState("");
+  const [referralApplied, setReferralApplied] = useState(false);
+  const [seedWords, setSeedWords] = useState(12);
+  const vaultStock = 13 - cart.vault; // Simulated stock from 13
+
+  const discount = referralApplied ? 0.15 : 0;
+  const sub = Math.round((cart.vault * PRICES.vault + cart.tangem2 * PRICES.tangem2 + cart.tangem3 * PRICES.tangem3) * (1 - discount));
+  const subBefore = cart.vault * PRICES.vault + cart.tangem2 * PRICES.tangem2 + cart.tangem3 * PRICES.tangem3;
+  const total = sub + (quote?.price || 0);
+  const inc = (k) => setCart((c) => ({ ...c, [k]: c[k] + 1 }));
+  const dec = (k) => setCart((c) => ({ ...c, [k]: Math.max(0, c[k] - 1) }));
+  const canShip = ship.name && ship.email && ship.phone && ship.street && ship.city && ship.state && ship.zip;
+
+  const getQuote = async () => {
+    // TODO: call envia.com API /ship/rate
+    await new Promise((r) => setTimeout(r, 1000));
+    setQuote({ carrier: "Estafeta", days: "3–5 días", price: 199 });
+  };
+
+  const pay = () => {
+    // TODO: POST to backend → MercadoPago /checkout/preferences + envia.com /ship/generate
+    console.log("Payment items:", { vault: cart.vault, tangem2: cart.tangem2, tangem3: cart.tangem3, subtotal: sub, shipping: quote?.price, total, referral: referralApplied ? referral : null, discount: referralApplied ? "15%" : "0%", seedPhraseWords: seedWords });
+    console.log("Envia.com destination:", ship);
+    alert(`Checkout: ${fmt(total)} MXN — En producción se procesa el pago con tarjeta. Ver consola.`);
+  };
+
+  const Field = ({ label, field, ph, type = "text" }) => (
+    <div style={{ flex: "1 1 200px" }}>
+      <label style={{ fontSize: 10, color: "rgba(200,214,224,0.5)", fontFamily: S.mono, display: "block", marginBottom: 4 }}>{label} *</label>
+      <input type={type} value={ship[field]} onChange={(e) => setShip((s) => ({ ...s, [field]: e.target.value }))} placeholder={ph} style={{ width: "100%", padding: "10px 14px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, color: "#e0e8f0", fontSize: 13, fontFamily: S.sans, outline: "none" }} />
+    </div>
+  );
+
+  return (
+    <>
+      <div style={{ textAlign: "center", padding: "72px 0 24px" }}>
+        <div style={{ display: "inline-block", padding: "6px 16px", background: "rgba(196,154,26,0.1)", border: "1px solid rgba(196,154,26,0.2)", borderRadius: 20, fontSize: 10, color: "#c49a1a", fontFamily: S.mono, letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 20 }}>Tienda · Pago con tarjeta · Envío nacional</div>
+        <h1 style={{ fontSize: "clamp(28px,5vw,44px)", fontWeight: 800, color: "#fff", margin: "0 0 16px", fontFamily: S.sans, lineHeight: 1.1 }}>Ceduverse <span style={{ color: "#c49a1a" }}>Store</span></h1>
+        <p style={{ fontSize: 15, color: "rgba(224,232,240,0.6)", maxWidth: 600, margin: "0 auto", lineHeight: 1.7, fontFamily: S.sans }}>Adquiere tu kit de autocustodia. Paga con tu tarjeta de crédito o débito, envío a toda la república.</p>
+      </div>
+
+      {/* Referral code */}
+      <div style={{ background: "linear-gradient(135deg,rgba(0,197,212,0.06),rgba(196,154,26,0.06))", border: "1px solid rgba(0,197,212,0.2)", borderRadius: 14, padding: "20px 24px", marginBottom: 28 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+          <div style={{ flex: 1, minWidth: 200 }}>
+            <h4 style={{ fontSize: 14, fontWeight: 700, color: "#00C5D4", fontFamily: S.sans, margin: "0 0 4px" }}>🎟️ ¿Tienes código de referido?</h4>
+            <p style={{ fontSize: 12, color: "rgba(200,214,224,0.6)", fontFamily: S.sans, margin: 0 }}>Coloca tu código de referido socio Ceduverse y obtén un <strong style={{ color: "#c49a1a" }}>15% de descuento</strong> en tu compra.</p>
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <input type="text" placeholder="Código de referido" value={referral} onChange={(e) => setReferral(e.target.value.toUpperCase())} disabled={referralApplied} style={{ padding: "10px 14px", background: "rgba(255,255,255,0.04)", border: referralApplied ? "1px solid rgba(0,197,212,0.4)" : "1px solid rgba(255,255,255,0.1)", borderRadius: 8, color: referralApplied ? "#00C5D4" : "#e0e8f0", fontSize: 13, fontFamily: S.mono, outline: "none", width: 160, textTransform: "uppercase" }} />
+            {!referralApplied ? (
+              <button onClick={() => { if (referral.length >= 4) setReferralApplied(true); }} style={{ padding: "10px 18px", background: referral.length >= 4 ? "linear-gradient(135deg,#00C5D4,#0D1B4B)" : "rgba(255,255,255,0.06)", border: "none", borderRadius: 8, color: "#fff", fontSize: 12, fontWeight: 700, cursor: referral.length >= 4 ? "pointer" : "not-allowed", fontFamily: S.sans, opacity: referral.length >= 4 ? 1 : 0.4 }}>Aplicar</button>
+            ) : (
+              <div style={{ padding: "10px 18px", background: "rgba(0,197,212,0.1)", border: "1px solid rgba(0,197,212,0.3)", borderRadius: 8, color: "#00C5D4", fontSize: 12, fontWeight: 700, fontFamily: S.mono, display: "flex", alignItems: "center", gap: 6 }}>✓ −15%</div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Two wallet recommendation */}
+      <div style={{ background: "rgba(0,197,212,0.04)", border: "1px solid rgba(0,197,212,0.12)", borderRadius: 14, padding: "22px 24px", marginBottom: 36 }}>
+        <h4 style={{ fontSize: 15, fontWeight: 700, color: "#00C5D4", fontFamily: S.sans, margin: "0 0 12px" }}>💡 Usa DOS wallets separadas</h4>
+        <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
+          <div style={{ flex: "1 1 230px", padding: "14px 18px", background: "rgba(196,154,26,0.06)", border: "1px solid rgba(196,154,26,0.12)", borderRadius: 10 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#c49a1a", fontFamily: S.sans, marginBottom: 4 }}>🎓 Wallet de Certificados</div>
+            <p style={{ fontSize: 11, color: "rgba(200,214,224,0.65)", fontFamily: S.sans, margin: 0, lineHeight: 1.6 }}>Se crea automáticamente al registrarte en <strong style={{ color: "#c49a1a" }}>ceduverse.org</strong>. Solo para NFTs educativos: DC-3, DC-5, diplomas, constancias. Sin fondos de valor.</p>
+          </div>
+          <div style={{ flex: "1 1 230px", padding: "14px 18px", background: "rgba(0,197,212,0.06)", border: "1px solid rgba(0,197,212,0.12)", borderRadius: 10 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#00C5D4", fontFamily: S.sans, marginBottom: 4 }}>₿ Wallet de Criptoactivos</div>
+            <p style={{ fontSize: 11, color: "rgba(200,214,224,0.65)", fontFamily: S.sans, margin: 0, lineHeight: 1.6 }}>Para BTC, ETH, USDT usa una wallet independiente en <strong style={{ color: "#00C5D4" }}>Tangem</strong> o MetaMask/Trust Wallet. Si comprometen una, la otra está a salvo.</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Vault Kit */}
+      <div style={{ background: "rgba(196,154,26,0.03)", border: "1px solid rgba(196,154,26,0.12)", borderRadius: 18, padding: "32px 24px", marginBottom: 24 }}>
+        <div style={{ display: "flex", gap: 24, flexWrap: "wrap", alignItems: "center" }}>
+          <div style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+            <VaultCard side={side} />
+            <div style={{ display: "flex", gap: 6 }}>
+              {["front", "back"].map((s) => (
+                <button key={s} onClick={() => setSide(s)} style={{ padding: "5px 14px", background: side === s ? "rgba(196,154,26,0.15)" : "transparent", border: side === s ? "1px solid rgba(196,154,26,0.3)" : "1px solid rgba(255,255,255,0.06)", borderRadius: 6, color: side === s ? "#c49a1a" : "rgba(224,232,240,0.4)", fontSize: 10, cursor: "pointer", fontFamily: S.mono }}>{s === "front" ? "Frente" : "Reverso"}</button>
+              ))}
+            </div>
+          </div>
+          <div style={{ flex: 1, minWidth: 240 }}>
+            <h3 style={{ fontSize: 20, fontWeight: 800, color: "#fff", fontFamily: S.sans, margin: "0 0 6px" }}>Ceduverse Vault Kit <span style={{ fontSize: 10, background: "rgba(196,154,26,0.15)", color: "#c49a1a", padding: "2px 8px", borderRadius: 10, fontFamily: S.mono }}>Black Edition</span></h3>
+            <p style={{ fontSize: 24, fontWeight: 800, color: "#c49a1a", fontFamily: S.mono, margin: "0 0 10px" }}>$2,999 <span style={{ fontSize: 11, fontWeight: 400, color: "rgba(196,154,26,0.6)" }}>MXN</span></p>
+            <p style={{ fontSize: 12, color: "rgba(200,214,224,0.7)", lineHeight: 1.6, fontFamily: S.sans, margin: "0 0 10px" }}>Tarjeta metálica acero inoxidable <strong style={{ color: "#c49a1a" }}>sin chip bancario</strong> — cold storage exclusivo. Grid grabable, QR→NFT, Scriber, estuche tarjetero personalizado.</p>
+            <div style={{ background: "rgba(255,68,102,0.05)", border: "1px solid rgba(255,68,102,0.1)", borderRadius: 8, padding: "8px 12px", marginBottom: 10 }}>
+              <p style={{ fontSize: 10, color: "rgba(255,68,102,0.8)", fontFamily: S.sans, margin: 0 }}>⚠️ Sin chip. Separar pago y custodia evita que expongas tus contraseñas al pagar.</p>
+            </div>
+            {/* Seed phrase word selector */}
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ fontSize: 10, color: "rgba(200,214,224,0.5)", fontFamily: S.mono, display: "block", marginBottom: 6 }}>PALABRAS EN FRASE SEMILLA</label>
+              <div style={{ display: "flex", gap: 6 }}>
+                {[12, 18, 24].map((n) => (
+                  <button key={n} onClick={() => setSeedWords(n)} style={{ padding: "8px 16px", background: seedWords === n ? "rgba(196,154,26,0.15)" : "rgba(255,255,255,0.03)", border: seedWords === n ? "1px solid rgba(196,154,26,0.3)" : "1px solid rgba(255,255,255,0.06)", borderRadius: 8, color: seedWords === n ? "#c49a1a" : "rgba(224,232,240,0.5)", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: S.mono }}>{n} palabras</button>
+                ))}
+              </div>
+              <p style={{ fontSize: 9, color: "rgba(200,214,224,0.35)", fontFamily: S.mono, marginTop: 4 }}>{seedWords === 12 ? "Estándar — compatible con la mayoría de wallets (Trust, MetaMask, Tangem)" : seedWords === 18 ? "Intermedio — mayor seguridad, compatible con algunas wallets" : "Máxima seguridad — compatible con Ledger, Trezor y wallets avanzadas"}</p>
+            </div>
+            {/* Stock counter */}
+            <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 10 }}>
+              <Qty value={cart.vault} onInc={() => { if (vaultStock > 7) inc("vault"); }} onDec={() => dec("vault")} />
+              {cart.vault > 0 && <span style={{ fontSize: 14, fontWeight: 700, color: "#c49a1a", fontFamily: S.mono }}>{fmt(cart.vault * PRICES.vault)}</span>}
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <div style={{ width: 8, height: 8, borderRadius: "50%", background: vaultStock > 10 ? "#00C5D4" : vaultStock > 8 ? "#ffa500" : "#ff4466", animation: "pulse 2s infinite" }} />
+                <span style={{ fontSize: 11, fontWeight: 700, color: vaultStock > 10 ? "#00C5D4" : vaultStock > 8 ? "#ffa500" : "#ff4466", fontFamily: S.mono }}>{vaultStock} disponibles</span>
+                <span style={{ fontSize: 9, color: "rgba(200,214,224,0.35)", fontFamily: S.mono }}>· Edición especial limitada</span>
+              </div>
+            </div>
+            <div style={{ fontSize: 9, color: "rgba(200,214,224,0.4)", fontFamily: S.mono, marginTop: 6 }}>📦 30–45 días (edición especial)</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Tangem */}
+      <div style={{ background: "rgba(0,197,212,0.03)", border: "1px solid rgba(0,197,212,0.1)", borderRadius: 18, padding: "32px 24px", marginBottom: 24 }}>
+        <h3 style={{ fontSize: 20, fontWeight: 800, color: "#fff", fontFamily: S.sans, margin: "0 0 10px" }}>Tangem Wallet</h3>
+        <p style={{ fontSize: 12, color: "rgba(200,214,224,0.7)", lineHeight: 1.6, fontFamily: S.sans, margin: "0 0 16px" }}>Hardware NFC, chip EAL6+ IP68, sin batería. Seedless o frase semilla. 85+ blockchains. Garantía 25 años.</p>
+        <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 12 }}>
+          {[{ k: "tangem2", label: "2 tarjetas", sub: "1 principal + 1 backup", price: PRICES.tangem2 }, { k: "tangem3", label: "3 tarjetas", sub: "1 principal + 2 backup", price: PRICES.tangem3 }].map((t) => (
+            <div key={t.k} style={{ flex: "1 1 200px", padding: "14px 16px", background: "rgba(0,197,212,0.04)", border: "1px solid rgba(0,197,212,0.1)", borderRadius: 10 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                <div><div style={{ fontSize: 13, fontWeight: 700, color: "#fff", fontFamily: S.sans }}>{t.label}</div><div style={{ fontSize: 9, color: "rgba(200,214,224,0.4)", fontFamily: S.mono }}>{t.sub}</div></div>
+                <div style={{ fontSize: 18, fontWeight: 800, color: "#00C5D4", fontFamily: S.mono }}>{fmt(t.price)}</div>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <Qty value={cart[t.k]} onInc={() => inc(t.k)} onDec={() => dec(t.k)} color="#00C5D4" />
+                {cart[t.k] > 0 && <span style={{ fontSize: 12, fontWeight: 700, color: "#00C5D4", fontFamily: S.mono }}>{fmt(cart[t.k] * t.price)}</span>}
+              </div>
+            </div>
+          ))}
+        </div>
+        {(cart.tangem2 > 0 || cart.tangem3 > 0) && (
+          <div style={{ background: "rgba(255,165,0,0.06)", border: "1px solid rgba(255,165,0,0.12)", borderRadius: 8, padding: "8px 12px" }}>
+            <p style={{ fontSize: 10, color: "rgba(255,165,0,0.8)", fontFamily: S.sans, margin: 0 }}>⏳ Entrega estimada: <strong>30–60 días</strong>. Producto importado. Se procesa al confirmar pago.</p>
+          </div>
+        )}
+      </div>
+
+      {/* Checkout */}
+      {sub > 0 && (
+        <div style={{ background: "linear-gradient(135deg,rgba(0,197,212,0.06),rgba(196,154,26,0.06))", border: "1px solid rgba(0,197,212,0.2)", borderRadius: 18, padding: "28px 24px", marginBottom: 40 }}>
+          {step === "browse" && (
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 14 }}>
+              <div>
+                <div style={{ fontSize: 10, color: "rgba(200,214,224,0.5)", fontFamily: S.mono, marginBottom: 4 }}>TU ORDEN</div>
+                <div style={{ fontSize: 13, color: "#fff", fontFamily: S.sans }}>
+                  {cart.vault > 0 && <span>{cart.vault}x Vault Kit </span>}
+                  {cart.tangem2 > 0 && <span>{cart.tangem2}x Tangem 2-pack </span>}
+                  {cart.tangem3 > 0 && <span>{cart.tangem3}x Tangem 3-pack </span>}
+                </div>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                <div style={{ textAlign: "right" }}><div style={{ fontSize: 10, color: "rgba(200,214,224,0.4)", fontFamily: S.mono }}>SUBTOTAL{referralApplied ? " (−15%)" : ""}</div>{referralApplied && <div style={{ fontSize: 12, color: "rgba(200,214,224,0.3)", fontFamily: S.mono, textDecoration: "line-through" }}>{fmt(subBefore)}</div>}<div style={{ fontSize: 22, fontWeight: 800, color: referralApplied ? "#00C5D4" : "#fff", fontFamily: S.mono }}>{fmt(sub)}</div></div>
+                <button onClick={() => setStep("shipping")} style={{ padding: "12px 24px", background: "linear-gradient(135deg,#00C5D4,#0D1B4B)", border: "none", borderRadius: 10, color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: S.sans }}>Continuar →</button>
+              </div>
+            </div>
+          )}
+
+          {step === "shipping" && (
+            <>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}><h3 style={{ fontSize: 16, fontWeight: 700, color: "#fff", fontFamily: S.sans, margin: 0 }}>📦 Datos de Envío</h3><button onClick={() => setStep("browse")} style={{ background: "none", border: "none", color: "rgba(200,214,224,0.5)", cursor: "pointer", fontFamily: S.mono, fontSize: 11 }}>← Volver</button></div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 16 }}>
+                <Field label="NOMBRE" field="name" ph="Juan Pérez" />
+                <Field label="EMAIL" field="email" ph="juan@email.com" type="email" />
+                <Field label="TELÉFONO" field="phone" ph="8112345678" type="tel" />
+                <Field label="CALLE Y NÚMERO" field="street" ph="Av. Constitución 1000" />
+                <Field label="COLONIA" field="colony" ph="Centro" />
+                <Field label="CIUDAD" field="city" ph="Monterrey" />
+                <Field label="ESTADO" field="state" ph="Nuevo León" />
+                <Field label="C.P." field="zip" ph="64000" />
+              </div>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
+                {quote && <div style={{ flex: 1, padding: "10px 14px", background: "rgba(0,197,212,0.06)", border: "1px solid rgba(0,197,212,0.12)", borderRadius: 10 }}><div style={{ fontSize: 10, color: "rgba(200,214,224,0.5)", fontFamily: S.mono }}>{quote.carrier} · {quote.days}</div><div style={{ fontSize: 16, fontWeight: 800, color: "#00C5D4", fontFamily: S.mono }}>{fmt(quote.price)}</div></div>}
+                <button onClick={quote ? () => setStep("confirm") : getQuote} disabled={!canShip} style={{ padding: "12px 24px", background: canShip ? "linear-gradient(135deg,#00C5D4,#0D1B4B)" : "rgba(255,255,255,0.1)", border: "none", borderRadius: 10, color: "#fff", fontSize: 13, fontWeight: 700, cursor: canShip ? "pointer" : "not-allowed", fontFamily: S.sans, opacity: canShip ? 1 : 0.5 }}>{quote ? "Revisar orden →" : "Cotizar envío"}</button>
+              </div>
+            </>
+          )}
+
+          {step === "confirm" && (
+            <>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}><h3 style={{ fontSize: 16, fontWeight: 700, color: "#fff", fontFamily: S.sans, margin: 0 }}>✅ Confirmar</h3><button onClick={() => setStep("shipping")} style={{ background: "none", border: "none", color: "rgba(200,214,224,0.5)", cursor: "pointer", fontFamily: S.mono, fontSize: 11 }}>← Editar</button></div>
+              <div style={{ marginBottom: 16 }}>
+                {cart.vault > 0 && <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", fontSize: 12, color: "rgba(200,214,224,0.8)", fontFamily: S.sans }}><span>{cart.vault}x Vault Kit</span><span style={{ fontFamily: S.mono, fontWeight: 700 }}>{fmt(cart.vault * PRICES.vault)}</span></div>}
+                {cart.tangem2 > 0 && <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", fontSize: 12, color: "rgba(200,214,224,0.8)", fontFamily: S.sans }}><span>{cart.tangem2}x Tangem 2-pack</span><span style={{ fontFamily: S.mono, fontWeight: 700 }}>{fmt(cart.tangem2 * PRICES.tangem2)}</span></div>}
+                {cart.tangem3 > 0 && <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", fontSize: 12, color: "rgba(200,214,224,0.8)", fontFamily: S.sans }}><span>{cart.tangem3}x Tangem 3-pack</span><span style={{ fontFamily: S.mono, fontWeight: 700 }}>{fmt(cart.tangem3 * PRICES.tangem3)}</span></div>}
+                {quote && <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", fontSize: 12, color: "rgba(200,214,224,0.8)", fontFamily: S.sans }}><span>📦 Envío {quote.carrier}</span><span style={{ fontFamily: S.mono, fontWeight: 700 }}>{fmt(quote.price)}</span></div>}
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderTop: "1px solid rgba(255,255,255,0.06)", fontSize: 18, fontWeight: 800, color: "#fff", fontFamily: S.mono, marginTop: 6 }}><span>TOTAL</span><span>{fmt(total)}</span></div>
+              </div>
+              <p style={{ fontSize: 11, color: "rgba(200,214,224,0.5)", fontFamily: S.sans, marginBottom: 12 }}>Enviar a: {ship.name}, {ship.street}, {ship.city}, {ship.state} {ship.zip}</p>
+              <button onClick={pay} style={{ width: "100%", padding: "16px", background: "linear-gradient(135deg,#00C5D4,#0D1B4B)", border: "none", borderRadius: 12, color: "#fff", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: S.sans, boxShadow: "0 8px 30px rgba(0,197,212,0.3)", display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none"><rect x="1" y="4" width="22" height="16" rx="3" stroke="#fff" strokeWidth="2" /><path d="M1 10h22" stroke="#fff" strokeWidth="2" /></svg>
+                Pagar {fmt(total)} con tarjeta
+              </button>
+              {referralApplied && <p style={{ fontSize: 10, color: "#00C5D4", fontFamily: S.mono, textAlign: "center", marginTop: 6 }}>✓ Descuento de referido aplicado: −15% (código: {referral})</p>}
+              <p style={{ fontSize: 9, color: "rgba(200,214,224,0.3)", fontFamily: S.mono, textAlign: "center", marginTop: 6 }}>Pago seguro con tarjeta de crédito o débito.</p>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Setup */}
+      <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(196,154,26,0.1)", borderRadius: 16, padding: "32px 24px", marginBottom: 40 }}>
+        <h3 style={{ fontSize: 17, fontWeight: 700, color: "#fff", fontFamily: S.sans, margin: "0 0 24px", textAlign: "center" }}>Guía de Activación</h3>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 560, margin: "0 auto", fontSize: 13, color: "rgba(200,214,224,0.7)", fontFamily: S.sans, lineHeight: 1.7 }}>
+          <p><strong style={{ color: "#c49a1a" }}>1.</strong> Crea tu cuenta en ceduverse.org — se genera tu wallet de certificados automáticamente.</p>
+          <p><strong style={{ color: "#c49a1a" }}>2.</strong> Configura tu wallet de criptoactivos (separada) en Tangem App, Trust Wallet o MetaMask.</p>
+          <p><strong style={{ color: "#c49a1a" }}>3.</strong> Graba tu frase semilla en la Vault Card con el Scriber. Guárdala en el estuche.</p>
+          <p><strong style={{ color: "#c49a1a" }}>4.</strong> Registra tu dirección pública de certificados en ceduverse.org o vía WhatsApp/Telegram.</p>
+          <p><strong style={{ color: "#c49a1a" }}>5.</strong> Recibe tu NFT de Certificado de Aportación en Polygon.</p>
+          <p><strong style={{ color: "#c49a1a" }}>6.</strong> Certificados en wallet de ceduverse.org. BTC y cripto en tu Tangem/wallet separada.</p>
+        </div>
+      </div>
+      <Disclosures />
+    </>
+  );
+}
+
+// ═══════════════════════════════════════════════
+// SECTION: SEGURIDAD
+// ═══════════════════════════════════════════════
+function SeguridadSection() {
+  const [monto, setMonto] = useState(50000);
+  const [perfil, setPerfil] = useState("moderado");
+  const perfiles = {
+    conservador: { t: 0, b: 65, v: 35, l: "Conservador", d: "Prioriza privacidad fiat con innominada." },
+    moderado: { t: 0, b: 45, v: 55, l: "Moderado", d: "Balance entre innominada y autocustodia cripto." },
+    cripto: { t: 0, b: 20, v: 80, l: "Cripto-Nativo", d: "Maximiza autocustodia y descentralización." },
+  };
+  const p = perfiles[perfil];
+
+  return (
+    <>
+      <div style={{ textAlign: "center", padding: "72px 0 48px" }}>
+        <h1 style={{ fontSize: "clamp(28px,5vw,44px)", fontWeight: 800, color: "#fff", margin: "0 0 16px", fontFamily: S.sans, lineHeight: 1.1 }}>Seguridad y <span style={{ color: "#00C5D4" }}>Diversificación</span></h1>
+      </div>
+
+      <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 36 }}>
+        <div style={{ flex: "1 1 260px", background: "rgba(255,68,102,0.05)", border: "1px solid rgba(255,68,102,0.12)", borderRadius: 14, padding: 22 }}>
+          <h4 style={{ fontSize: 14, fontWeight: 700, color: "#ff4466", fontFamily: S.sans, margin: "0 0 8px" }}>🏦 NO dejes cripto en exchanges</h4>
+          <p style={{ fontSize: 11, color: "rgba(200,214,224,0.75)", lineHeight: 1.7, fontFamily: S.sans, margin: 0 }}>Si quiebran o congelan retiros (Mt. Gox, FTX, Celsius), pierdes todo. "Not your keys, not your coins."</p>
+        </div>
+        <div style={{ flex: "1 1 260px", background: "rgba(255,165,0,0.05)", border: "1px solid rgba(255,165,0,0.12)", borderRadius: 14, padding: 22 }}>
+          <h4 style={{ fontSize: 14, fontWeight: 700, color: "#ffa500", fontFamily: S.sans, margin: "0 0 8px" }}>💳 NO confíes todo a una fintech</h4>
+          <p style={{ fontSize: 11, color: "rgba(200,214,224,0.75)", lineHeight: 1.7, fontFamily: S.sans, margin: 0 }}>Pueden congelar cuentas o ser intervenidas. Ideales para gasto diario, no como refugio de valor.</p>
+        </div>
+        <div style={{ flex: "1 1 260px", background: "rgba(0,197,212,0.05)", border: "1px solid rgba(0,197,212,0.12)", borderRadius: 14, padding: 22 }}>
+          <h4 style={{ fontSize: 14, fontWeight: 700, color: "#00C5D4", fontFamily: S.sans, margin: "0 0 8px" }}>🔐 Diversifica entre capas</h4>
+          <p style={{ fontSize: 11, color: "rgba(200,214,224,0.75)", lineHeight: 1.7, fontFamily: S.sans, margin: 0 }}>Fintech para liquidez + innominada para privacidad + cold storage para soberanía.</p>
+        </div>
+      </div>
+
+      <div style={{ background: "rgba(196,154,26,0.04)", border: "1px solid rgba(196,154,26,0.12)", borderRadius: 14, padding: 22, marginBottom: 36 }}>
+        <h4 style={{ fontSize: 14, fontWeight: 700, color: "#c49a1a", fontFamily: S.sans, margin: "0 0 8px" }}>🔑 ¿Por qué la Vault Card NO tiene chip?</h4>
+        <p style={{ fontSize: 12, color: "rgba(200,214,224,0.75)", lineHeight: 1.8, fontFamily: S.sans, margin: 0 }}>
+          Una tarjeta con chip se entrega a cajeros y meseros. Si tiene tu frase semilla, pueden copiarla. La Vault Card es <strong style={{ color: "#c49a1a" }}>solo cold storage</strong> — nunca sale de tu estuche. <strong style={{ color: "#00C5D4" }}>Separar pago y custodia es la regla #1.</strong>
+        </p>
+      </div>
+
+      {/* Recommended wallets & coins */}
+      <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 16, padding: "28px 22px", marginBottom: 36 }}>
+        <h3 style={{ fontSize: 16, fontWeight: 700, color: "#fff", fontFamily: S.sans, margin: "0 0 18px", textAlign: "center" }}>Wallets Descentralizadas Recomendadas</h3>
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "center", marginBottom: 24 }}>
+          {[
+            { name: "Tangem", type: "Hardware NFC", seeds: "Seedless o 12/24", diff: "Fácil", color: "#1a1a1a", emoji: "💳" },
+            { name: "Trust Wallet", type: "Móvil (iOS/Android)", seeds: "12 palabras", diff: "Fácil", color: "#0500FF", emoji: "🛡️" },
+            { name: "MetaMask", type: "Navegador + Móvil", seeds: "12 palabras", diff: "Intermedio", color: "#F6851B", emoji: "🦊" },
+            { name: "Phantom", type: "Solana + Multi-chain", seeds: "12 palabras", diff: "Fácil", color: "#AB9FF2", emoji: "👻" },
+            { name: "Ledger", type: "Hardware USB", seeds: "24 palabras", diff: "Intermedio", color: "#000000", emoji: "🔑" },
+            { name: "Trezor", type: "Hardware USB", seeds: "12/24 palabras", diff: "Intermedio", color: "#00854D", emoji: "🏰" },
+          ].map((w, i) => (
+            <div key={i} style={{ flex: "1 1 150px", maxWidth: 180, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, padding: "16px 14px", textAlign: "center" }}>
+              <div style={{ fontSize: 28, marginBottom: 6 }}>{w.emoji}</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#fff", fontFamily: S.sans, marginBottom: 2 }}>{w.name}</div>
+              <div style={{ fontSize: 9, color: "rgba(200,214,224,0.5)", fontFamily: S.mono, marginBottom: 6 }}>{w.type}</div>
+              <div style={{ fontSize: 10, color: "#00C5D4", fontFamily: S.mono, marginBottom: 2 }}>{w.seeds}</div>
+              <div style={{ fontSize: 9, color: w.diff === "Fácil" ? "rgba(0,197,212,0.7)" : "rgba(255,165,0,0.7)", fontFamily: S.mono }}>{w.diff}</div>
+            </div>
+          ))}
+        </div>
+        <h3 style={{ fontSize: 16, fontWeight: 700, color: "#fff", fontFamily: S.sans, margin: "0 0 18px", textAlign: "center" }}>Criptomonedas Recomendadas</h3>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center" }}>
+          {[
+            { symbol: "BTC", name: "Bitcoin", color: "#F7931A", emoji: "₿" },
+            { symbol: "ETH", name: "Ethereum", color: "#627EEA", emoji: "⟠" },
+            { symbol: "USDT", name: "Tether", color: "#26A17B", emoji: "💵" },
+            { symbol: "USDC", name: "USD Coin", color: "#2775CA", emoji: "💲" },
+            { symbol: "MATIC", name: "Polygon", color: "#8247E5", emoji: "🔷" },
+            { symbol: "SOL", name: "Solana", color: "#9945FF", emoji: "☀️" },
+            { symbol: "BNB", name: "BNB Chain", color: "#F0B90B", emoji: "🔶" },
+            { symbol: "DAI", name: "Dai", color: "#F5AC37", emoji: "🏛️" },
+          ].map((c, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10 }}>
+              <span style={{ fontSize: 18 }}>{c.emoji}</span>
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: c.color, fontFamily: S.mono }}>{c.symbol}</div>
+                <div style={{ fontSize: 9, color: "rgba(200,214,224,0.5)", fontFamily: S.sans }}>{c.name}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Matrix */}
+      <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 16, padding: "24px 18px", marginBottom: 36, overflowX: "auto" }}>
+        <h3 style={{ fontSize: 16, fontWeight: 700, color: "#fff", fontFamily: S.sans, margin: "0 0 18px", textAlign: "center" }}>Matriz de Seguridad</h3>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, fontFamily: S.sans, minWidth: 520 }}>
+          <thead>
+            <tr>
+              {["", "Tokapay", "Black", "Vault Card", "Tangem"].map((h, i) => (
+                <th key={i} style={{ padding: "8px 4px", textAlign: i === 0 ? "left" : "center", color: i === 0 ? "rgba(200,214,224,0.5)" : "#00C5D4", fontWeight: 700, borderBottom: "1px solid rgba(0,197,212,0.15)", fontSize: 9, fontFamily: S.mono }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {[
+              ["Custodia", "Fintech", "Fintech", "Tú (acero)", "Tú (NFC)"],
+              ["KYC", "Requerido", "No oblig.", "No", "No"],
+              ["Embargo", "Medio", "Bajo", "Nulo", "Nulo"],
+              ["Chip", "MC", "MC", "NO — acero", "EAL6+"],
+              ["Recuperación", "Repos.", "$100", "Frase semilla", "Backup card"],
+              ["Volatilidad", "Nula", "Nula", "Alta (cripto)", "Alta (cripto)"],
+              ["Garantía", "Fintech", "Fintech", "Inoxidable", "25 años"],
+            ].map((row, i) => (
+              <tr key={i} style={{ background: i % 2 === 0 ? "rgba(255,255,255,0.01)" : "transparent" }}>
+                {row.map((cell, j) => (
+                  <td key={j} style={{ padding: "7px 4px", textAlign: j === 0 ? "left" : "center", color: cell.includes("Nulo") || cell.includes("NO") ? "rgba(200,214,224,0.8)" : "rgba(200,214,224,0.5)", borderBottom: "1px solid rgba(255,255,255,0.03)", fontWeight: j === 0 || cell.includes("NO") ? 600 : 400 }}>{cell}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Calculator */}
+      <div style={{ background: "linear-gradient(135deg,rgba(0,197,212,0.04),rgba(196,154,26,0.04))", border: "1px solid rgba(0,197,212,0.15)", borderRadius: 16, padding: "32px 24px", marginBottom: 36 }}>
+        <h3 style={{ fontSize: 17, fontWeight: 700, color: "#fff", fontFamily: S.sans, margin: "0 0 24px", textAlign: "center" }}>Calculadora de Diversificación</h3>
+        <div style={{ display: "flex", gap: 20, flexWrap: "wrap", justifyContent: "center", marginBottom: 24 }}>
+          <div style={{ flex: "1 1 220px", maxWidth: 320 }}>
+            <label style={{ fontSize: 10, color: "rgba(200,214,224,0.5)", fontFamily: S.mono, display: "block", marginBottom: 6 }}>MONTO TOTAL</label>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <input type="range" min={5000} max={500000} step={5000} value={monto} onChange={(e) => setMonto(+e.target.value)} style={{ flex: 1, accentColor: "#00C5D4" }} />
+              <span style={{ fontSize: 16, fontWeight: 800, color: "#00C5D4", fontFamily: S.mono, minWidth: 100, textAlign: "right" }}>{fmt(monto)}</span>
+            </div>
+          </div>
+          <div style={{ flex: "1 1 220px", maxWidth: 320 }}>
+            <label style={{ fontSize: 10, color: "rgba(200,214,224,0.5)", fontFamily: S.mono, display: "block", marginBottom: 6 }}>PERFIL</label>
+            <div style={{ display: "flex", gap: 5 }}>
+              {Object.keys(perfiles).map((k) => (
+                <button key={k} onClick={() => setPerfil(k)} style={{ flex: 1, padding: "8px 6px", background: perfil === k ? "rgba(0,197,212,0.15)" : "rgba(255,255,255,0.03)", border: perfil === k ? "1px solid rgba(0,197,212,0.3)" : "1px solid rgba(255,255,255,0.06)", borderRadius: 7, color: perfil === k ? "#00C5D4" : "rgba(224,232,240,0.5)", fontSize: 10, fontWeight: 600, cursor: "pointer", fontFamily: S.sans }}>{perfiles[k].l}</button>
+              ))}
+            </div>
+          </div>
+        </div>
+        <p style={{ fontSize: 12, color: "rgba(200,214,224,0.5)", textAlign: "center", fontFamily: S.sans, margin: "0 0 20px", fontStyle: "italic" }}>{p.d}</p>
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "center" }}>
+          {[{ n: "Tokapay", pct: 0, c: "#4ec6e0", i: "📱", off: true }, { n: "Black Premium", pct: p.b, c: "#8a8aaa", i: "💳", off: false }, { n: "Vault / Tangem", pct: p.v, c: "#c49a1a", i: "🔐", off: false }].map((x, i) => (
+            <div key={i} style={{ flex: "1 1 170px", maxWidth: 240, background: x.off ? "rgba(255,255,255,0.01)" : "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, padding: 18, textAlign: "center", opacity: x.off ? 0.35 : 1, filter: x.off ? "grayscale(1)" : "none", position: "relative" }}>
+              {x.off && <div style={{ position: "absolute", top: 8, right: 8, background: "rgba(255,68,102,0.2)", color: "#ff4466", fontSize: 8, fontWeight: 700, padding: "2px 8px", borderRadius: 8, fontFamily: S.mono }}>AGOTADA</div>}
+              <div style={{ fontSize: 22, marginBottom: 4 }}>{x.i}</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#fff", fontFamily: S.sans }}>{x.n}</div>
+              <div style={{ fontSize: 24, fontWeight: 800, color: x.c, fontFamily: S.mono }}>{x.pct}%</div>
+              <div style={{ width: "100%", height: 5, background: "rgba(255,255,255,0.06)", borderRadius: 3, margin: "8px 0", overflow: "hidden" }}><div style={{ width: `${x.pct}%`, height: "100%", background: x.c, borderRadius: 3, transition: "width 0.5s" }} /></div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: x.c, fontFamily: S.mono }}>{fmt(monto * x.pct / 100)}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{ marginTop: 18, padding: "12px 16px", background: "rgba(0,197,212,0.04)", border: "1px solid rgba(0,197,212,0.1)", borderRadius: 10 }}>
+          <div style={{ fontSize: 10, color: "rgba(200,214,224,0.5)", fontFamily: S.mono, marginBottom: 3 }}>COMISIONES DE DISPERSIÓN ESTIMADAS</div>
+          <div style={{ fontSize: 18, fontWeight: 800, color: "#00C5D4", fontFamily: S.mono }}>{fmt(monto * p.b / 100 * 0.025 + monto * p.v / 100 * 0.05)} <span style={{ fontSize: 10, color: "rgba(200,214,224,0.4)" }}>+ consulta con tu gestor</span></div>
+        </div>
+      </div>
+      <Disclosures />
+    </>
+  );
+}
+
+// ═══════════════════════════════════════════════
+// SECTION: BLOCKCHAIN
+// ═══════════════════════════════════════════════
+function BlockchainSection() {
+  const blocks = ["Aportación", "Beca", "Incentivo", "Verificación"];
+  return (
+    <>
+      <div style={{ textAlign: "center", padding: "72px 0 48px" }}>
+        <h1 style={{ fontSize: "clamp(28px,5vw,44px)", fontWeight: 800, color: "#fff", margin: "0 0 16px", fontFamily: S.sans, lineHeight: 1.1 }}>Bóveda <span style={{ color: "#00C5D4" }}>Blockchain</span></h1>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 0, overflowX: "auto", padding: "0 0 32px", flexWrap: "wrap" }}>
+        {blocks.map((b, i) => (
+          <div key={i} style={{ display: "flex", alignItems: "center" }}>
+            <div style={{ width: 110, padding: "14px 10px", background: "rgba(0,197,212,0.08)", border: "1px solid rgba(0,197,212,0.25)", borderRadius: 8, textAlign: "center" }}>
+              <div style={{ fontSize: 7, color: "#00C5D4", fontFamily: S.mono, marginBottom: 4, opacity: 0.6 }}>BLOCK #{i + 1}</div>
+              <div style={{ fontSize: 11, color: "#e0e8f0", fontWeight: 600 }}>{b}</div>
+            </div>
+            {i < blocks.length - 1 && <div style={{ width: 24, height: 2, background: "linear-gradient(90deg,rgba(0,197,212,0.4),rgba(0,197,212,0.1))" }} />}
+          </div>
+        ))}
+      </div>
+
+      {/* Supported cryptos for contributions */}
+      <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 16, padding: "24px 20px", marginBottom: 36 }}>
+        <h3 style={{ fontSize: 15, fontWeight: 700, color: "#fff", fontFamily: S.sans, margin: "0 0 6px", textAlign: "center" }}>Criptoactivos aceptados para aportaciones</h3>
+        <p style={{ fontSize: 11, color: "rgba(200,214,224,0.5)", fontFamily: S.sans, textAlign: "center", margin: "0 0 18px" }}>Realiza tus aportaciones cooperativas en cualquiera de estas redes y monedas.</p>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center" }}>
+          {[
+            { symbol: "BTC", name: "Bitcoin", color: "#F7931A", emoji: "₿", net: "Bitcoin Network" },
+            { symbol: "ETH", name: "Ethereum", color: "#627EEA", emoji: "⟠", net: "Ethereum / L2s" },
+            { symbol: "USDT", name: "Tether", color: "#26A17B", emoji: "💵", net: "Multi-chain" },
+            { symbol: "USDC", name: "USD Coin", color: "#2775CA", emoji: "💲", net: "Ethereum / Polygon" },
+            { symbol: "MATIC", name: "Polygon", color: "#8247E5", emoji: "🔷", net: "Polygon PoS" },
+            { symbol: "SOL", name: "Solana", color: "#9945FF", emoji: "☀️", net: "Solana Network" },
+            { symbol: "BNB", name: "BNB", color: "#F0B90B", emoji: "🔶", net: "BNB Smart Chain" },
+            { symbol: "DAI", name: "Dai", color: "#F5AC37", emoji: "🏛️", net: "Ethereum / Polygon" },
+            { symbol: "AVAX", name: "Avalanche", color: "#E84142", emoji: "🔺", net: "C-Chain" },
+            { symbol: "ARB", name: "Arbitrum", color: "#28A0F0", emoji: "🔵", net: "Arbitrum One" },
+          ].map((c, i) => (
+            <div key={i} style={{ flex: "0 0 auto", display: "flex", alignItems: "center", gap: 8, padding: "10px 16px", background: "rgba(0,197,212,0.04)", border: "1px solid rgba(0,197,212,0.1)", borderRadius: 12 }}>
+              <div style={{ width: 36, height: 36, borderRadius: "50%", background: `${c.color}22`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>{c.emoji}</div>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: c.color, fontFamily: S.mono }}>{c.symbol}</div>
+                <div style={{ fontSize: 8, color: "rgba(200,214,224,0.45)", fontFamily: S.mono }}>{c.net}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div style={{ display: "flex", gap: 14, flexWrap: "wrap", justifyContent: "center", marginBottom: 40 }}>
+        {[
+          { i: "🔗", t: "Aportaciones On-Chain", d: "Hash único e inmutable." },
+          { i: "🎓", t: "Becas Tokenizadas", d: "Trazabilidad sin datos personales." },
+          { i: "💎", t: "Incentivos Verificables", d: "Smart contracts sin discrecionalidad." },
+          { i: "🛡️", t: "Privacidad ZK", d: "Solo el socio verifica su historial." },
+          { i: "🏦", t: "Inembargable", d: "Fuera del alcance de embargos." },
+          { i: "📜", t: "Auditoría Inmutable", d: "Verificación sin datos individuales." },
+        ].map((x, idx) => (
+          <div key={idx} style={{ flex: "1 1 200px", background: "rgba(0,197,212,0.04)", border: "1px solid rgba(0,197,212,0.12)", borderRadius: 14, padding: 20, textAlign: "center" }}>
+            <div style={{ width: 48, height: 48, borderRadius: "50%", background: "rgba(0,197,212,0.1)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px", fontSize: 20 }}>{x.i}</div>
+            <h4 style={{ fontSize: 13, fontWeight: 700, color: "#fff", margin: "0 0 4px", fontFamily: S.sans }}>{x.t}</h4>
+            <p style={{ fontSize: 11, color: "rgba(200,214,224,0.7)", margin: 0, fontFamily: S.sans }}>{x.d}</p>
+          </div>
+        ))}
+      </div>
+      <Disclosures />
+    </>
+  );
+}
+
+// ═══════════════════════════════════════════════
+// MAIN APP
+// ═══════════════════════════════════════════════
+function Dashboard() {
+  const [sec, setSec] = useState("pagos");
+  const [fade, setFade] = useState(true);
+  const go = (s) => { setFade(false); setTimeout(() => { setSec(s); setFade(true); window.scrollTo({ top: 0, behavior: "smooth" }); }, 200); };
+  const nav = [{ k: "pagos", l: "Medios de Pago" }, { k: "tienda", l: "🛒 Tienda" }, { k: "seguridad", l: "📊 Seguridad" }, { k: "blockchain", l: "🔐 Bóveda" }];
+
+  return (
+    <div style={{ minHeight: "100vh", background: "#060B18", color: "#e0e8f0" }}>
+      <ParticleField />
+      <nav style={{ position: "sticky", top: 0, zIndex: 10, background: "rgba(6,11,24,0.85)", backdropFilter: "blur(20px)", borderBottom: "1px solid rgba(0,197,212,0.1)", padding: "0 20px" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", height: 56, flexWrap: "wrap", gap: 6 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <svg viewBox="0 0 40 35" width="24" height="20"><polygon points="20,1 38,11 38,26 20,34 2,26 2,11" fill="none" stroke="#00C5D4" strokeWidth="2" /><text x="20" y="22" textAnchor="middle" fill="#00C5D4" fontSize="12" fontWeight="bold">C</text></svg>
+            <span style={{ fontSize: 16, fontWeight: 800, color: "#fff", fontFamily: S.sans }}>Ceduverse</span>
+          </div>
+          <div style={{ display: "flex", gap: 3, overflowX: "auto" }}>
+            {nav.map((s) => (
+              <button key={s.k} onClick={() => go(s.k)} style={{ padding: "6px 12px", background: sec === s.k ? "rgba(0,197,212,0.15)" : "transparent", border: sec === s.k ? "1px solid rgba(0,197,212,0.3)" : "1px solid transparent", borderRadius: 7, color: sec === s.k ? "#00C5D4" : "rgba(224,232,240,0.5)", fontSize: 10, fontWeight: 600, cursor: "pointer", fontFamily: S.sans, whiteSpace: "nowrap" }}>{s.l}</button>
+            ))}
+          </div>
+        </div>
+      </nav>
+      <div style={{ position: "relative", zIndex: 1, maxWidth: 1100, margin: "0 auto", padding: "0 20px", opacity: fade ? 1 : 0, transform: fade ? "translateY(0)" : "translateY(12px)", transition: "opacity 0.4s, transform 0.4s" }}>
+        {sec === "pagos" && <PagosSection />}
+        {sec === "tienda" && <TiendaSection />}
+        {sec === "seguridad" && <SeguridadSection />}
+        {sec === "blockchain" && <BlockchainSection />}
+      </div>
+      <footer style={{ position: "relative", zIndex: 1, textAlign: "center", padding: "48px 20px 24px", fontSize: 10, color: "rgba(200,214,224,0.3)", fontFamily: S.mono }}>
+        <p style={{ margin: "0 0 4px" }}>Ceduverse — ceduverse.org</p>
+        <p style={{ margin: 0 }}>Documento confidencial · Socios cooperativistas</p>
+      </footer>
+    </div>
+  );
+}
+
+function LockScreen({ onUnlock }) {
+  const [code, setCode] = useState("");
+  const [err, setErr] = useState(false);
+  const go = () => { if (code === ACCESS_CODE) onUnlock(); else { setErr(true); setTimeout(() => setErr(false), 2000); } };
+  return (
+    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "#060B18", position: "relative" }}>
+      <ParticleField />
+      <div style={{ zIndex: 1, textAlign: "center", maxWidth: 380, padding: "0 24px" }}>
+        <svg viewBox="0 0 80 70" width="56" height="48" style={{ marginBottom: 12 }}><polygon points="40,2 76,22 76,52 40,68 4,52 4,22" fill="none" stroke="#00C5D4" strokeWidth="2" /><text x="40" y="42" textAnchor="middle" fill="#00C5D4" fontSize="18" fontWeight="bold">C</text></svg>
+        <h1 style={{ fontSize: 26, fontWeight: 800, color: "#fff", fontFamily: S.sans, margin: "0 0 4px" }}>Ceduverse</h1>
+        <p style={{ fontSize: 12, color: "#00C5D4", fontFamily: S.mono, margin: "0 0 28px", letterSpacing: 2, textTransform: "uppercase" }}>Portal de Socios</p>
+        <div style={{ width: 50, height: 50, borderRadius: "50%", border: "2px solid rgba(0,197,212,0.3)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}><span style={{ fontSize: 22 }}>🔒</span></div>
+        <p style={{ fontSize: 13, color: "rgba(224,232,240,0.6)", margin: "0 0 16px", fontFamily: S.sans }}>Acceso exclusivo para socios cooperativistas</p>
+        <div style={{ display: "flex", gap: 8 }}>
+          <input type="password" placeholder="Código de acceso" value={code} onChange={(e) => setCode(e.target.value)} onKeyDown={(e) => e.key === "Enter" && go()} style={{ flex: 1, padding: "12px 16px", background: "rgba(255,255,255,0.05)", border: err ? "1px solid #ff4466" : "1px solid rgba(0,197,212,0.2)", borderRadius: 10, color: "#e0e8f0", fontSize: 13, fontFamily: S.mono, outline: "none" }} />
+          <button onClick={go} style={{ padding: "12px 20px", background: "linear-gradient(135deg,#00C5D4,#0D1B4B)", border: "none", borderRadius: 10, color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: S.sans }}>Entrar</button>
+        </div>
+        {err && <p style={{ color: "#ff4466", fontSize: 11, marginTop: 10, fontFamily: S.mono }}>Código incorrecto</p>}
+      </div>
+    </div>
+  );
+}
+
+export default function App() {
+  const [unlocked, setUnlocked] = useState(false);
+  return (
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Outfit:wght@400;600;700;800&display=swap');
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #060B18; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #060B18; }
+        ::-webkit-scrollbar-thumb { background: rgba(0,197,212,0.2); border-radius: 3px; }
+        @keyframes fadeSlideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes shimmer { 0% { transform: translateX(-100px) rotate(25deg); } 100% { transform: translateX(400px) rotate(25deg); } }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+      `}</style>
+      {unlocked ? <Dashboard /> : <LockScreen onUnlock={() => setUnlocked(true)} />}
+    </>
+  );
+}

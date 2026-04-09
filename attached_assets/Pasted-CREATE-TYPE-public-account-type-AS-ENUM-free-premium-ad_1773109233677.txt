@@ -1,0 +1,127 @@
+CREATE TYPE "public"."account_type" AS ENUM('free', 'premium', 'admin');
+CREATE TYPE "public"."achievement_status" AS ENUM('pending', 'active', 'revoked');
+CREATE TYPE "public"."user_role" AS ENUM('user', 'moderator', 'admin');
+CREATE TABLE "achievement_users" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"user_id" uuid NOT NULL,
+	"achievement_id" uuid NOT NULL,
+	"is_active" boolean DEFAULT true NOT NULL,
+	"status" "achievement_status" NOT NULL,
+	"contract_address" text,
+	"token_id" text,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone
+);
+CREATE TABLE "users" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"email" text NOT NULL,
+	"password" text DEFAULT 'supabase-managed' NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "users_email_unique" UNIQUE("email")
+);
+CREATE TABLE "courses" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"slug" text NOT NULL,
+	"title" text NOT NULL,
+	"description" text,
+	"cover_url" text,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone,
+	"instructor" text,
+	"instructor_id" text,
+	"duration_hrs" integer,
+	"duration_virtual_hrs" integer,
+	"area_tematica" text,
+	"categoria" text[],
+	"nivel" text,
+	"temas" text[],
+	"objetivo" text,
+	"publico" text[],
+	"dc3_disponible" boolean DEFAULT false,
+	"precio_curso" integer DEFAULT 0,
+	CONSTRAINT "courses_slug_unique" UNIQUE("slug")
+);
+CREATE TABLE "team_users" (
+	"id" bigserial PRIMARY KEY NOT NULL,
+	"team_id" text NOT NULL,
+	"user_id" uuid NOT NULL,
+	"role" text NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone
+);
+CREATE TABLE "teams" (
+	"id" text PRIMARY KEY NOT NULL,
+	"name" text NOT NULL,
+	"description" text,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone
+);
+CREATE TABLE "achievements" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"slug" text NOT NULL,
+	"name" text NOT NULL,
+	"short_description" text,
+	"description" text,
+	"value" integer DEFAULT 1000 NOT NULL,
+	"category" text,
+	"icon" text,
+	"cover_url" text,
+	"contract_address" text,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone,
+	CONSTRAINT "achievements_slug_unique" UNIQUE("slug"),
+	CONSTRAINT "chk_achievement_value" CHECK (value > 0)
+);
+CREATE TABLE "accounts" (
+	"id" uuid PRIMARY KEY NOT NULL,
+	"account_type" "account_type" DEFAULT 'free' NOT NULL,
+	"account_setup" smallint DEFAULT 0 NOT NULL,
+	"referral_code" text,
+	"referred_by" text,
+	"user_role" "user_role" DEFAULT 'user' NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone,
+	CONSTRAINT "accounts_referral_code_unique" UNIQUE("referral_code")
+);
+CREATE TABLE "course_users" (
+	"id" bigserial PRIMARY KEY NOT NULL,
+	"user_id" uuid NOT NULL,
+	"course_id" uuid NOT NULL,
+	"course_slug" text NOT NULL,
+	"completed" smallint DEFAULT 0 NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone,
+	CONSTRAINT "chk_completed_range" CHECK ((completed >= 0) AND (completed <= 100))
+);
+CREATE TABLE "profiles" (
+	"id" uuid PRIMARY KEY NOT NULL,
+	"full_name" text,
+	"country" text,
+	"city" text,
+	"phone_number" text,
+	"wallet_address" text,
+	"interest" jsonb DEFAULT '[]'::jsonb,
+	"genre" text,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone
+);
+ALTER TABLE "achievement_users" ADD CONSTRAINT "achievement_users_achievement_id_achievements_id_fk" FOREIGN KEY ("achievement_id") REFERENCES "public"."achievements"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "achievement_users" ADD CONSTRAINT "achievement_users_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "team_users" ADD CONSTRAINT "team_users_team_id_teams_id_fk" FOREIGN KEY ("team_id") REFERENCES "public"."teams"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "team_users" ADD CONSTRAINT "team_users_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "accounts" ADD CONSTRAINT "accounts_id_users_id_fk" FOREIGN KEY ("id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "accounts" ADD CONSTRAINT "accounts_referred_by_accounts_referral_code_fk" FOREIGN KEY ("referred_by") REFERENCES "public"."accounts"("referral_code") ON DELETE set null ON UPDATE no action;
+ALTER TABLE "course_users" ADD CONSTRAINT "course_users_course_id_courses_id_fk" FOREIGN KEY ("course_id") REFERENCES "public"."courses"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "course_users" ADD CONSTRAINT "course_users_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "profiles" ADD CONSTRAINT "profiles_id_users_id_fk" FOREIGN KEY ("id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
+CREATE INDEX "idx_achievement_users_achievement_id" ON "achievement_users" USING btree ("achievement_id");
+CREATE INDEX "idx_achievement_users_user_id" ON "achievement_users" USING btree ("user_id");
+CREATE UNIQUE INDEX "uq_achievement_users" ON "achievement_users" USING btree ("user_id","achievement_id");
+CREATE INDEX "idx_team_users_team_id" ON "team_users" USING btree ("team_id");
+CREATE INDEX "idx_team_users_user_id" ON "team_users" USING btree ("user_id");
+CREATE UNIQUE INDEX "uq_team_users" ON "team_users" USING btree ("team_id","user_id");
+CREATE INDEX "idx_accounts_referred_by" ON "accounts" USING btree ("referred_by");
+CREATE INDEX "idx_course_users_course_id" ON "course_users" USING btree ("course_id");
+CREATE INDEX "idx_course_users_user_id" ON "course_users" USING btree ("user_id");
+CREATE UNIQUE INDEX "uq_course_users" ON "course_users" USING btree ("user_id","course_id");
+CREATE INDEX "idx_profiles_wallet_address" ON "profiles" USING btree ("wallet_address");

@@ -1,0 +1,375 @@
+# Prompt para Replit Agent — Dashboard Superadmin: Gestión de APIs
+
+Pegar esto completo en el Replit Agent:
+
+```
+CONTEXTO: Ceduverse ya tiene implementado:
+- API externa en /api/v1/external/* (companies/viewport, search, nearby, stats, etc.)
+- Tabla api_keys con: id, key_hash, name, owner, permissions, rate_limit_per_minute,
+  rate_limit_per_day, allowed_origins, is_active, requests_today, last_used_at, etc.
+- Middleware authenticateApiKey que valida Bearer tokens, rate limiting, y CORS
+- Tabla api_request_logs para logging de cada request
+- Admin dashboard existente en /admin con sidebar y layout
+- Roles: admin, superadmin, socio, instructor, trabajador
+- Auth con JWT + OTP vía Resend
+- Stack: React 19 + Express + Drizzle ORM + PostgreSQL + Tailwind
+
+TAREA: Crear la sección "APIs" dentro del admin dashboard, accesible SOLO para 
+rol superadmin (demosuperadmin@ceduverse.org / Demo1234!). Esta sección permite 
+gestionar API keys, monitorear uso, ver logs, y controlar el acceso externo a 
+la base de datos de empresas.
+
+IMPORTANTE: Reutilizar el layout, sidebar, y componentes del admin dashboard 
+existente. NO crear un layout nuevo — agregar como nueva opción en el sidebar 
+del admin, visible solo para superadmin.
+
+=============================================
+PARTE 1: MIDDLEWARE + PERMISOS
+=============================================
+
+Crear middleware requireSuperadmin:
+- Verifica que req.user existe y req.user.role === 'superadmin'
+- Si no → 403 { error: "Se requiere rol de superadmin" }
+- Aplicar a TODAS las rutas de /api/admin/apis/*
+
+Agregar al sidebar del admin:
+- Si el usuario es superadmin → mostrar sección "APIs" con ícono de llave (Key)
+  debajo de las secciones existentes
+- Si es admin normal → NO mostrar la sección APIs
+
+=============================================
+PARTE 2: API ENDPOINTS PARA GESTIÓN
+=============================================
+
+Todas las rutas bajo: /api/admin/apis
+Todas requieren requireSuperadmin middleware.
+
+--- 2.1: CRUD de API Keys ---
+
+GET /api/admin/apis/keys
+  Response: lista de API keys (SIN el hash, solo metadata)
+  [{
+    id, name, owner, permissions, rate_limit_per_minute, rate_limit_per_day,
+    allowed_origins, is_active, requests_today, last_used_at, created_at,
+    expires_at, total_requests_30d (subquery de api_request_logs)
+  }]
+
+POST /api/admin/apis/keys
+  Body: { name, owner, permissions?, rate_limit_per_minute?, rate_limit_per_day?,
+    allowed_origins?, expires_at? }
+  Lógica:
+    1. Generar raw key: "cv_live_" + crypto.randomUUID().replace(/-/g, '')
+    2. Hash con bcrypt (10 rounds)
+    3. Guardar hash en DB
+    4. Retornar la raw key UNA SOLA VEZ en la response
+  Response: { 
+    id, name, owner, 
+    raw_key: "cv_live_a3f7b2c1d4e5f6...",  // SOLO SE MUESTRA ESTA VEZ
+    message: "Copia esta clave ahora. No se puede recuperar después."
+  }
+
+PATCH /api/admin/apis/keys/:id
+  Body: campos a actualizar (name, owner, rate limits, origins, is_active, expires_at)
+  NO se puede cambiar el key_hash
+
+DELETE /api/admin/apis/keys/:id
+  Soft delete: set is_active = false (no borrar, por auditoría)
+  Response: { success: true, message: "API key desactivada" }
+
+POST /api/admin/apis/keys/:id/regenerate
+  Genera nueva raw key + nuevo hash para la misma API key (rotación)
+  Response: { raw_key: "cv_live_nuevo...", message: "Key regenerada" }
+
+--- 2.2: Logs y Analytics ---
+
+GET /api/admin/apis/logs
+  Query params: 
+    api_key_id (optional), endpoint (optional), status (optional),
+    date_from, date_to, page, limit (default 50)
+  Response: {
+    data: [{ id, api_key_name, endpoint, method, status, response_time_ms,
+      ip_address, user_agent, query_params, created_at }],
+    pagination: { page, limit, total, total_pages }
+  }
+
+GET /api/admin/apis/analytics
+  Query params: period (7d, 30d, 90d — default 30d), api_key_id (optional)
+  Response: {
+    period: "30d",
+    summary: {
+      total_requests: 45678,
+      unique_ips: 23,
+      avg_response_time_ms: 145,
+      error_rate_pct: 1.2,
+      busiest_hour: 14,  // 2 PM
+      busiest_day: "martes"
+    },
+    requests_per_day: [
+      { date: "2026-03-01", count: 1234, errors: 12, avg_time: 140 },
+      { date: "2026-03-02", count: 1567, errors: 8, avg_time: 155 },
+      ...
+    ],
+    requests_per_endpoint: [
+      { endpoint: "/viewport", count: 23456, avg_time: 180, pct: 51.4 },
+      { endpoint: "/search", count: 12345, avg_time: 120, pct: 27.0 },
+      { endpoint: "/nearby", count: 5678, avg_time: 95, pct: 12.4 },
+      { endpoint: "/stats", count: 2345, avg_time: 60, pct: 5.1 },
+      { endpoint: "/:id", count: 1854, avg_time: 75, pct: 4.1 },
+    ],
+    requests_per_key: [
+      { key_name: "mecorrieron-production", count: 40000, pct: 87.6 },
+      { key_name: "mecorrieron-staging", count: 5678, pct: 12.4 },
+    ],
+    top_errors: [
+      { status: 429, count: 345, pct: 0.8 },
+      { status: 404, count: 123, pct: 0.3 },
+      { status: 500, count: 45, pct: 0.1 },
+    ],
+    status_distribution: [
+      { status: "2xx", count: 44567, pct: 97.6 },
+      { status: "4xx", count: 987, pct: 2.2 },
+      { status: "5xx", count: 124, pct: 0.3 },
+    ]
+  }
+
+GET /api/admin/apis/analytics/realtime
+  Response: stats de los últimos 60 minutos, actualizable cada 30 seg
+  {
+    requests_last_hour: 234,
+    requests_last_minute: 4,
+    active_keys: 2,
+    current_rate: { key_name: "mecorrieron-production", requests_this_minute: 3, limit: 120 },
+    last_10_requests: [{ endpoint, status, time, key_name, response_ms }]
+  }
+
+--- 2.3: Health y configuración ---
+
+GET /api/admin/apis/health
+  Response: {
+    api_status: "operational",
+    database_status: "connected",
+    total_companies_available: [COUNT de denue_prospects],
+    active_api_keys: [COUNT de keys activas],
+    cache_status: "enabled",
+    uptime_hours: [calc desde process start]
+  }
+
+GET /api/admin/apis/config
+  Response: configuración actual de la API
+  {
+    global_rate_limit_per_minute: 1000,
+    default_cache_ttl_seconds: 3600,
+    max_results_per_request: 500,
+    allowed_endpoints: ["/viewport", "/search", "/nearby", "/stats", "/:id", "/filters"],
+    cors_global_origins: [],
+    maintenance_mode: false
+  }
+
+PATCH /api/admin/apis/config
+  Body: cambios a la configuración global
+  Solo superadmin puede cambiar esto
+
+=============================================
+PARTE 3: FRONTEND — PÁGINAS DEL DASHBOARD
+=============================================
+
+Agregar al sidebar del admin (solo visible para superadmin):
+Sección: "APIs" con ícono Key/Lock
+Sub-items: Overview, API Keys, Logs, Documentación
+
+--- Página /admin/apis (Overview) ---
+
+HEADER: "Centro de Control API" + badge "Superadmin"
+
+FILA 1 — 5 stat cards:
+1. "Requests hoy" — número grande + sparkline mini últimas 24h
+2. "Keys activas" — count de api_keys activas
+3. "Tiempo respuesta" — promedio ms últimas 24h + indicator (verde <200ms)
+4. "Tasa de error" — % con color (verde <1%, amarillo 1-5%, rojo >5%)
+5. "Empresas disponibles" — COUNT de denue_prospects (lo que sirve la API)
+
+FILA 2 — Gráfica principal (ancho completo):
+"Requests por día — últimos 30 días"
+Gráfica de área con dos colores:
+- Azul: requests exitosos (2xx)
+- Rojo (transparente overlay): errores (4xx + 5xx)
+Hover: muestra fecha, total, errores, avg response time
+Selector de periodo: 7d | 30d | 90d
+
+FILA 3 — 2 columnas:
+
+Left: "Endpoints más usados"
+Tabla mini: endpoint, requests, avg time, % del total
+Cada endpoint con barra de progreso proporcional
+
+Right: "Actividad por API Key"
+Tabla mini: nombre key, owner, requests hoy, último uso, status (badge)
+
+FILA 4 — "Últimas 10 requests" (tabla actualizable)
+Columnas: Hora, Key, Endpoint, Status (badge color), Tiempo, IP
+Auto-refresh cada 30 segundos (polling o SSE si ya hay patrón en el proyecto)
+Badge colors: 200=verde, 400=amarillo, 429=naranja, 500=rojo
+
+--- Página /admin/apis/keys (Gestión de API Keys) ---
+
+HEADER: "API Keys" + botón "Crear nueva key" (prominente, azul)
+
+TABLA de API keys:
+Columnas:
+- Nombre (bold)
+- Owner (texto secundario)
+- Status (badge: Activa verde / Inactiva gris / Expirada rojo)
+- Rate limit (X/min, Y/día)
+- Requests hoy / Límite diario (barra de progreso)
+- Origins permitidos (chips truncados)
+- Último uso (relative time: "hace 3 min")
+- Creada (fecha)
+- Acciones: Editar, Regenerar key, Desactivar
+
+MODAL "Crear nueva API Key":
+Formulario:
+- Nombre* (text input, ej: "mecorrieron-staging")
+- Owner* (text input, ej: "MeCorrieron.mx")
+- Permisos (multi-select chips: read:companies, read:stats)
+- Rate limit/minuto (number input, default 120)
+- Rate limit/día (number input, default 50000)
+- Origins permitidos (input con tags, ej: "https://mecorrieron.mx")
+- Expira (date picker, opcional)
+- Botón: "Generar API Key"
+
+POST-CREACIÓN: Modal especial con:
+- Ícono de advertencia amarillo
+- "Tu nueva API Key:" 
+- Input readonly con la key + botón "Copiar"
+  cv_live_a3f7b2c1d4e5f6789012345678901234
+- Mensaje: "⚠️ Guarda esta clave ahora. No podrás verla de nuevo."
+- Checkbox: "Confirmé que copié la clave"
+- Botón "Cerrar" (disabled hasta que marque el checkbox)
+
+MODAL "Editar API Key":
+- Mismos campos que crear pero pre-poblados
+- NO muestra el key hash (no se puede ver la key original)
+- Botón "Regenerar key" → Confirmar → Genera nueva key y muestra el modal especial
+
+MODAL "Desactivar API Key":
+- Confirmación: "¿Desactivar {nombre}? Las aplicaciones que usen esta key 
+  recibirán error 403 inmediatamente."
+- Input de confirmación: escribir el nombre de la key para confirmar
+- Botón rojo "Desactivar"
+
+--- Página /admin/apis/logs (Logs de uso) ---
+
+HEADER: "Logs de API" + filtros inline
+
+BARRA DE FILTROS:
+- API Key (dropdown de keys activas + "Todas")
+- Endpoint (dropdown de endpoints + "Todos")
+- Status (dropdown: Todos, 2xx, 4xx, 5xx)
+- Fecha desde — Fecha hasta (date pickers)
+- Botón "Filtrar" + "Limpiar"
+- Botón "Exportar CSV"
+
+TABLA de logs (paginada, 50 por página):
+Columnas:
+- Fecha/Hora (format: "31 mar 2026, 14:23:45")
+- API Key (nombre, no el hash)
+- Endpoint (con método: GET /viewport)
+- Status (badge color: 200 verde, 400 amarillo, 429 naranja, 500 rojo)
+- Tiempo (ms, coloreado: <100 verde, 100-300 azul, 300-1000 amarillo, >1000 rojo)
+- IP
+- Params (expandible: click para ver query params completos)
+
+Click en una fila → expandir detalle:
+- Request completo: method, URL, headers (sanitizados), query params
+- Response: status, time, tamaño estimado
+- Rate limit state: requests restantes en ese momento
+
+FOOTER de tabla: "Mostrando 1-50 de 12,345 logs" + paginación
+
+--- Página /admin/apis/docs (Documentación) ---
+
+Página estática (o semi-estática) con la documentación de la API:
+
+SECCIONES:
+1. "Introducción" — qué es la API, para qué sirve
+2. "Autenticación" — cómo usar el Bearer token
+   Ejemplo: curl -H "Authorization: Bearer cv_live_xxx" https://ceduverse.replit.app/api/v1/external/companies/stats
+3. "Rate Limits" — tabla con límites y qué pasa al exceder
+4. "Endpoints" — lista de cada endpoint con:
+   - Método + URL
+   - Parámetros (tabla con nombre, tipo, required, descripción)
+   - Ejemplo de request
+   - Ejemplo de response (JSON formateado con syntax highlighting)
+   - Códigos de error posibles
+5. "Errores" — tabla de códigos HTTP con significado
+6. "SDKs" — snippet de ejemplo en JavaScript/Python
+7. "Changelog" — historial de versiones
+
+Cada sección como acordeón expandible.
+Botón "Copiar" en cada bloque de código.
+Los ejemplos de response deben usar datos REALES de la DB (query 1 registro 
+para generar el ejemplo, no hardcodear).
+
+NOTA: Esta página debe ser visible SOLO para superadmin internamente.
+La documentación pública de la API (para consumers como MeCorrieron) 
+está en /api/v1/external/docs (ya creada o por crear como endpoint público
+pero con acceso limitado).
+
+=============================================
+PARTE 4: SEED DATA Y CONFIGURACIÓN
+=============================================
+
+Si no existen API keys aún, crear una de prueba:
+- Nombre: "mecorrieron-development"
+- Owner: "MeCorrieron.mx (dev)"
+- Rate limit: 60/min, 10000/día
+- Origins: ["http://localhost:3000", "http://localhost:5173"]
+- Generar la raw key y logearla en consola
+
+Si no existe la tabla api_request_logs, crearla:
+  - id: serial primary key
+  - api_key_id: integer references api_keys(id)
+  - endpoint: varchar
+  - method: varchar (GET/POST)
+  - query_params: jsonb
+  - response_status: integer
+  - response_time_ms: integer
+  - ip_address: varchar
+  - user_agent: varchar
+  - created_at: timestamp default now()
+
+Insertar 100 logs de ejemplo (mock) para que las gráficas no estén vacías:
+- Distribuir en los últimos 7 días
+- Mezcla de endpoints (60% viewport, 20% search, 10% nearby, 10% otros)
+- 95% status 200, 3% status 429, 2% status 500
+- Response times entre 50-400ms
+- Usar la API key de desarrollo como api_key_id
+
+=============================================
+PARTE 5: NOTIFICACIONES Y ALERTAS
+=============================================
+
+Agregar al dashboard de overview:
+
+ALERTA VISUAL (banner arriba del dashboard) si:
+- Rate limit diario al 80%+ → banner amarillo
+- Rate limit diario al 95%+ → banner rojo
+- API key expirada → banner rojo
+- Error rate > 5% en última hora → banner naranja
+- Alguna key no usada en 30+ días → banner informativo azul
+
+Formato: "[ícono] [mensaje] [botón acción]"
+Ejemplo: "⚠️ mecorrieron-production ha usado el 85% de su límite diario (42,500/50,000) — Aumentar límite"
+
+=============================================
+NOTAS FINALES
+=============================================
+
+- Todo reutiliza el layout y componentes existentes del admin dashboard
+- Usar los mismos patrones de fetch/react-query del proyecto
+- Las gráficas usar Recharts (si ya está en el proyecto) o Chart.js
+- Mobile responsive (aunque superadmin probablemente usa desktop)
+- NUNCA mostrar "DENUE" ni "INEGI" — los datos se llaman "Directorio Empresarial"
+- Los logs se limpian automáticamente después de 90 días (agregar cleanup cron)
+- La sección APIs es INVISIBLE para roles que no sean superadmin
+```

@@ -1,0 +1,885 @@
+# 🎓 CEDUVERSE TUTOR IA — Plan Técnico de Audio Inmersivo + Mejoras
+## Documento técnico para implementación en Replit
+## Versión 1.0 — Marzo 2026
+
+---
+
+## TABLA DE CONTENIDOS
+
+1. [Arquitectura de Audio Inmersivo](#a-audio)
+2. [Comparativa de APIs TTS](#tts-compare)
+3. [Nuevo Pipeline de Generación](#pipeline)
+4. [Fix JSON Parsing](#json-fix)
+5. [Nuevo Prompt de Sistema](#prompt)
+6. [Cambios en Schema](#schema)
+7. [Nuevo Endpoint de Audio](#audio-endpoint)
+8. [Componente AudioPlayer](#audio-player)
+9. [Mejoras Generales (Sección C)](#mejoras)
+10. [Plan de Implementación por Prioridad](#plan)
+
+---
+
+<a name="a-audio"></a>
+## 1. ARQUITECTURA DEL SISTEMA DE AUDIO INMERSIVO
+
+### Visión
+
+Cuando el usuario presiona "Escuchar", debe sentirse como estar en una clase real con un instructor mexicano. No un robot leyendo texto, sino un profesor que:
+- Usa ejemplos de la vida real del estudiante
+- Hace pausas dramáticas antes de conceptos clave
+- Simula interacción con "compañeros" del aula
+- Incluye anécdotas, humor y momentos de reflexión
+- Referencia normatividad como si la dominara de memoria
+
+### Pipeline completo
+
+```
+PASO 1: Claude genera lectureHtml (ya existe)
+    ↓
+PASO 2: Claude genera classScript (NUEVO — prompt separado)
+    ↓ Un guion narrativo conversacional, NO el mismo texto de lectura
+    ↓ Incluye marcadores de sección: [INTRO], [CONCEPTO_1], [EJEMPLO], etc.
+    ↓ Incluye indicaciones de tono: (enfático), (pausa), (pregunta retórica)
+    ↓ ~2,000-3,000 palabras (8-15 min de audio)
+    ↓
+PASO 3: OpenAI TTS convierte classScript → audio MP3
+    ↓ Voz "nova" o "coral" (las más naturales en español)
+    ↓ Se cachea el MP3 en filesystem
+    ↓
+PASO 4: Frontend reproduce con player profesional
+    ↓ Play/Pause, seek bar, velocidad, marcadores de sección
+    ↓ Auto-scroll sincronizado con el texto de lectura
+```
+
+### ¿Por qué un classScript separado del lectureHtml?
+
+El lectureHtml es un documento de referencia extenso (3,000-5,000 palabras) con tablas, listas, normatividad detallada. Está diseñado para LEER.
+
+El classScript es una narrativa conversacional (2,000-3,000 palabras) diseñada para ESCUCHAR. Es como las notas del profesor vs. el libro de texto. Diferente formato, diferente propósito.
+
+Ejemplo de la diferencia:
+
+**lectureHtml (para leer):**
+```html
+<h2>NOM-035: Obligaciones del Patrón</h2>
+<p>La NOM-035-STPS-2018 establece en su numeral 5.1 que el patrón debe:</p>
+<ul>
+  <li>Establecer por escrito e implementar una política de prevención</li>
+  <li>Identificar y analizar los factores de riesgo psicosocial</li>
+  <li>Evaluar el entorno organizacional</li>
+</ul>
+```
+
+**classScript (para escuchar):**
+```
+Ahora, vamos a hablar de algo que a muchos patrones les da flojera pero que les puede costar MUY caro si no lo hacen. La NOM-035.
+
+(pausa)
+
+Imagínate esto: eres supervisor en una planta de [industria] como la tuya. Un trabajador se queja de que su jefe lo hostiga. Otro se incapacita por "estrés". Un tercero renuncia y dice que el ambiente era tóxico. ¿Qué tienen en común? Todos son factores de riesgo psicosocial. Y la NOM-035 dice que TÚ, como empresa, eres responsable de prevenirlos.
+
+"Pero profe, ¿y qué hago yo como [puesto]?"
+
+Excelente pregunta. Mira, lo primero que la norma te pide es una política de prevención. No es un documento de 50 páginas — es un escrito claro donde la dirección dice: "En esta empresa no toleramos la violencia laboral, y estos son los canales para reportar." Suena simple, ¿verdad? Pues la mayoría de las empresas de [tamaño] como la tuya NO lo tienen...
+```
+
+¿Ves la diferencia? El classScript es una clase viva, personalizada, con preguntas retóricas y simulación de aula.
+
+---
+
+<a name="tts-compare"></a>
+## 2. COMPARATIVA DE APIs TTS
+
+### Los 3 candidatos
+
+| Criterio | OpenAI TTS-1 | OpenAI gpt-4o-mini-tts | ElevenLabs |
+|----------|-------------|----------------------|------------|
+| **Calidad español MX** | Buena (voces naturales) | Muy buena (más expresiva) | Excelente (la mejor) |
+| **Precio** | $15/1M caracteres | ~$0.015/minuto | $5-22/mes (Starter-Creator) |
+| **Costo por módulo** (~2,500 chars) | ~$0.037 | ~$0.12-0.15 | Depende del plan |
+| **Costo por curso** (4 módulos) | ~$0.15 | ~$0.50 | Dentro del plan mensual |
+| **Latencia** | ~0.5s + generación | ~0.5s + generación | 75ms (Flash) a 300ms |
+| **Voces español** | Sí (nova, coral, alloy) | Sí (mismas + más control) | Sí (español MX nativo) |
+| **Max input** | 4,096 caracteres | 2,000 tokens | 10,000 chars (Multilingual) |
+| **Streaming** | Sí | Sí | Sí |
+| **SDK Node.js** | openai (oficial) | openai (oficial) | elevenlabs (oficial) |
+| **Formato salida** | MP3, WAV, FLAC, PCM | MP3, WAV, FLAC, PCM | MP3, PCM, μ-law |
+| **Emocionalidad** | Media | Alta (sigue indicaciones) | Muy alta (natural) |
+| **Control de tono** | Limitado | Bueno (via instructions) | Excelente (SSML-like) |
+
+### Mi recomendación: OpenAI TTS-1 para MVP, upgrade a gpt-4o-mini-tts
+
+**Razones:**
+
+1. **Costo predecible:** $0.015 por 1,000 caracteres. Un módulo de 2,500 chars cuesta ~$0.037. Un curso completo ~$0.15. 100 usuarios × 50 cursos = ~$750 total en audio. Manejable.
+
+2. **Misma infraestructura:** Ya usas APIs en el backend. OpenAI se integra con un `npm install openai` y una llamada POST.
+
+3. **Calidad suficiente:** Las voces "nova" y "coral" de OpenAI suenan naturales en español. No son ElevenLabs pero son mucho mejor que Web Speech API.
+
+4. **Sin límites de plan:** Pago por uso, no por suscripción mensual con tope de caracteres.
+
+5. **Upgrade path claro:** Cuando el revenue lo justifique, migrar a `gpt-4o-mini-tts` (más expresivo, sigue instrucciones de tono) o ElevenLabs (la mejor calidad).
+
+### Estimación de costos mensual
+
+```
+Supuestos conservadores:
+- 500 usuarios activos/mes
+- Cada uno genera audio de 2 módulos/mes (promedio)
+- Cada módulo: ~2,500 caracteres de classScript
+- Total: 500 × 2 × 2,500 = 2,500,000 caracteres/mes
+
+OpenAI TTS-1: 2.5M chars × $15/1M = $37.50/mes
+OpenAI gpt-4o-mini-tts: ~$0.015/min × 500 × 2 × 8min = $120/mes
+ElevenLabs Starter: $5/mes pero solo 100K chars (insuficiente)
+ElevenLabs Scale: $99/mes con 2M chars (ajustado)
+
+Ganador por costo: OpenAI TTS-1 ($37.50/mes para 500 usuarios)
+```
+
+---
+
+<a name="pipeline"></a>
+## 3. NUEVO PIPELINE DE GENERACIÓN
+
+### Cambio clave: separar generación de contenido en 2 llamadas
+
+Actualmente una sola llamada a Claude genera todo (lecture + mindmap + quiz + fuentes). Esto causa el bug de JSON truncado porque se piden demasiadas cosas en una respuesta.
+
+**Nuevo pipeline:**
+
+```
+LLAMADA 1 a Claude (max_tokens: 6144):
+  → Genera: lectureHtml (3,000-5,000 palabras)
+  → Genera: mindMap
+  → Genera: reflections
+  → Genera: suggestedSources
+  
+LLAMADA 2 a Claude (max_tokens: 4096):
+  → Input: el lectureHtml que acaba de generar + perfil del estudiante
+  → Genera: adaptiveQuiz (7 preguntas basadas en el contenido real)
+  → Genera: classScript (guion de clase de 2,000-3,000 palabras)
+
+LLAMADA 3 a OpenAI TTS (async, no bloquea al usuario):
+  → Input: classScript
+  → Output: MP3 cacheado en filesystem
+  → Se notifica al frontend cuando está listo
+```
+
+**Ventajas:**
+- Cada llamada tiene un scope más pequeño → menos riesgo de JSON truncado
+- El quiz se basa en el contenido REAL generado (no en el esqueleto)
+- El classScript se basa en el contenido REAL (coherencia total)
+- El audio se genera async — el usuario puede leer mientras se genera
+- Si una llamada falla, las otras no se pierden
+
+---
+
+<a name="json-fix"></a>
+## 4. FIX: JSON PARSING ROBUSTO
+
+### Problema actual
+
+```
+[ai-engine] Claude API error: Expected ',' or ']' after array element in JSON at position 26062
+```
+
+Claude genera JSON largo que a veces se trunca porque `max_tokens: 8192` no alcanza para 5,000 palabras de HTML + mind map + quiz + fuentes todo en un JSON.
+
+### Solución multi-capa
+
+```typescript
+// server/ai-engine.ts — Nuevo parseador robusto
+
+function parseClaudeJSON(rawText: string): any {
+  // CAPA 1: Limpiar markdown wrapping
+  let cleaned = rawText
+    .replace(/^```json\s*/i, '')
+    .replace(/^```\s*/i, '')
+    .replace(/\s*```$/i, '')
+    .trim();
+  
+  // CAPA 2: Intentar parse directo
+  try {
+    return JSON.parse(cleaned);
+  } catch (e1) {
+    console.log('[ai-engine] Direct parse failed, attempting repair...');
+    
+    // CAPA 3: Reparar JSON truncado
+    try {
+      // Cerrar strings abiertos
+      const openQuotes = (cleaned.match(/"/g) || []).length;
+      if (openQuotes % 2 !== 0) {
+        cleaned += '"';
+      }
+      
+      // Cerrar brackets/braces abiertos
+      const opens = { '{': 0, '[': 0 };
+      const closes = { '}': '{', ']': '[' };
+      
+      for (const char of cleaned) {
+        if (char in opens) opens[char]++;
+        if (char in closes) opens[closes[char]]--;
+      }
+      
+      // Agregar cierres faltantes
+      for (let i = 0; i < opens['[' ]; i++) cleaned += ']';
+      for (let i = 0; i < opens['{']; i++) cleaned += '}';
+      
+      return JSON.parse(cleaned);
+    } catch (e2) {
+      console.log('[ai-engine] Repair parse failed, attempting partial extraction...');
+      
+      // CAPA 4: Extraer campos individuales con regex
+      try {
+        const lectureMatch = cleaned.match(/"lectureHtml"\s*:\s*"([\s\S]*?)(?:"\s*,\s*"mindMap|"\s*,\s*"reflections|"\s*})/);
+        const mindMapMatch = cleaned.match(/"mindMap"\s*:\s*(\{[\s\S]*?\})\s*,/);
+        
+        return {
+          lectureHtml: lectureMatch ? 
+            lectureMatch[1].replace(/\\"/g, '"').replace(/\\n/g, '\n') : 
+            null,
+          mindMap: mindMapMatch ? JSON.parse(mindMapMatch[1]) : null,
+          reflections: [],
+          adaptiveQuiz: [],
+          suggestedSources: [],
+          _partial: true // Flag para indicar que es recuperación parcial
+        };
+      } catch (e3) {
+        console.error('[ai-engine] All parse attempts failed');
+        return null;
+      }
+    }
+  }
+}
+```
+
+### Retry automático
+
+```typescript
+async function generateWithRetry(
+  prompt: string, 
+  maxRetries: number = 2
+): Promise<any> {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await anthropic.messages.create({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 6144, // Subir de 8192 para Llamada 1
+        // ... resto de config
+      });
+      
+      const text = response.content
+        .filter(b => b.type === 'text')
+        .map(b => b.text)
+        .join('');
+      
+      const parsed = parseClaudeJSON(text);
+      
+      if (parsed && !parsed._partial) {
+        return parsed; // Parse exitoso completo
+      }
+      
+      if (parsed && parsed._partial && attempt < maxRetries) {
+        console.log(`[ai-engine] Partial result on attempt ${attempt + 1}, retrying...`);
+        continue; // Reintentar
+      }
+      
+      if (parsed && parsed._partial) {
+        return parsed; // Último intento, devolver lo parcial
+      }
+      
+    } catch (error) {
+      console.error(`[ai-engine] Attempt ${attempt + 1} failed:`, error.message);
+      if (attempt === maxRetries) throw error;
+    }
+  }
+}
+```
+
+### Logging mejorado
+
+```typescript
+// Agregar al inicio de cada generación:
+console.log(`[ai-engine] Generating for ${courseSlug}/module-${moduleIndex}`);
+console.log(`[ai-engine] Profile: ${profile.jobTitle} / ${profile.industry}`);
+console.log(`[ai-engine] Prompt tokens estimate: ~${estimateTokens(systemPrompt + userPrompt)}`);
+
+// Después de recibir respuesta:
+console.log(`[ai-engine] Response: ${response.usage.input_tokens} in / ${response.usage.output_tokens} out`);
+console.log(`[ai-engine] Stop reason: ${response.stop_reason}`);
+// Si stop_reason === 'max_tokens' → el JSON se truncó, necesita retry con más tokens
+
+// Después de parsear:
+console.log(`[ai-engine] Parse result: ${parsed ? 'success' : 'failed'}, partial: ${parsed?._partial || false}`);
+console.log(`[ai-engine] Lecture length: ${parsed?.lectureHtml?.length || 0} chars`);
+```
+
+---
+
+<a name="prompt"></a>
+## 5. PROMPT DE SISTEMA — VERSIÓN MEJORADA
+
+### Llamada 1: Contenido de lectura + mapa + fuentes
+
+```
+Eres el Tutor IA de Ceduverse. Generas CONTENIDO EDUCATIVO EXTENSO 
+y PERSONALIZADO para trabajadores mexicanos.
+
+DATOS DEL MÓDULO:
+Curso: {{courseTitle}}
+Módulo: {{moduleTitle}} ({{moduleIndex + 1}} de {{totalModules}})
+Descripción: {{moduleDescription}}
+Contenido base para EXPANDIR (no copiar, sino usar como esqueleto):
+{{moduleContentHtml}}
+Referencias base: {{moduleReferences}}
+
+PERFIL DEL ESTUDIANTE — PERSONALIZA TODO A ESTE CONTEXTO:
+Puesto: {{jobTitle}}
+Industria: {{industry}}
+Empresa de: {{companySize}} personas
+Experiencia: {{experienceLevel}}
+Objetivo: {{learningGoal}}
+
+INSTRUCCIONES PARA lectureHtml (3,000-5,000 palabras en HTML):
+
+ESTRUCTURA OBLIGATORIA:
+1. <h2>Introducción personalizada</h2> — Conecta el tema con el 
+   puesto e industria del estudiante. "Como {{jobTitle}} en {{industry}}, 
+   esto te afecta directamente porque..."
+
+2. <h2>Desarrollo del Tema 1</h2> — Explicación profunda con teoría 
+   fundamentada. Incluir una <h3>En tu contexto</h3> con ejemplo 
+   específico para su puesto.
+
+3. <h2>Desarrollo del Tema 2</h2> — Incluir tabla comparativa o 
+   framework práctico cuando aplique.
+
+4. <h2>Desarrollo del Tema 3</h2> — Caso de estudio o escenario 
+   relevante a su industria.
+
+5. <h2>Marco Legal y Normativo</h2> — NOMs con número específico, 
+   artículos de la LFT, reglamentos. NO inventar normatividad.
+
+6. <h2>Aplicación Inmediata</h2> — "Mañana en tu trabajo puedes..." 
+   con 3-5 acciones concretas para su puesto.
+
+REGLAS DE CALIDAD:
+- MÍNIMO 3,000 palabras. Si escribes menos, NO cumples.
+- Usa <h2>, <h3>, <p>, <ul>, <ol>, <li>, <strong>, <em>, <table>, 
+  <blockquote>, <hr>
+- Incluir al menos 1 tabla comparativa o de datos
+- Incluir al menos 2 ejemplos específicos al puesto del estudiante
+- Cada sección con mínimo 3 párrafos sustanciales
+- NO uses jerga innecesaria pero SÍ usa terminología técnica correcta
+- Citar artículos específicos de leyes (ej: "LFT Art. 153-A", "NOM-035 numeral 5.1")
+- Tono: mentor experto que tutea, profesional pero accesible
+
+INSTRUCCIONES PARA mindMap:
+- JSON con central (tema) y 4-6 branches
+- Cada branch con 2-4 children
+- Cada child con label y detail (1-2 líneas)
+- Colores: usa #1b5adf, #f28023, #7c3aed, #00b87a
+
+INSTRUCCIONES PARA reflections:
+- 3 preguntas PERSONALIZADAS al puesto
+- NO genéricas: "¿Qué opinas de la comunicación?" ❌
+- SÍ específicas: "Como mesero en hotelería, ¿cómo manejas 
+  la barrera del idioma con huéspedes internacionales?" ✅
+
+INSTRUCCIONES PARA suggestedSources:
+- 5-8 fuentes REALES (NOMs del DOF, artículos LFT, guías STPS)
+- Formato: {title, url, type: "NOM"|"LFT"|"guia"|"articulo"}
+- URLs reales cuando sea posible, si no estás seguro de la URL 
+  usa "Consultar en dof.gob.mx" o "Disponible en stps.gob.mx"
+
+RESPONDE SOLO JSON VÁLIDO:
+{
+  "lectureHtml": "<h2>...</h2>...",
+  "mindMap": {"central":"...","branches":[...]},
+  "reflections": ["...","...","..."],
+  "suggestedSources": [{"title":"...","url":"...","type":"..."}]
+}
+```
+
+### Llamada 2: Quiz adaptativo + Guion de clase
+
+```
+Eres el Tutor IA de Ceduverse. Basándote en el contenido de lectura 
+que acabas de generar, crea un quiz y un guion de clase.
+
+CONTENIDO DE LECTURA GENERADO (no lo repitas, úsalo como base):
+{{lectureHtml — el que se generó en Llamada 1}}
+
+PERFIL DEL ESTUDIANTE:
+Puesto: {{jobTitle}} | Industria: {{industry}} | Experiencia: {{experienceLevel}}
+
+=== INSTRUCCIONES PARA adaptiveQuiz ===
+
+7 preguntas de opción múltiple:
+- Basadas en el CONTENIDO ESPECÍFICO de la lectura (no genéricas)
+- Incluir al menos 2 preguntas situacionales del puesto del estudiante
+- 4 opciones por pregunta
+- Explicación detallada de la respuesta correcta
+- Progresión: 2 fáciles → 3 medias → 2 difíciles
+
+=== INSTRUCCIONES PARA classScript ===
+
+Guion narrativo conversacional de 2,000-3,000 palabras.
+Esto NO es el mismo texto de la lectura reescrito — es un guion 
+de CLASE ORAL como si un profesor mexicano estuviera dando la clase.
+
+ESTILO OBLIGATORIO:
+- Inicia con: "¡Qué tal! Vamos a hablar hoy de [tema]. Y esto te 
+  importa especialmente a ti como [puesto] en [industria] porque..."
+- Usa lenguaje oral natural mexicano (no formal, no slang excesivo)
+- Incluye preguntas retóricas: "¿Y saben qué? Resulta que..."
+- Incluye simulación de interacción con aula:
+  "A ver, imagínense que son [puesto] y les cae una inspección..."
+  "Si alguien aquí ha vivido esto, sabe de lo que hablo..."
+- Incluye anécdotas o casos ilustrativos:
+  "Les voy a contar un caso que pasó en una empresa de [industria]..."
+- Marca los conceptos clave con énfasis:
+  "Esto es FUNDAMENTAL, no se les olvide..."
+- Incluye transiciones naturales entre temas:
+  "Ahora, pasemos a algo que complementa lo que acabamos de ver..."
+- Cierra con motivación: 
+  "Recuerden, esto que aprendieron hoy no es solo para pasar un examen. 
+   Es para que mañana en tu trabajo como [puesto] puedas..."
+
+MARCADORES DE SECCIÓN (incluir en el texto):
+[INTRO] — al inicio
+[CONCEPTO:nombre] — al iniciar cada concepto principal
+[EJEMPLO] — antes de cada ejemplo o caso
+[CLAVE] — antes de puntos importantes
+[INTERACCION] — simulación de pregunta al aula
+[CIERRE] — al final
+
+LONGITUD: 2,000-3,000 palabras (equivale a 8-15 minutos de audio)
+NO incluir instrucciones de audio como "(pausa)" o "(tono serio)" 
+— la voz de TTS no las interpreta. En cambio, usa puntuación natural: 
+puntos suspensivos para pausas... signos de exclamación para énfasis! 
+y preguntas retóricas para cambio de tono.
+
+RESPONDE SOLO JSON VÁLIDO:
+{
+  "adaptiveQuiz": [
+    {"question":"...","options":["A","B","C","D"],"correctIndex":0,"explanation":"..."}
+  ],
+  "classScript": "El texto completo del guion de clase..."
+}
+```
+
+---
+
+<a name="schema"></a>
+## 6. CAMBIOS EN SCHEMA
+
+```sql
+-- Agregar campos a generated_content
+ALTER TABLE generated_content 
+  ADD COLUMN class_script TEXT,           -- Guion de clase generado
+  ADD COLUMN audio_url TEXT,              -- Path al MP3 generado
+  ADD COLUMN audio_duration_seconds INTEGER, -- Duración del audio
+  ADD COLUMN audio_generated_at TIMESTAMPTZ, -- Cuándo se generó
+  ADD COLUMN generation_status TEXT DEFAULT 'pending' 
+    CHECK (generation_status IN ('pending','generating_content','generating_quiz','generating_audio','complete','partial','failed')),
+  ADD COLUMN is_stub BOOLEAN DEFAULT false; -- True si es contenido fallback
+```
+
+En Drizzle (shared/schema.ts):
+```typescript
+// Agregar a generatedContent:
+classScript: text("class_script"),
+audioUrl: text("audio_url"),
+audioDurationSeconds: integer("audio_duration_seconds"),
+audioGeneratedAt: timestamp("audio_generated_at", { withTimezone: true }),
+generationStatus: text("generation_status").default("pending"),
+isStub: boolean("is_stub").default(false),
+```
+
+---
+
+<a name="audio-endpoint"></a>
+## 7. NUEVO ENDPOINT DE AUDIO
+
+```typescript
+// server/routes.ts — Agregar:
+
+// Generar o recuperar audio de un módulo
+GET /api/studio/courses/:slug/modules/:index/audio
+
+// Lógica:
+app.get('/api/studio/courses/:slug/modules/:index/audio', async (req, res) => {
+  const { slug, index } = req.params;
+  const userId = req.user.id;
+  
+  // 1. Buscar contenido generado
+  const generated = await storage.getGeneratedContent(userId, slug, parseInt(index));
+  
+  if (!generated || !generated.classScript) {
+    return res.status(404).json({ error: 'No class script available. Generate content first.' });
+  }
+  
+  // 2. Si ya tiene audio cacheado, servirlo
+  if (generated.audioUrl) {
+    const audioPath = path.join(AUDIO_DIR, generated.audioUrl);
+    if (fs.existsSync(audioPath)) {
+      return res.json({ 
+        audioUrl: `/audio/${generated.audioUrl}`,
+        duration: generated.audioDurationSeconds,
+        status: 'ready'
+      });
+    }
+  }
+  
+  // 3. Si no hay audio, generarlo async
+  // Marcar como generando
+  await storage.updateGeneratedContent(generated.id, { 
+    generationStatus: 'generating_audio' 
+  });
+  
+  // Generar en background (no bloquear la response)
+  generateAudioAsync(generated.id, generated.classScript, slug, parseInt(index), userId)
+    .catch(err => console.error('[audio] Generation failed:', err));
+  
+  return res.json({ status: 'generating', estimatedSeconds: 30 });
+});
+
+// Polling endpoint para verificar si el audio ya está listo
+GET /api/studio/courses/:slug/modules/:index/audio/status
+
+// Servir archivos de audio estáticos
+app.use('/audio', express.static(AUDIO_DIR));
+```
+
+### Función de generación de audio
+
+```typescript
+// server/audio-generator.ts
+
+import OpenAI from 'openai';
+import fs from 'fs';
+import path from 'path';
+
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const AUDIO_DIR = path.join(process.cwd(), 'audio-cache');
+
+// Crear directorio si no existe
+if (!fs.existsSync(AUDIO_DIR)) {
+  fs.mkdirSync(AUDIO_DIR, { recursive: true });
+}
+
+export async function generateAudioAsync(
+  generatedContentId: string,
+  classScript: string,
+  courseSlug: string,
+  moduleIndex: number,
+  userId: string
+): Promise<void> {
+  try {
+    const filename = `${courseSlug}_m${moduleIndex}_${userId.slice(0,8)}.mp3`;
+    const filepath = path.join(AUDIO_DIR, filename);
+    
+    // OpenAI TTS tiene límite de 4096 chars por request
+    // Si el script es más largo, dividir en chunks y concatenar
+    const chunks = splitTextIntoChunks(classScript, 4000);
+    const audioBuffers: Buffer[] = [];
+    
+    for (const chunk of chunks) {
+      const response = await openai.audio.speech.create({
+        model: "tts-1",
+        voice: "nova", // Voz femenina natural, buena en español
+        input: chunk,
+        speed: 0.95, // Ligeramente más lento para español didáctico
+        response_format: "mp3",
+      });
+      
+      const buffer = Buffer.from(await response.arrayBuffer());
+      audioBuffers.push(buffer);
+    }
+    
+    // Concatenar buffers (simple append para MP3)
+    const finalBuffer = Buffer.concat(audioBuffers);
+    fs.writeFileSync(filepath, finalBuffer);
+    
+    // Estimar duración (MP3 128kbps ≈ 16KB/sec)
+    const durationSeconds = Math.round(finalBuffer.length / 16000);
+    
+    // Actualizar DB
+    await storage.updateGeneratedContent(generatedContentId, {
+      audioUrl: filename,
+      audioDurationSeconds: durationSeconds,
+      audioGeneratedAt: new Date(),
+      generationStatus: 'complete',
+    });
+    
+    console.log(`[audio] Generated ${filename} (${durationSeconds}s, ${(finalBuffer.length/1024).toFixed(0)}KB)`);
+    
+  } catch (error) {
+    console.error('[audio] Generation error:', error);
+    await storage.updateGeneratedContent(generatedContentId, {
+      generationStatus: 'failed',
+    });
+  }
+}
+
+function splitTextIntoChunks(text: string, maxChars: number): string[] {
+  const chunks: string[] = [];
+  const sentences = text.split(/(?<=[.!?])\s+/);
+  let current = '';
+  
+  for (const sentence of sentences) {
+    if ((current + ' ' + sentence).length > maxChars) {
+      if (current) chunks.push(current.trim());
+      current = sentence;
+    } else {
+      current += (current ? ' ' : '') + sentence;
+    }
+  }
+  if (current) chunks.push(current.trim());
+  
+  return chunks;
+}
+```
+
+---
+
+<a name="audio-player"></a>
+## 8. COMPONENTE AudioPlayer.tsx
+
+```
+Componente: AudioClassPlayer.tsx
+
+Props:
+  courseSlug: string
+  moduleIndex: number
+  classScript: string (para mostrar texto sincronizado)
+  
+Funcionalidad:
+  1. Al montar: GET /api/studio/courses/:slug/modules/:index/audio
+  2. Si status === 'ready' → mostrar player con el audio
+  3. Si status === 'generating' → mostrar "Preparando tu clase... ⏳"
+     con polling cada 5 segundos hasta que esté ready
+  4. Si status === 404 → mostrar botón "🎙️ Generar audio de clase"
+
+UI del player:
+┌─────────────────────────────────────────────────────┐
+│  🎙️ Clase: [Título del módulo]                     │
+│                                                      │
+│  ▶️  ━━━━━━━━━●━━━━━━━━━━━━━━━━━  3:24 / 12:08     │
+│                                                      │
+│  [0.75x] [1x] [1.25x] [1.5x]     🔊 ━━━━●━━       │
+│                                                      │
+│  📋 Secciones:                                      │
+│  [Intro] [Concepto 1] [Ejemplo] [Concepto 2] [Cierre]│
+│                                                      │
+└─────────────────────────────────────────────────────┘
+
+Features:
+  - Play/Pause toggle
+  - Seek bar con tiempo actual y total
+  - Velocidad: 0.75x, 1x, 1.25x, 1.5x (botones tipo chip)
+  - Control de volumen
+  - Marcadores de sección (extraer de [CONCEPTO:...] del classScript)
+    - Click en marcador → salta a esa posición (estimada por % de texto)
+  - Auto-scroll del classScript debajo del player
+    - El párrafo actual se resalta
+  - Colapsable: el player se minimiza a una barra cuando scrolleas
+
+Estilo:
+  - Background: cedu-blue/5 con borde sutil
+  - Rounded-2xl
+  - Transiciones suaves en todos los controles
+  - Mobile: player sticky en la parte inferior
+```
+
+---
+
+<a name="mejoras"></a>
+## 9. MEJORAS GENERALES (SECCIÓN C) — PRIORIZADAS
+
+| # | Mejora | Esfuerzo | Impacto | Dependencia |
+|---|--------|----------|---------|-------------|
+| 1 | **Fix JSON parsing** | S | 🔥🔥🔥🔥🔥 | Ninguna |
+| 2 | **Indicador stub vs. IA real** | S | 🔥🔥🔥🔥 | Ninguna |
+| 3 | **Regenerar contenido** | S | 🔥🔥🔥🔥 | #2 |
+| 4 | **Progreso real (marcar completado)** | S | 🔥🔥🔥🔥 | Ninguna |
+| 5 | **Persistir quiz score** | S | 🔥🔥🔥 | #4 |
+| 6 | **Cargar historial de chat** | S | 🔥🔥🔥 | Ninguna |
+| 7 | **Pipeline 2 llamadas** | M | 🔥🔥🔥🔥🔥 | #1 |
+| 8 | **Class script generation** | M | 🔥🔥🔥🔥🔥 | #7 |
+| 9 | **Audio TTS (OpenAI)** | M | 🔥🔥🔥🔥🔥 | #8 |
+| 10 | **Audio player component** | M | 🔥🔥🔥🔥 | #9 |
+| 11 | **Descarga PDF decente** | M | 🔥🔥🔥 | Ninguna |
+| 12 | **Tiempo de lectura preciso** | S | 🔥🔥 | Ninguna |
+| 13 | **Certificado NFT al completar** | L | 🔥🔥🔥🔥 | #4, #5 |
+| 14 | **Dark mode Tutor IA** | M | 🔥🔥 | Ninguna |
+| 15 | **Responsive chat mejorado** | S | 🔥🔥 | Ninguna |
+
+### Detalle de las mejoras S (Small):
+
+**#2 Indicador stub vs IA:**
+```tsx
+// En el viewer, mostrar un banner si el contenido es stub:
+{generated?.isStub && (
+  <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-4">
+    <p>⚠️ Este contenido es genérico. Para contenido personalizado a tu perfil,
+    haz click en "Regenerar".</p>
+    <button onClick={regenerate}>🔄 Regenerar con IA</button>
+  </div>
+)}
+```
+
+**#3 Regenerar contenido:**
+```
+Botón en el header del módulo: "🔄 Regenerar"
+Al click: DELETE el contenido cacheado → POST /generate de nuevo
+Confirmar antes: "¿Regenerar? Esto reemplazará el contenido actual."
+```
+
+**#4 Progreso real:**
+```typescript
+// Al completar de leer un módulo (scroll al final o click "Completar"):
+POST /api/studio/enrollments/:enrollmentId/progress
+Body: { moduleIdentifier: "module_0", completed: true }
+
+// En el header de módulos, mostrar ✅ en los completados
+// Calcular progressPercent basado en módulos completados / total
+```
+
+**#5 Persistir quiz score:**
+```typescript
+// Al enviar quiz:
+POST /api/studio/courses/:slug/quiz/submit
+Body: { answers: [...], quizType: 'adaptive' | 'static' }
+Response: { score, passed, total }
+
+// Guardar score en studioModuleProgress.quizScore
+// Si passed && todos los módulos completados → marcar enrollment como 'completed'
+```
+
+**#6 Cargar historial de chat:**
+```typescript
+// Al abrir el chat panel:
+GET /api/studio/courses/:slug/modules/:index/chat/history
+// Retorna chatSessions.messages para ese usuario/curso/módulo
+// El frontend los carga en el state initial del chat
+```
+
+---
+
+<a name="plan"></a>
+## 10. PLAN DE IMPLEMENTACIÓN — ORDEN DE EJECUCIÓN
+
+### Sprint 1 (Semana 1): Fixes críticos
+```
+DÍA 1-2:
+  □ Fix JSON parsing (parseClaudeJSON + retry)
+  □ Logging mejorado en ai-engine
+  □ Indicador stub vs IA real en frontend
+  □ Botón "Regenerar contenido"
+
+DÍA 3-4:
+  □ Progreso real (marcar módulos completados)
+  □ Persistir quiz score
+  □ Cargar historial de chat del servidor
+
+DÍA 5:
+  □ Separar generación en 2 llamadas (pipeline)
+  □ Probar que el contenido generado es más robusto
+```
+
+### Sprint 2 (Semana 2): Audio inmersivo
+```
+DÍA 1:
+  □ Migración de schema (agregar campos a generated_content)
+  □ Agregar classScript al prompt de Llamada 2
+  □ Probar generación de classScript con Claude
+
+DÍA 2-3:
+  □ Implementar audio-generator.ts con OpenAI TTS
+  □ Endpoint GET /audio + polling de status
+  □ Probar generación y caché de MP3
+
+DÍA 4-5:
+  □ Componente AudioClassPlayer.tsx
+  □ Integrar en studio-course.tsx
+  □ Marcadores de sección + control de velocidad
+  □ Probar flujo completo end-to-end
+```
+
+### Sprint 3 (Semana 3): Polish + certificación
+```
+  □ Descarga PDF mejorada (html2pdf o jsPDF)
+  □ Tiempo de lectura preciso del contenido generado
+  □ Certificado NFT al completar todos los módulos + quiz
+  □ Dark mode
+  □ Responsive chat mejorado
+  □ Testing y QA general
+```
+
+---
+
+## VARIABLES DE ENTORNO NECESARIAS
+
+```
+# Ya existentes:
+ANTHROPIC_API_KEY=sk-ant-...
+
+# Nuevas:
+OPENAI_API_KEY=sk-...        # Para TTS
+AUDIO_CACHE_DIR=./audio-cache # Directorio de caché de audio
+```
+
+---
+
+## PROMPT PARA REPLIT — SPRINT 1 (copy/paste)
+
+```
+Necesito implementar fixes críticos en el Tutor IA. Lee todo antes de empezar.
+
+1. FIX JSON PARSING en server/ai-engine.ts:
+   - Implementar parseClaudeJSON() con 4 capas de fallback:
+     a) Parse directo
+     b) Limpiar markdown backticks y reintentar
+     c) Reparar brackets/quotes abiertos y reintentar
+     d) Extraer campos individuales con regex como último recurso
+   - Implementar retry automático (2 intentos) cuando stop_reason === 'max_tokens'
+   - Logging: input tokens, output tokens, stop_reason, parse result
+   - Subir max_tokens a 6144
+
+2. INDICADOR DE STUB en studio-course.tsx:
+   - Si generated_content.is_stub === true, mostrar banner amarillo:
+     "⚠️ Contenido genérico. Tu perfil no se aplicó. [🔄 Regenerar con IA]"
+   - Agregar campo is_stub a generated_content si no existe
+
+3. BOTÓN REGENERAR:
+   - Agregar botón "🔄 Regenerar" en el header del módulo
+   - Al click: confirm() → DELETE el registro de generated_content → 
+     POST /generate de nuevo
+
+4. PROGRESO REAL:
+   - Agregar endpoint PUT /api/studio/enrollments/:id/modules/:identifier/complete
+   - Al completar un módulo (scroll al final + click "Completar módulo"):
+     marcar completed=true en studio_module_progress
+   - Recalcular progressPercent en el enrollment
+   - En el header de módulos: mostrar ✅ verde en módulos completados
+
+5. PERSISTIR QUIZ SCORE:
+   - Al enviar quiz, guardar score en studio_module_progress.quizScore
+   - Si score >= 70 y todos los módulos completados → enrollment status='completed'
+   - Mostrar score en la UI con mensaje personalizado
+
+6. HISTORIAL DE CHAT:
+   - Al abrir el panel de chat, cargar mensajes previos:
+     GET /api/studio/courses/:slug/modules/:index/chat/history
+   - Renderizar mensajes guardados antes de permitir nuevos mensajes
+
+Empieza por el fix de JSON parsing — es el más crítico.
+```
+
+---
+
+*"De lector de texto robótico a clase virtual inmersiva. Ese es el salto."*

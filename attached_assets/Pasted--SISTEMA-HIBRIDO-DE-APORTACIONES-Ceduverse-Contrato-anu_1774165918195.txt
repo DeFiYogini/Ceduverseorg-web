@@ -1,0 +1,109 @@
+# SISTEMA HIBRIDO DE APORTACIONES — Ceduverse
+## Contrato anual + Confirmacion mensual + Comprobantes + Facturas + ZIP Auditoria
+
+## FLUJO COMPLETO
+
+DIA 1: Sistema genera SAM (Solicitud de Aportacion Mensual) por empresa activa
+- Cuenta colaboradores activos
+- Calcula: cols x UMAs x $113.14
+- Aplica fee (15%/8%/5%)
+- Genera hash SHA-256
+- Envia email al admin de empresa
+
+EMPRESA ENTRA AL DASHBOARD:
+- Ve SAM con desglose (plan, cols, UMA, monto, fee, que incluye)
+- Puede ajustar colaboradores (recalcula automaticamente)
+- Confirma aportacion (registra IP, timestamp, user_agent)
+- Ve datos bancarios (BanRegio, CLABE, referencia)
+- Sube comprobante de pago (PDF/JPG/PNG, monto, fecha, metodo, referencia)
+- Descarga factura CFDI cuando admin la sube (PDF + XML)
+
+ADMIN:
+- Ve todas las SAMs del mes con estatus
+- Valida comprobantes de pago
+- Sube facturas CFDI (XML + PDF)
+- Genera ZIP mensual de auditoria
+
+## TABLAS SQL
+
+### monthly_contributions
+id, company_id, period_year, period_month, plan_type, umas_per_col, uma_value,
+active_employees, gross_amount, fee_percentage, fee_amount,
+adjusted_employees, adjusted_amount, adjustment_reason, adjustment_at,
+confirmed_at, confirmed_by, confirmed_ip, confirmed_user_agent,
+sam_hash, status (generated/adjusted/confirmed/paid_pending/paid_validated/invoiced/overdue/cancelled),
+due_date, overdue_notified, created_at, updated_at
+UNIQUE(company_id, period_year, period_month)
+
+### payment_receipts
+id, contribution_id, filename, file_path, file_size_bytes, mime_type, file_hash,
+amount_paid, payment_date, payment_method (spei/deposito/domiciliacion),
+bank_reference, validated, validated_by, validated_at, validation_notes,
+rejected, rejection_reason, uploaded_by, uploaded_at
+
+### invoices
+id, contribution_id, xml_filename, xml_path, xml_hash, pdf_filename, pdf_path, pdf_hash,
+folio_fiscal, serie, folio, fecha_timbrado, subtotal, iva, total,
+uploaded_by, uploaded_at, notified_company, notified_at
+
+### contribution_audit_log (inmutable)
+id, contribution_id, action, actor_email, actor_ip, actor_user_agent,
+document_hash, metadata (jsonb), created_at
+
+### monthly_audit_packages
+id, period_year, period_month, total_companies, total_contributions,
+total_fees, total_receipts, total_invoices, zip_filename, zip_path,
+zip_hash, zip_size_bytes, manifest_json, generated_by, generated_at
+
+## API ENDPOINTS
+
+Admin:
+POST   /api/admin/contributions/generate          -> genera SAMs del mes
+GET    /api/admin/contributions?year&month&status  -> listar SAMs
+GET    /api/admin/contributions/:id                -> detalle SAM
+PATCH  /api/admin/contributions/:id/validate-receipt -> validar comprobante
+PATCH  /api/admin/contributions/:id/reject-receipt   -> rechazar comprobante
+POST   /api/admin/contributions/:id/invoice          -> subir CFDI (XML+PDF)
+POST   /api/admin/contributions/audit-package        -> generar ZIP
+GET    /api/admin/contributions/audit-package/:id/download -> descargar ZIP
+
+Empresa:
+GET    /api/company/contributions/current          -> SAM del mes actual
+GET    /api/company/contributions?year             -> historial
+PATCH  /api/company/contributions/:id/adjust       -> ajustar colaboradores
+POST   /api/company/contributions/:id/confirm      -> confirmar aportacion
+POST   /api/company/contributions/:id/receipt      -> subir comprobante
+GET    /api/company/contributions/:id/invoice/download -> descargar factura PDF
+GET    /api/company/contributions/:id/invoice/xml     -> descargar XML
+
+## ESTRUCTURA ZIP MENSUAL
+
+ceduverse-audit-2026-03.zip
+├── MANIFEST.json (indice con hashes de todo)
+├── README.txt (resumen legible)
+├── Manufactura_Avanzada/
+│   ├── SAM-2026-03.json
+│   ├── comprobante-2026-03.pdf
+│   ├── factura-2026-03.pdf
+│   ├── factura-2026-03.xml
+│   └── audit-log-2026-03.json
+├── Cozzini_Middleby/
+│   └── ... (misma estructura)
+└── ... (1 carpeta por empresa)
+
+Cada archivo tiene hash SHA-256 en MANIFEST.json para verificacion.
+
+## CLAUSULAS PARA EL CONTRATO
+
+Vigesima: Confirmacion mensual — sistema genera SAM automatica, empresa confirma digitalmente, constituye aceptacion del monto.
+
+Vigesima Primera: Paquete de auditoria — ZIP mensual con SAM + comprobante + CFDI + audit log, verificable con SHA-256.
+
+## DEPENDENCIAS: npm install archiver @types/archiver
+
+## PRIORIDAD:
+1. Tablas SQL + generacion batch de SAMs
+2. Dashboard empresa (ver/confirmar/subir comprobante)
+3. Dashboard admin (validar/subir factura)
+4. Generador ZIP auditoria
+5. Emails automaticos

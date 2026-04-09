@@ -1,0 +1,143 @@
+/**
+ * CEDUVERSE STORE — Database Schema (Drizzle ORM)
+ * Add these tables to your existing schema.ts
+ * 
+ * Tables:
+ *   store_products      → Product catalog
+ *   store_stock         → Real-time inventory
+ *   store_orders        → Orders with payment status
+ *   store_order_items   → Line items per order
+ *   store_shipments     → Envia.com tracking
+ *   store_referral_codes → Referral/discount codes
+ *   store_referral_uses → Referral usage log
+ */
+
+import { pgTable, serial, text, integer, decimal, boolean, timestamp, jsonb, varchar } from "drizzle-orm/pg-core";
+
+// ─── Products ───
+export const storeProducts = pgTable("store_products", {
+  id: serial("id").primaryKey(),
+  slug: varchar("slug", { length: 50 }).notNull().unique(), // vault_kit, tangem_2pack, tangem_3pack
+  name: text("name").notNull(),
+  description: text("description"),
+  priceMxn: integer("price_mxn").notNull(), // in whole pesos
+  weightKg: decimal("weight_kg", { precision: 5, scale: 2 }).notNull(),
+  dimensionsJson: jsonb("dimensions_json"), // { length, width, height } in cm
+  imageUrl: text("image_url"),
+  deliveryDays: varchar("delivery_days", { length: 50 }).default("30-45 días"),
+  isActive: boolean("is_active").default(true),
+  isSoldOut: boolean("is_sold_out").default(false),
+  seedPhraseOptions: jsonb("seed_phrase_options"), // [12, 18, 24] for vault_kit
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// ─── Stock ───
+export const storeStock = pgTable("store_stock", {
+  id: serial("id").primaryKey(),
+  productId: integer("product_id").references(() => storeProducts.id).notNull(),
+  quantity: integer("quantity").notNull().default(0),
+  reserved: integer("reserved").notNull().default(0), // reserved by pending orders
+  lowStockThreshold: integer("low_stock_threshold").default(5),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// ─── Orders ───
+export const storeOrders = pgTable("store_orders", {
+  id: serial("id").primaryKey(),
+  orderNumber: varchar("order_number", { length: 30 }).notNull().unique(), // CEV-20260403-001
+  userId: integer("user_id"), // FK to your users table (nullable for guest checkout)
+  
+  // Payer info
+  payerName: text("payer_name").notNull(),
+  payerEmail: text("payer_email").notNull(),
+  payerPhone: varchar("payer_phone", { length: 20 }),
+  
+  // Shipping address
+  shipStreet: text("ship_street"),
+  shipColony: text("ship_colony"),
+  shipCity: text("ship_city"),
+  shipState: varchar("ship_state", { length: 5 }),
+  shipZip: varchar("ship_zip", { length: 10 }),
+  shipCountry: varchar("ship_country", { length: 3 }).default("MX"),
+  shipNotes: text("ship_notes"),
+  
+  // Pricing
+  subtotalMxn: integer("subtotal_mxn").notNull(),
+  discountPct: integer("discount_pct").default(0), // 0 or 15
+  discountAmountMxn: integer("discount_amount_mxn").default(0),
+  shippingMxn: integer("shipping_mxn").default(0),
+  totalMxn: integer("total_mxn").notNull(),
+  
+  // Referral
+  referralCodeId: integer("referral_code_id").references(() => storeReferralCodes.id),
+  
+  // Customization
+  seedPhraseWords: integer("seed_phrase_words").default(12), // 12, 18, or 24
+  
+  // MercadoPago
+  mpPreferenceId: text("mp_preference_id"),
+  mpPaymentId: text("mp_payment_id"),
+  mpStatus: varchar("mp_status", { length: 30 }).default("pending"), // pending, approved, rejected, refunded
+  
+  // Order status
+  status: varchar("status", { length: 30 }).default("pending_payment"), 
+  // pending_payment → paid → preparing → shipped → delivered → cancelled
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  paidAt: timestamp("paid_at"),
+  shippedAt: timestamp("shipped_at"),
+});
+
+// ─── Order Items ───
+export const storeOrderItems = pgTable("store_order_items", {
+  id: serial("id").primaryKey(),
+  orderId: integer("order_id").references(() => storeOrders.id).notNull(),
+  productId: integer("product_id").references(() => storeProducts.id).notNull(),
+  quantity: integer("quantity").notNull(),
+  unitPriceMxn: integer("unit_price_mxn").notNull(),
+  totalPriceMxn: integer("total_price_mxn").notNull(),
+});
+
+// ─── Shipments ───
+export const storeShipments = pgTable("store_shipments", {
+  id: serial("id").primaryKey(),
+  orderId: integer("order_id").references(() => storeOrders.id).notNull(),
+  carrier: varchar("carrier", { length: 50 }),
+  service: varchar("service", { length: 100 }),
+  trackingNumber: varchar("tracking_number", { length: 100 }),
+  labelUrl: text("label_url"),
+  shippingCostMxn: integer("shipping_cost_mxn"),
+  estimatedDays: varchar("estimated_days", { length: 30 }),
+  status: varchar("status", { length: 30 }).default("pending"),
+  // pending → label_generated → picked_up → in_transit → delivered
+  enviaShipmentId: text("envia_shipment_id"),
+  enviaResponseJson: jsonb("envia_response_json"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// ─── Referral Codes ───
+export const storeReferralCodes = pgTable("store_referral_codes", {
+  id: serial("id").primaryKey(),
+  code: varchar("code", { length: 30 }).notNull().unique(), // e.g. "SOCIO2026"
+  ownerId: integer("owner_id"), // FK to users table (socio who owns this code)
+  ownerName: text("owner_name"),
+  discountPct: integer("discount_pct").notNull().default(15),
+  commissionPct: integer("commission_pct").default(0), // future: earn commission on referrals
+  maxUses: integer("max_uses").default(100),
+  currentUses: integer("current_uses").default(0),
+  isActive: boolean("is_active").default(true),
+  expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// ─── Referral Usage Log ───
+export const storeReferralUses = pgTable("store_referral_uses", {
+  id: serial("id").primaryKey(),
+  referralCodeId: integer("referral_code_id").references(() => storeReferralCodes.id).notNull(),
+  orderId: integer("order_id").references(() => storeOrders.id).notNull(),
+  discountAppliedMxn: integer("discount_applied_mxn").notNull(),
+  usedAt: timestamp("used_at").defaultNow(),
+});

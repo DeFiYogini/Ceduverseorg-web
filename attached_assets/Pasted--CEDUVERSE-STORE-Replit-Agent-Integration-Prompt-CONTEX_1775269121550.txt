@@ -1,0 +1,178 @@
+# CEDUVERSE STORE — Replit Agent Integration Prompt
+
+## CONTEXT
+Ceduverse is a React 19 + Express + Drizzle ORM + PostgreSQL EdTech platform at ceduverse.replit.app. We need to add a **Hardware Store** (Vault Kit + Tangem wallets) with real payment processing (MercadoPago) and shipping (Envia.com).
+
+I'm providing 4 files that contain ALL the code — your job is to integrate them into the existing codebase:
+1. `store-schema.ts` — 7 Drizzle ORM tables (products, stock, orders, items, shipments, referrals, referral_uses)
+2. `store-routes.ts` — Full Express API with 12 endpoints (public + admin)
+3. `seed-store.sql` — Initial product catalog, stock quantities, and sample referral codes
+4. The existing `ceduverse-medios-de-pago.jsx` landing page (reference for UI/UX, adapt to TSX)
+
+---
+
+## TASK 1: Database Schema
+
+Add the 7 store tables from `store-schema.ts` to the existing `shared/schema.ts` file:
+- `store_products` — Product catalog with slug, price, weight, dimensions, seed phrase options
+- `store_stock` — Real-time inventory with quantity, reserved, low_stock_threshold  
+- `store_orders` — Full order record with payer, shipping, MercadoPago IDs, status lifecycle
+- `store_order_items` — Line items per order
+- `store_shipments` — Envia.com tracking and label URLs
+- `store_referral_codes` — Discount codes owned by socios (15% off, max uses, expiry)
+- `store_referral_uses` — Usage log linking referrals to orders
+
+Run `npx drizzle-kit generate` and `npx drizzle-kit migrate` after adding the schema.
+Then run the SQL from `seed-store.sql` to populate initial products and stock.
+
+---
+
+## TASK 2: API Routes
+
+Add the store API routes from `store-routes.ts` to the Express backend:
+
+### In your main server file (e.g., `server/index.ts` or `server/routes.ts`):
+```typescript
+import storeRoutes from "./store-routes";
+app.use("/api/store", storeRoutes);
+```
+
+### Install MercadoPago SDK:
+```bash
+npm install mercadopago
+```
+
+### Add environment variables to `.env`:
+```
+MP_ACCESS_TOKEN=APP_USR-xxxxx  (get from mercadopago.com.mx/developers/panel/app)
+ENVIA_API_KEY=xxxxx
+BASE_URL=https://ceduverse.replit.app
+```
+
+### The routes provide:
+**Public:**
+- `GET /api/store/products` — Product catalog with live stock
+- `POST /api/store/validate-referral` — Check referral code validity
+- `POST /api/store/shipping-quote` — Get Envia.com shipping rates
+- `POST /api/store/create-order` — Create order + MercadoPago preference → returns `init_point` URL
+- `POST /api/store/webhook` — MercadoPago payment notification (auto-confirms stock, generates shipment)
+
+**Admin (protect with existing auth middleware for super_admin/admin roles):**
+- `GET /api/store/admin/stats` — Dashboard stats (orders, revenue, referrals)
+- `GET /api/store/admin/orders` — All orders (newest first)
+- `GET /api/store/admin/orders/:id` — Order detail with items + shipment
+- `PATCH /api/store/admin/orders/:id/status` — Update order status
+- `GET /api/store/admin/stock` — Current stock levels
+- `PATCH /api/store/admin/stock/:productId` — Update stock quantity / sold out
+- `GET /api/store/admin/referrals` — All referral codes
+- `POST /api/store/admin/referrals` — Create new referral code
+- `DELETE /api/store/admin/referrals/:id` — Deactivate referral code
+
+---
+
+## TASK 3: Super Admin Dashboard — Store Tab
+
+Add a **"🛒 Tienda"** tab to the Super Admin dashboard. This tab has 4 sub-sections:
+
+### 3A. Stats Overview (top of tab)
+Show 4 stat cards in a row:
+- 📦 Total Ordenes — `GET /api/store/admin/stats` → `totalOrders`
+- ✅ Ordenes Pagadas — `paidOrders`
+- 💰 Revenue Total — `revenue` formatted as MXN
+- 🎟️ Referidos Usados — `referralUses`
+
+### 3B. Orders Table
+Table with columns: Orden #, Fecha, Cliente, Email, Total, Status, Acciones
+- Fetch from `GET /api/store/admin/orders`
+- Status badges with colors:
+  - `pending_payment` → yellow "Pendiente"
+  - `paid` → green "Pagado"
+  - `preparing` → blue "Preparando"
+  - `shipped` → purple "Enviado"
+  - `delivered` → cyan "Entregado"
+  - `cancelled` → red "Cancelado"
+- Click on an order → expand/modal showing:
+  - Order items (product, qty, unit price, total)
+  - Shipping address
+  - MercadoPago payment ID + status
+  - Shipment tracking number + label URL
+  - Seed phrase words selection (12/18/24)
+  - Status dropdown to update order status via `PATCH /api/store/admin/orders/:id/status`
+
+### 3C. Stock Management
+Table: Producto, Stock Actual, Reservado, Disponible, Agotado, Acciones
+- Fetch from `GET /api/store/admin/stock`
+- Inline edit for stock quantity
+- Toggle for "Agotada" (sold out)
+- Save via `PATCH /api/store/admin/stock/:productId`
+- Show low stock warning when available < low_stock_threshold
+
+### 3D. Referral Codes
+Table: Código, Dueño, Descuento, Usos, Máximo, Status, Acciones
+- Fetch from `GET /api/store/admin/referrals`
+- "Crear Código" button → form with: code, ownerName, discountPct (default 15), maxUses (default 100)
+- Delete/deactivate button per code
+- Show usage stats
+
+---
+
+## TASK 4: Admin Dashboard — Store Tab (Limited)
+
+For the regular **Admin** role (not super_admin), show a read-only version:
+- View orders list (no status editing)
+- View stock levels (no editing)
+- View referral codes (no creation/deletion)
+
+---
+
+## TASK 5: Public Store Page
+
+Create a new public route at `/tienda` that renders the hardware store:
+
+### Key features (already designed in the JSX reference file):
+1. **Password gate** — Access code "ceduverse2026" (or remove if making fully public)
+2. **Product cards** — Vault Kit ($2,999), Tangem 2-pack ($1,375), Tangem 3-pack ($1,750)
+3. **Vault Card 3D visual** — Interactive front/back toggle showing the metal card design
+4. **Seed phrase word selector** — 12, 18, or 24 words
+5. **Stock counter** — Real-time from API, with pulse indicator and "edición especial limitada"
+6. **Referral code input** — Apply code for 15% discount, validated via API
+7. **Two-wallet recommendation** — Wallet de Certificados (ceduverse.org) vs Wallet de Criptoactivos (Tangem)
+8. **3-step checkout**: Browse → Shipping form → Confirm + Pay
+9. **Shipping quote** — Real Envia.com rates via API
+10. **Pay button** — Calls `POST /api/store/create-order`, then `window.location.href = data.init_point` to redirect to MercadoPago
+11. **Tangem delivery notice** — Orange badge "30–60 días" for Tangem products
+12. **Tokapay "AGOTADA"** badge on Medios de Pago section
+
+### Also add success/failure/pending pages:
+- `/tienda/success?order=CEV-xxx` — "¡Pago confirmado! Tu orden #{order} está siendo preparada."
+- `/tienda/failure?order=CEV-xxx` — "El pago no se procesó. Intenta de nuevo."
+- `/tienda/pending?order=CEV-xxx` — "Tu pago está pendiente de confirmación."
+
+---
+
+## TASK 6: Navigation
+
+Add the Store tab to the navigation:
+- **Super Admin sidebar**: Add "🛒 Tienda" with sub-items: Estadísticas, Órdenes, Stock, Referidos
+- **Admin sidebar**: Add "🛒 Tienda" with sub-items: Órdenes (read-only), Stock (read-only)
+- **Public nav** (if applicable): Link to `/tienda`
+
+---
+
+## DESIGN SYSTEM
+
+Match the existing Ceduverse design:
+- Colors: Navy #0D1B4B, Cyan #00C5D4, Gold #c49a1a
+- Fonts: Outfit (sans), JetBrains Mono (mono)
+- Dark theme with glass-morphism cards
+- Consistent with existing dashboard components
+
+---
+
+## IMPORTANT NOTES
+
+1. The `store-routes.ts` file has TODO comments for: generating Envia.com shipment labels on payment confirmation, sending emails via Resend, and minting NFT certificates. Leave these as stubs for now.
+2. Protect all `/api/store/admin/*` routes with the existing auth middleware that checks for `super_admin` or `admin` role.
+3. The MercadoPago webhook URL must be publicly accessible. If behind a firewall, use ngrok during development.
+4. Stock uses a "reserve on order, confirm on payment" pattern to prevent overselling.
+5. The order status lifecycle is: `pending_payment → paid → preparing → shipped → delivered` (or `cancelled` at any point).

@@ -1,0 +1,48 @@
+Library
+Other
+Documents
+API Ceduverse + base de datos de reseñas
+
+Crear la capa de servicio para consumir la API REST del Directorio Empresarial Ceduverse (6.1M+ empresas mexicanas verificadas) y el esquema de base de datos para las reseñas anónimas de MeCorrieron.mx. Esta es la base sobre la que se construirán todas las páginas públicas.
+
+Configúrala como secret CEDUVERSE_API_KEY en el proyecto de MeCorrieron.
+
+Los orígenes permitidos están configurados para https://mecorrieron.mx y https://www.mecorrieron.mx. Si necesitas agregar otro dominio (por ejemplo el de desarrollo en Replit), avísame para agregarlo a la lista.
+
+Límites: 120 requests/minuto, 50,000/día.
+
+Good, the secret is configured. Let me verify everything compiles correctly and then run the code review.
+
+Gracias por la información. Como las llamadas a la API Ceduverse se hacen desde el servidor (a través de las rutas proxy), no hay problema con los orígenes CORS — el navegador nunca contacta directamente la API.
+
+Voy a actualizar el cliente para reflejar los límites de rate (120 req/min, 50,000/día) y luego verificar todo.
+
+The server is running fine. Now let me add server-side rate limiting awareness for the Ceduverse API limits (120 req/min) and update the documentation.
+
+Now let me update replit.md with the new Ceduverse integration info:
+
+Now let me run the code review:
+
+Good feedback. Let me address the critical issues:
+
+Now fix the critical issues - make REVIEW_IP_SALT required, add numeric validation to proxy routes, and handle count query errors:
+
+Now add numeric validation to the Ceduverse proxy routes. Let me fix the viewport and nearby routes which take numeric params:
+
+Now let me also handle the count query error in the reviews GET and set the REVIEW_IP_SALT secret:
+
+Now set the REVIEW_IP_SALT:
+
+Now let me verify the build compiles and write the commit message:
+
+Server is running cleanly with no errors. Now let me write the commit message and mark the task complete:
+
+Let me fix all the issues raised by the code review.
+
+Good - REVIEW_IP_SALT is only in the code itself, not committed anywhere. Let me check .replit:
+
+Found it. The salt got committed to .replit. Let me fix all three issues:
+
+I can't edit .replit directly. Let me use the env management to rotate the salt as a proper secret:
+
+Se necesita un salt para hashear las IPs de forma segura en las reseñas anónimas. Usa este valor generado: f74ef4b670fc502eaf778fe1f0d029034a8e65bda35f7ff7b358ec337d9a10af

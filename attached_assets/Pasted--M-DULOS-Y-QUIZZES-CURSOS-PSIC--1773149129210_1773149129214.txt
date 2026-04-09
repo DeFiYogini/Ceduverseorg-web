@@ -1,0 +1,1436 @@
+// ═══════════════════════════════════════════════════════════
+// MÓDULOS Y QUIZZES — CURSOS PSIC. YURIDIA ITURRIAGA (10)
+// Formato TypeScript para Replit / Ceduverse
+// ═══════════════════════════════════════════════════════════
+
+// ────────────────────────────────────────────
+// MÓDULOS
+// ────────────────────────────────────────────
+
+export const yuridiaModules: Record<string, any[]> = {
+
+// ═══ 1. DIAGNÓSTICO, PREVENCIÓN E INTERVENCIÓN DEL BULLYING ═══
+"diagnostico-prevencion-bullying": [
+  {
+    title: "Conceptualización del Bullying",
+    description: "Definición, tipos y criterios para identificar el bullying en entornos laborales y sociales",
+    contentHtml: `
+      <h2>¿Qué es el Bullying?</h2>
+      <p>El bullying es una conducta agresiva, <strong>intencional y repetida</strong> que ocurre en una relación donde existe un desequilibrio de poder. No es un conflicto aislado ni una broma: es un patrón sostenido que causa daño.</p>
+
+      <h3>Criterios para identificar el bullying</h3>
+      <ol>
+        <li><strong>Intencionalidad:</strong> La conducta busca causar daño deliberadamente</li>
+        <li><strong>Repetición:</strong> No es un incidente aislado, sino un patrón persistente</li>
+        <li><strong>Desequilibrio de poder:</strong> El agresor tiene o percibe tener más poder que la víctima</li>
+        <li><strong>Indefensión:</strong> La víctima tiene dificultades para defenderse</li>
+      </ol>
+
+      <h3>Tipos de bullying</h3>
+      <ul>
+        <li><strong>Físico:</strong> Golpes, empujones, daño a pertenencias</li>
+        <li><strong>Verbal:</strong> Insultos, apodos, amenazas, humillaciones públicas</li>
+        <li><strong>Social/Relacional:</strong> Exclusión deliberada, difusión de rumores, aislamiento</li>
+        <li><strong>Cyberbullying:</strong> Agresión a través de medios digitales y redes sociales</li>
+        <li><strong>Laboral (Mobbing):</strong> Acoso en el entorno de trabajo — sobrecarga intencional, exclusión de reuniones, descrédito profesional</li>
+      </ul>
+
+      <h3>El Mobbing: bullying en el trabajo</h3>
+      <p>En el contexto organizacional, el bullying adopta la forma de <strong>mobbing</strong>, que puede ser:</p>
+      <ul>
+        <li><strong>Horizontal:</strong> Entre compañeros del mismo nivel jerárquico</li>
+        <li><strong>Vertical descendente (bossing):</strong> Del jefe hacia el subordinado</li>
+        <li><strong>Vertical ascendente:</strong> Del subordinado hacia el jefe (menos común pero real)</li>
+      </ul>
+
+      <h3>El triángulo del bullying</h3>
+      <p>En toda dinámica de bullying participan tres roles: el <strong>agresor</strong> (quien ejecuta la conducta), la <strong>víctima</strong> (quien la recibe) y los <strong>espectadores</strong> (quienes observan). El rol de los espectadores es crucial — pueden ser facilitadores, reforzadores, defensores o simples observadores pasivos. Romper el silencio de los testigos es clave para detener el ciclo.</p>
+    `,
+    references: ["NOM-035-STPS-2018", "Ley Federal del Trabajo Art. 3 Bis", "OMS - Violencia en el lugar de trabajo"],
+    durationMinutes: 30
+  },
+  {
+    title: "Factores y Características del Bullying",
+    description: "Factores individuales, organizacionales y señales de alerta para detectar el bullying",
+    contentHtml: `
+      <h2>¿Qué propicia el bullying?</h2>
+      <p>El bullying no surge en el vacío. Existen factores individuales y contextuales que crean el terreno fértil para que estas conductas se manifiesten y se sostengan en el tiempo.</p>
+
+      <h3>Factores individuales del agresor</h3>
+      <ul>
+        <li>Necesidad de control y dominio sobre otros</li>
+        <li>Baja empatía — dificultad para ponerse en el lugar del otro</li>
+        <li>Modelos de conducta agresiva aprendidos en su historia personal</li>
+        <li>Inseguridad profunda encubierta con conducta dominante</li>
+        <li>Falta de habilidades para resolver conflictos de manera constructiva</li>
+      </ul>
+
+      <h3>Factores organizacionales que lo permiten</h3>
+      <ul>
+        <li><strong>Culturas permisivas:</strong> "Así es aquí, así nos llevamos"</li>
+        <li><strong>Falta de normas claras</strong> de convivencia y consecuencias</li>
+        <li><strong>Liderazgo negligente</strong> que ignora las señales</li>
+        <li><strong>Alta competitividad</strong> sin regulación ni valores</li>
+        <li><strong>Ausencia de protocolos</strong> de denuncia y atención</li>
+        <li><strong>Estrés organizacional crónico</strong> que detona conductas agresivas</li>
+      </ul>
+
+      <h3>Señales de alerta</h3>
+      <p><strong>En la víctima:</strong> aislamiento progresivo, cambios bruscos de ánimo, baja productividad, ausentismo, ansiedad antes de ir al trabajo, llanto o irritabilidad sin causa aparente.</p>
+      <p><strong>En el agresor:</strong> conducta dominante frecuente, ridiculización de otros como "broma", necesidad de audiencia, minimización de sus actos ("es jugando"), culpabilización de la víctima ("es muy sensible").</p>
+      <p><strong>En el ambiente:</strong> rumores constantes, grupos cerrados y exclusivos, silencio ante agresiones evidentes, alta rotación de personal en un área específica, quejas recurrentes.</p>
+
+      <h3>Importante</h3>
+      <p>Los factores de la víctima <strong>nunca justifican</strong> el bullying. Ser introvertido, nuevo, diferente o exitoso no es causa del acoso — la responsabilidad siempre es del agresor y del sistema que lo permite.</p>
+    `,
+    references: ["NOM-035-STPS-2018 Cap. 7", "Leymann, H. - Mobbing and Psychological Terror at Workplaces", "STPS - Protocolo contra violencia laboral"],
+    durationMinutes: 30
+  },
+  {
+    title: "Repercusiones Psicológicas del Bullying",
+    description: "Impacto en la salud mental, física y organizacional del bullying laboral",
+    contentHtml: `
+      <h2>El impacto real del bullying</h2>
+      <p>El bullying no es "cosa de niños" ni algo que se supera con "echarle ganas". Sus efectos son profundos y medibles — afectan la salud mental, física y el desempeño profesional de la víctima, y generan costos reales para la organización.</p>
+
+      <h3>Efectos psicológicos en la víctima</h3>
+      <ul>
+        <li><strong>Ansiedad generalizada</strong> y ataques de pánico</li>
+        <li><strong>Depresión</strong> y sentimientos de desesperanza</li>
+        <li><strong>Trastorno de estrés postraumático</strong> (TEPT)</li>
+        <li><strong>Autoestima deteriorada</strong> — "tal vez sí es mi culpa"</li>
+        <li><strong>Desconfianza</strong> hacia compañeros y autoridades</li>
+        <li><strong>Insomnio, pesadillas</strong> y trastornos del sueño</li>
+      </ul>
+
+      <h3>Efectos físicos (psicosomáticos)</h3>
+      <p>El estrés crónico del bullying se manifiesta en el cuerpo: dolores de cabeza recurrentes, problemas gastrointestinales, tensión muscular crónica, fatiga constante, cambios drásticos en el apetito y peso, y debilitamiento del sistema inmunológico.</p>
+
+      <h3>Impacto en la organización</h3>
+      <ul>
+        <li><strong>Clima laboral tóxico</strong> que afecta a todos, no solo a la víctima</li>
+        <li><strong>Alta rotación</strong> — las personas talentosas se van primero</li>
+        <li><strong>Baja productividad</strong> generalizada por miedo y desmotivación</li>
+        <li><strong>Ausentismo</strong> y presentismo (estar presente pero sin rendir)</li>
+        <li><strong>Costos legales</strong> — demandas laborales, indemnizaciones</li>
+        <li><strong>Daño reputacional</strong> — la empresa se conoce como "tóxica"</li>
+      </ul>
+
+      <h3>El costo oculto</h3>
+      <p>Estudios estiman que el mobbing puede costar a una organización entre <strong>$15,000 y $50,000 USD por caso</strong> cuando se suman ausentismo, rotación, pérdida de productividad y costos legales. Prevenir siempre es más económico que remediar.</p>
+    `,
+    references: ["OIT - Violencia y acoso en el mundo del trabajo (C190)", "NOM-035-STPS-2018", "Hirigoyen, M.F. - El acoso moral en el trabajo"],
+    durationMinutes: 25
+  },
+  {
+    title: "Apoyo y Manejo del Bullying",
+    description: "Protocolos de intervención, atención a la víctima y estrategias de prevención organizacional",
+    contentHtml: `
+      <h2>Protocolo de intervención organizacional</h2>
+      <p>Cuando se detecta bullying, la organización debe actuar de manera estructurada. No basta con "hablar con las partes" — se necesita un proceso formal.</p>
+
+      <h3>Paso 1: Detección</h3>
+      <ul>
+        <li>Implementar canales de denuncia <strong>confidenciales</strong> (buzón anónimo, línea ética, correo dedicado)</li>
+        <li>Capacitar a líderes para reconocer las señales tempranas</li>
+        <li>Aplicar encuestas de clima laboral periódicamente</li>
+        <li>Observación activa de dinámicas grupales en reuniones y convivencia</li>
+      </ul>
+
+      <h3>Paso 2: Documentación</h3>
+      <p>Registrar fechas, hechos concretos (no interpretaciones), testigos disponibles y evidencia (mensajes, correos, testimonios escritos). Mantener <strong>confidencialidad estricta</strong> durante todo el proceso.</p>
+
+      <h3>Paso 3: Intervención inmediata</h3>
+      <ul>
+        <li>Separar al agresor de la víctima si es operativamente posible</li>
+        <li>Realizar entrevistas individuales con las partes involucradas</li>
+        <li>Activar el protocolo interno de atención</li>
+        <li>Nunca confrontar públicamente al agresor frente a la víctima</li>
+      </ul>
+
+      <h3>Paso 4: Atención a la víctima</h3>
+      <p>Ofrecer apoyo psicológico profesional, asegurar que no habrá represalias, dar seguimiento periódico y facilitar la reintegración al grupo cuando sea seguro.</p>
+
+      <h3>Paso 5: Medidas con el agresor</h3>
+      <p>Confrontación privada con evidencias específicas (conductas, no etiquetas), establecimiento de compromisos de cambio medibles, seguimiento a 30/60/90 días, y consecuencias claras si la conducta persiste.</p>
+
+      <h3>Prevención: la mejor estrategia</h3>
+      <ol>
+        <li><strong>Política de cero tolerancia</strong> al acoso, comunicada y visible</li>
+        <li><strong>Capacitación regular</strong> a todo el personal sobre convivencia respetuosa</li>
+        <li><strong>Liderazgo con el ejemplo</strong> — los líderes modelan la conducta</li>
+        <li><strong>Consecuencias reales</strong> y consistentes para los agresores</li>
+        <li><strong>Canales de denuncia</strong> accesibles, confidenciales y efectivos</li>
+        <li><strong>Seguimiento</strong> — el protocolo no sirve si se guarda en un cajón</li>
+      </ol>
+    `,
+    references: ["NOM-035-STPS-2018 Cap. 8", "LFT Art. 47 y 51", "Protocolo de actuación contra la violencia laboral - STPS"],
+    durationMinutes: 35
+  }
+],
+
+// ═══ 2. CAMINO A LA AUTODEPENDENCIA ═══
+"camino-autodependencia": [
+  {
+    title: "Encuentro con Uno Mismo",
+    description: "Autoconocimiento como base de la autodependencia emocional y profesional",
+    contentHtml: `
+      <h2>El primer paso: conocerte</h2>
+      <p>La autodependencia comienza con un acto de honestidad: mirarte sin filtros. No se trata de ser autosuficiente ni de no necesitar a nadie — se trata de <strong>no depender emocionalmente de otros</strong> para sentirte valioso, tomar decisiones o encontrar dirección en tu vida.</p>
+
+      <h3>¿Qué es la autodependencia?</h3>
+      <p>Es la capacidad de hacerte cargo de ti mismo: de tus emociones, tus decisiones, tus necesidades y tu bienestar. Una persona autodependiente puede pedir ayuda sin sentirse débil, puede estar sola sin sentirse vacía, y puede amar sin perderse en el otro.</p>
+
+      <h3>Las 4 preguntas del autoconocimiento</h3>
+      <ol>
+        <li><strong>¿Quién soy?</strong> — Más allá de mi rol laboral, mi título, mi relación. ¿Qué me define cuando me quitan las etiquetas?</li>
+        <li><strong>¿Qué siento?</strong> — Identificar y nombrar mis emociones. Muchos adultos no pueden distinguir entre tristeza, frustración, miedo y enojo.</li>
+        <li><strong>¿Qué necesito?</strong> — No lo que "debería" necesitar, sino lo que genuinamente necesito para estar bien.</li>
+        <li><strong>¿Qué quiero?</strong> — Diferenciar mis deseos de las expectativas que otros han puesto sobre mí.</li>
+      </ol>
+
+      <h3>Los mandatos que arrastramos</h3>
+      <p>Desde la infancia recibimos mensajes que se convierten en creencias inconscientes:</p>
+      <ul>
+        <li>"No llores" → Aprendí a reprimir emociones</li>
+        <li>"Sé fuerte" → Aprendí que pedir ayuda es debilidad</li>
+        <li>"No seas egoísta" → Aprendí a anteponer siempre a los demás</li>
+        <li>"Tú puedes solo" → Aprendí a no confiar en otros</li>
+      </ul>
+      <p>El camino a la autodependencia implica revisar estos mandatos y decidir conscientemente cuáles quieres conservar y cuáles necesitas soltar.</p>
+
+      <h3>Ejercicio: El inventario emocional</h3>
+      <p>Durante una semana, registra cada noche: ¿Qué emoción sentí con más intensidad hoy? ¿Qué la provocó? ¿Cómo reaccioné? ¿Cómo me hubiera gustado reaccionar? Este simple ejercicio comienza a construir tu <strong>inteligencia emocional</strong>.</p>
+    `,
+    references: ["Bucay, J. - El camino de la autodependencia", "Goleman, D. - Inteligencia Emocional", "Rogers, C. - El proceso de convertirse en persona"],
+    durationMinutes: 30
+  },
+  {
+    title: "Encuentro con el Otro",
+    description: "Construir relaciones saludables desde la autonomía emocional",
+    contentHtml: `
+      <h2>Relaciones desde la libertad, no desde la necesidad</h2>
+      <p>Una vez que comienzas a conocerte, el siguiente paso es revisar cómo te relacionas con los demás. La autodependencia no significa aislarte — significa <strong>elegir estar con otros desde la voluntad, no desde la carencia</strong>.</p>
+
+      <h3>Dependencia vs. Autodependencia en las relaciones</h3>
+      <ul>
+        <li><strong>Dependencia:</strong> "Te necesito para estar bien" → Relación desde el miedo al abandono</li>
+        <li><strong>Contradependencia:</strong> "No necesito a nadie" → Relación desde el miedo a la vulnerabilidad</li>
+        <li><strong>Autodependencia:</strong> "Elijo estar contigo y también estoy bien conmigo" → Relación desde la libertad</li>
+      </ul>
+
+      <h3>Los 5 pilares de las relaciones saludables</h3>
+      <ol>
+        <li><strong>Respeto:</strong> Reconocer al otro como ser autónomo con derecho a ser diferente</li>
+        <li><strong>Honestidad:</strong> Decir lo que sientes y necesitas sin manipulación</li>
+        <li><strong>Límites:</strong> Saber dónde termino yo y dónde empieza el otro</li>
+        <li><strong>Reciprocidad:</strong> Dar y recibir en equilibrio — no siempre exacto, pero sí justo</li>
+        <li><strong>Libertad:</strong> No intentar controlar, cambiar o poseer al otro</li>
+      </ol>
+
+      <h3>El arte de poner límites</h3>
+      <p>Poner límites no es ser egoísta — es ser honesto. Un límite es decir: "Esto sí, esto no. Hasta aquí llego." Los límites claros generan relaciones más sanas porque eliminan el resentimiento acumulado.</p>
+      <p><strong>Fórmula para poner un límite:</strong></p>
+      <p>"Entiendo que [necesidad del otro], y yo necesito [tu necesidad]. Lo que puedo hacer es [propuesta concreta]."</p>
+
+      <h3>Aplicación en el trabajo</h3>
+      <p>Las relaciones laborales son un excelente laboratorio para practicar la autodependencia: establecer límites con jefes o compañeros invasivos, comunicar necesidades sin agresividad, y separar tu valor personal de tu desempeño laboral.</p>
+    `,
+    references: ["Bucay, J. - El camino de la autodependencia", "Brené Brown - Los dones de la imperfección", "Cloud & Townsend - Límites"],
+    durationMinutes: 30
+  },
+  {
+    title: "Pérdidas y Duelos",
+    description: "Procesamiento saludable de las pérdidas y transiciones de vida",
+    contentHtml: `
+      <h2>Aprender a soltar</h2>
+      <p>La vida está llena de pérdidas — no solo de personas, sino de relaciones, trabajos, etapas, ilusiones, identidades. <strong>El duelo es el proceso natural de adaptación a una pérdida significativa</strong>, y negarlo no lo elimina: solo lo retrasa y lo complica.</p>
+
+      <h3>Tipos de pérdidas</h3>
+      <ul>
+        <li><strong>Pérdidas relacionales:</strong> Ruptura de pareja, alejamiento de amigos, muerte de seres queridos</li>
+        <li><strong>Pérdidas laborales:</strong> Despido, cambio de puesto, pérdida de un proyecto, jubilación</li>
+        <li><strong>Pérdidas de identidad:</strong> Dejar de ser "el joven", "el estudiante", "el exitoso"</li>
+        <li><strong>Pérdidas de salud:</strong> Enfermedad crónica, limitaciones físicas</li>
+        <li><strong>Pérdidas de ilusiones:</strong> Aceptar que algo no va a suceder como lo imaginabas</li>
+      </ul>
+
+      <h3>El proceso del duelo</h3>
+      <p>No es lineal ni tiene un tiempo definido. Las emociones van y vienen en oleadas:</p>
+      <ol>
+        <li><strong>Negación:</strong> "No puede ser, esto no está pasando"</li>
+        <li><strong>Enojo:</strong> "¿Por qué a mí? No es justo"</li>
+        <li><strong>Negociación:</strong> "Si hubiera hecho algo diferente..."</li>
+        <li><strong>Tristeza:</strong> La emoción más necesaria — sentir el vacío de lo perdido</li>
+        <li><strong>Aceptación:</strong> No significa estar de acuerdo, sino integrar la pérdida en tu historia</li>
+      </ol>
+
+      <h3>Duelo en el contexto laboral</h3>
+      <p>Perder un empleo puede sentirse como perder la identidad. Muchas personas se definen por lo que hacen: "Soy ingeniero", "Soy gerente". Cuando ese rol desaparece, la pregunta incómoda aparece: "¿Quién soy sin mi trabajo?" Procesar este duelo es fundamental antes de buscar un nuevo empleo — de lo contrario, la urgencia y el miedo nublan las decisiones.</p>
+
+      <h3>Señales de duelo no procesado</h3>
+      <p>Irritabilidad crónica, dificultad para comprometerse con algo nuevo, idealización excesiva del pasado ("todo tiempo pasado fue mejor"), evitación de situaciones que recuerden la pérdida, y sensación de estar "atorado".</p>
+    `,
+    references: ["Kübler-Ross, E. - Sobre la muerte y los moribundos", "Bucay, J. - El camino de las lágrimas", "Neimeyer, R. - Aprender de la pérdida"],
+    durationMinutes: 30
+  },
+  {
+    title: "Completitud y Búsqueda del Sentido",
+    description: "Encontrar propósito y sentido de vida como fundamento de la autodependencia plena",
+    contentHtml: `
+      <h2>No necesitas que te completen</h2>
+      <p>La cultura nos enseña que estamos "incompletos" hasta que encontramos la pareja perfecta, el trabajo ideal o el logro definitivo. La autodependencia propone lo contrario: <strong>ya eres completo</strong>. Lo que buscas afuera es un complemento, no una necesidad existencial.</p>
+
+      <h3>La completitud no es perfección</h3>
+      <p>Ser completo no significa no tener carencias ni necesidades. Significa aceptar que con lo que eres y tienes en este momento, puedes vivir una vida con sentido. Las carencias son parte de la condición humana — no son defectos que arreglar.</p>
+
+      <h3>La búsqueda de sentido</h3>
+      <p>Viktor Frankl, psiquiatra sobreviviente de los campos de concentración nazis, descubrió que las personas que encontraban un <strong>sentido</strong> a su sufrimiento tenían más probabilidad de sobrevivir. Su propuesta: el sentido de la vida no se inventa, se descubre.</p>
+
+      <h3>Tres caminos hacia el sentido (según Frankl)</h3>
+      <ol>
+        <li><strong>Valores de creación:</strong> Lo que aportas al mundo — tu trabajo, tus proyectos, tu creatividad</li>
+        <li><strong>Valores de experiencia:</strong> Lo que recibes del mundo — el amor, el arte, la naturaleza, las relaciones</li>
+        <li><strong>Valores de actitud:</strong> La postura que tomas ante el sufrimiento inevitable — aquí reside la libertad última del ser humano</li>
+      </ol>
+
+      <h3>Aplicación práctica: Tu declaración de sentido</h3>
+      <p>Completa estas frases desde la honestidad:</p>
+      <ul>
+        <li>"Lo que más me importa en la vida es..."</li>
+        <li>"Me siento más vivo/a cuando..."</li>
+        <li>"Si pudiera cambiar una cosa del mundo, sería..."</li>
+        <li>"Quiero ser recordado/a como alguien que..."</li>
+      </ul>
+      <p>Estas respuestas son tu brújula. No necesitan ser grandiosas — a veces el sentido más profundo está en lo cotidiano: ser buen padre, hacer bien tu trabajo, cuidar a quien lo necesita.</p>
+
+      <h3>La autodependencia como camino, no como destino</h3>
+      <p>No llegas a la autodependencia un día y ya. Es una práctica diaria de elegirte, conocerte, respetarte y encontrar sentido en lo que haces. Algunos días será más fácil que otros — y eso está bien.</p>
+    `,
+    references: ["Frankl, V. - El hombre en busca de sentido", "Bucay, J. - El camino de la autodependencia", "Yalom, I. - Psicoterapia existencial"],
+    durationMinutes: 30
+  }
+],
+
+// ═══ 3. VALORES HUMANOS EN LA ORGANIZACIÓN ═══
+"valores-humanos-organizacion": [
+  {
+    title: "Los Valores: ¿Qué Son? ¿Cómo los Identifico?",
+    description: "Fundamentos de los valores humanos y su papel en la vida personal y profesional",
+    contentHtml: `
+      <h2>¿Qué son los valores?</h2>
+      <p>Los valores son <strong>principios que guían nuestras decisiones, actitudes y comportamientos</strong>. Son las creencias profundas sobre lo que consideramos importante, correcto y deseable. No son lo que decimos que somos — son lo que hacemos cuando nadie nos ve.</p>
+
+      <h3>Características de los valores</h3>
+      <ul>
+        <li><strong>Son aprendidos:</strong> Los adquirimos de la familia, la cultura, la educación y las experiencias</li>
+        <li><strong>Son jerárquicos:</strong> Tenemos valores más importantes que otros — esta jerarquía guía nuestras decisiones</li>
+        <li><strong>Son dinámicos:</strong> Pueden evolucionar con el tiempo y las experiencias de vida</li>
+        <li><strong>Se demuestran con acciones:</strong> Un valor que no se practica es solo una idea</li>
+      </ul>
+
+      <h3>Valores personales vs. valores organizacionales</h3>
+      <p>Los <strong>valores personales</strong> son los que tú has construido a lo largo de tu vida. Los <strong>valores organizacionales</strong> son los que la empresa declara como principios rectores. Cuando ambos están alineados, el trabajo se vuelve significativo. Cuando están en conflicto, surge el malestar, la desmotivación y eventualmente la salida.</p>
+
+      <h3>Ejercicio: Identifica tus valores</h3>
+      <p>De la siguiente lista, selecciona los 5 que más te representan: Honestidad, Libertad, Familia, Éxito, Justicia, Creatividad, Seguridad, Servicio, Lealtad, Salud, Conocimiento, Respeto, Valentía, Solidaridad, Independencia, Espiritualidad, Diversión, Responsabilidad, Amor, Integridad.</p>
+      <p>Ahora ordénalos del 1 al 5. Ese orden revela tu jerarquía de valores actual.</p>
+    `,
+    references: ["Rokeach, M. - The Nature of Human Values", "Schwartz, S.H. - Teoría de los valores básicos", "Covey, S. - Los 7 hábitos de la gente altamente efectiva"],
+    durationMinutes: 25
+  },
+  {
+    title: "Clarificación de Valores",
+    description: "Proceso de clarificación personal para alinear valores con acciones cotidianas",
+    contentHtml: `
+      <h2>Del dicho al hecho</h2>
+      <p>Muchas personas dicen valorar la familia pero trabajan 14 horas al día. Dicen valorar la honestidad pero mienten en pequeñas cosas. La clarificación de valores es el proceso de <strong>identificar la brecha entre lo que dices que valoras y lo que realmente haces</strong>.</p>
+
+      <h3>El proceso de clarificación de valores (Louis Raths)</h3>
+      <p>Un valor genuino cumple 7 criterios:</p>
+      <ol>
+        <li><strong>Elegido libremente</strong> — no impuesto por otros</li>
+        <li><strong>Elegido entre alternativas</strong> — con conciencia de las opciones</li>
+        <li><strong>Elegido después de considerar consecuencias</strong> — con reflexión</li>
+        <li><strong>Apreciado y querido</strong> — te sientes bien con esa elección</li>
+        <li><strong>Afirmado públicamente</strong> — estás dispuesto a defenderlo</li>
+        <li><strong>Actuado de manera consistente</strong> — se refleja en tu conducta</li>
+        <li><strong>Actuado de forma repetida</strong> — no es un acto aislado, es un patrón</li>
+      </ol>
+
+      <h3>Técnica de clarificación: El test de la crisis</h3>
+      <p>Cuando enfrentas una decisión difícil, tus valores reales se revelan. Pregúntate:</p>
+      <ul>
+        <li>¿Qué haría si nadie me estuviera observando?</li>
+        <li>¿Qué decisión me permitiría dormir tranquilo esta noche?</li>
+        <li>¿Qué le aconsejaría a mi hijo/a en esta situación?</li>
+        <li>¿Cómo me sentiría si esta decisión saliera en el periódico?</li>
+      </ul>
+
+      <h3>La coherencia como meta</h3>
+      <p>No se trata de ser perfecto — se trata de reducir la distancia entre lo que valoras y lo que haces. Cada vez que actúas en coherencia con tus valores, fortaleces tu autoestima y tu integridad. Cada vez que los traicionas, un pedacito de confianza en ti mismo se erosiona.</p>
+    `,
+    references: ["Raths, L. - Values and Teaching", "Simon, S. - Values Clarification", "Frankl, V. - El hombre en busca de sentido"],
+    durationMinutes: 25
+  },
+  {
+    title: "Mis Prioridades, Mis Valores y Mi Comportamiento",
+    description: "Alinear decisiones diarias con la jerarquía personal de valores",
+    contentHtml: `
+      <h2>Tus prioridades revelan tus valores reales</h2>
+      <p>Hay una forma simple de descubrir cuáles son tus valores reales (no los declarados): <strong>observa en qué gastas tu tiempo y tu dinero</strong>. Ahí están tus prioridades verdaderas.</p>
+
+      <h3>El inventario de tiempo</h3>
+      <p>Haz un registro honesto de cómo distribuyes tu tiempo en una semana típica:</p>
+      <ul>
+        <li>¿Cuántas horas dedicas al trabajo?</li>
+        <li>¿Cuántas a tu familia y relaciones?</li>
+        <li>¿Cuántas a tu salud (ejercicio, alimentación, descanso)?</li>
+        <li>¿Cuántas a tu desarrollo personal (lectura, aprendizaje)?</li>
+        <li>¿Cuántas a lo que te apasiona?</li>
+      </ul>
+      <p>Compara esta distribución con los 5 valores que identificaste. ¿Coinciden? Si la familia es tu valor #1 pero le dedicas 2 horas a la semana, hay una brecha que atender.</p>
+
+      <h3>Dilemas de valores en el trabajo</h3>
+      <p>En la vida laboral enfrentamos constantemente situaciones donde nuestros valores se ponen a prueba:</p>
+      <ul>
+        <li>Tu jefe te pide reportar datos inflados → ¿Honestidad o lealtad al jefe?</li>
+        <li>Un ascenso requiere mudarte y alejarte de tu familia → ¿Éxito o familia?</li>
+        <li>Un compañero comete un error grave → ¿Solidaridad o responsabilidad?</li>
+      </ul>
+      <p>No hay respuestas universales — lo importante es que <strong>tú</strong> sepas qué valoras más y actúes en consecuencia.</p>
+
+      <h3>Plan de acción: Cerrar la brecha</h3>
+      <p>Identifica 3 acciones concretas que puedas hacer esta semana para alinear mejor tu tiempo y comportamiento con tus valores prioritarios.</p>
+    `,
+    references: ["Covey, S. - Primero lo primero", "Covey, S. - Los 7 hábitos", "Senge, P. - La quinta disciplina"],
+    durationMinutes: 25
+  },
+  {
+    title: "El Valor del Trabajo y la Trascendencia",
+    description: "Encontrar significado y trascendencia a través del trabajo cotidiano",
+    contentHtml: `
+      <h2>El trabajo como vehículo de trascendencia</h2>
+      <p>Para muchas personas, el trabajo es solo un medio para ganar dinero. Pero cuando lo vemos desde los valores y el sentido de vida, el trabajo puede ser mucho más: puede ser el espacio donde <strong>dejamos huella en el mundo</strong>.</p>
+
+      <h3>Tres formas de vivir el trabajo</h3>
+      <ol>
+        <li><strong>Como empleo:</strong> Un intercambio de tiempo por dinero. Se vive con indiferencia o resistencia. "Trabajo porque tengo que pagar cuentas."</li>
+        <li><strong>Como carrera:</strong> Un camino de crecimiento y logro. Se buscan ascensos y reconocimiento. "Trabajo para crecer profesionalmente."</li>
+        <li><strong>Como vocación:</strong> Una expresión de propósito. El trabajo en sí tiene significado. "Trabajo porque esto importa y contribuyo a algo mayor."</li>
+      </ol>
+      <p>Lo interesante es que <strong>el mismo trabajo puede vivirse de las tres formas</strong>. Un barrendero puede ver su trabajo como empleo ("me pagan por barrer") o como vocación ("mantengo limpia y digna la comunidad donde viven familias").</p>
+
+      <h3>Valores que dan sentido al trabajo</h3>
+      <ul>
+        <li><strong>Servicio:</strong> Mi trabajo beneficia a otros</li>
+        <li><strong>Excelencia:</strong> Hago las cosas lo mejor que puedo, sin importar si alguien me ve</li>
+        <li><strong>Contribución:</strong> Soy parte de algo más grande que yo</li>
+        <li><strong>Aprendizaje:</strong> Cada día aprendo algo nuevo</li>
+        <li><strong>Comunidad:</strong> Construyo relaciones significativas con mis compañeros</li>
+      </ul>
+
+      <h3>Trascendencia en la cooperativa</h3>
+      <p>En una cooperativa, el trabajo adquiere una dimensión adicional: no trabajas para un patrón, <strong>trabajas contigo mismo y con otros</strong> en un proyecto compartido. Los valores cooperativos — solidaridad, democracia, equidad, responsabilidad — son una base natural para encontrar trascendencia en el trabajo diario.</p>
+
+      <h3>Reflexión final</h3>
+      <p>Pregúntate: ¿Qué valor aporto yo con mi trabajo? ¿A quién beneficia lo que hago? ¿Cómo puedo hacer que mi trabajo cotidiano sea más significativo sin cambiar de empleo?</p>
+    `,
+    references: ["Frankl, V. - El hombre en busca de sentido", "Wrzesniewski, A. - Job Crafting", "Principios cooperativos de la ACI"],
+    durationMinutes: 25
+  }
+],
+
+// ═══ 4. CÓMO ES MI COMUNICACIÓN ═══
+"como-es-mi-comunicacion": [
+  {
+    title: "Estrategias de Comunicación Efectiva",
+    description: "Herramientas prácticas para comunicar con claridad, empatía y asertividad",
+    contentHtml: `
+      <h2>Comunicar no es solo hablar</h2>
+      <p>La comunicación efectiva es la habilidad más importante en cualquier entorno laboral. Sin embargo, la mayoría de los conflictos organizacionales tienen su raíz en <strong>problemas de comunicación</strong>: mensajes ambiguos, supuestos no verificados, escucha deficiente o estilos incompatibles.</p>
+
+      <h3>Los 3 estilos de comunicación</h3>
+      <ul>
+        <li><strong>Pasivo:</strong> Evita expresar necesidades y opiniones. Dice "sí" cuando quiere decir "no". Acumula resentimiento. Frases típicas: "Como tú digas", "No importa", "Está bien" (cuando no lo está).</li>
+        <li><strong>Agresivo:</strong> Impone sus necesidades sobre las de otros. No escucha. Usa sarcasmo, gritos o intimidación. Frases típicas: "Porque yo lo digo", "Tú siempre...", "Eso es ridículo".</li>
+        <li><strong>Asertivo:</strong> Expresa necesidades y opiniones con respeto. Escucha activamente. Pone límites sin agredir. Frases típicas: "Necesito que...", "Entiendo tu punto y...", "No estoy de acuerdo, y te explico por qué".</li>
+      </ul>
+
+      <h3>Los 7 principios de la comunicación efectiva</h3>
+      <ol>
+        <li><strong>Claridad:</strong> Un mensaje, una idea. Si tu interlocutor necesita preguntar "¿qué quieres decir?", no fuiste claro</li>
+        <li><strong>Brevedad:</strong> Di lo necesario, no lo que te haga sentir importante</li>
+        <li><strong>Escucha activa:</strong> Escuchar para entender, no para responder</li>
+        <li><strong>Empatía:</strong> Ponerte en el lugar del otro antes de hablar</li>
+        <li><strong>Retroalimentación:</strong> Verificar que el mensaje fue recibido como lo enviaste</li>
+        <li><strong>Congruencia:</strong> Que tu lenguaje verbal, tono y cuerpo digan lo mismo</li>
+        <li><strong>Momento adecuado:</strong> El mejor mensaje en el peor momento es inútil</li>
+      </ol>
+
+      <h3>La escucha activa: el superpoder subestimado</h3>
+      <p>Técnicas de escucha activa: mantener contacto visual, parafrasear ("lo que entiendo es que..."), hacer preguntas abiertas, no interrumpir, y validar emociones ("entiendo que eso te frustre").</p>
+    `,
+    references: ["Alberti & Emmons - Your Perfect Right (Asertividad)", "Rosenberg, M. - Comunicación No Violenta", "NOM-035-STPS-2018 - Entorno organizacional favorable"],
+    durationMinutes: 35
+  },
+  {
+    title: "La Comunicación Interior y los Vínculos",
+    description: "Cómo tu diálogo interno afecta tus relaciones y tu comunicación con otros",
+    contentHtml: `
+      <h2>Primero hablas contigo, luego con el mundo</h2>
+      <p>Antes de comunicarte con otros, ya te estás comunicando contigo mismo. Ese <strong>diálogo interior</strong> — la voz en tu cabeza que comenta, juzga, anticipa y narra — determina en gran medida cómo te comunicas con los demás.</p>
+
+      <h3>El diálogo interior: tu primer interlocutor</h3>
+      <p>Según investigaciones, una persona tiene entre <strong>12,000 y 60,000 pensamientos al día</strong>. La mayoría son automáticos y repetitivos. Y una buena parte son negativos:</p>
+      <ul>
+        <li>"No debí decir eso, qué tonto"</li>
+        <li>"Seguro piensa que soy incompetente"</li>
+        <li>"Para qué opino, nadie me va a escuchar"</li>
+        <li>"Siempre me pasa lo mismo"</li>
+      </ul>
+      <p>Este diálogo interno negativo se filtra en tu comunicación externa: te vuelves inseguro, defensivo, evasivo o reactivo.</p>
+
+      <h3>Cómo tu comunicación interior afecta tus vínculos</h3>
+      <ul>
+        <li>Si te dices "no soy suficiente" → buscas validación constante de otros</li>
+        <li>Si te dices "no puedo confiar en nadie" → te comunicas con desconfianza</li>
+        <li>Si te dices "debo ser perfecto" → no toleras errores propios ni ajenos</li>
+        <li>Si te dices "lo que pienso no importa" → no expresas tus necesidades</li>
+      </ul>
+
+      <h3>Técnica: El observador interno</h3>
+      <p>Durante un día, observa tu diálogo interior sin juzgarlo. Solo nota: ¿qué me estoy diciendo? ¿Es verdad? ¿Me ayuda o me limita? ¿Le diría esto a alguien que quiero? Si la respuesta es "no", probablemente tampoco deberías decírtelo a ti mismo.</p>
+
+      <h3>Los vínculos como espejos</h3>
+      <p>Las personas que más te irritan o que más admiras están reflejando algo tuyo. El compañero que "siempre quiere tener razón" puede reflejar tu propia necesidad de control. El líder que admiras puede reflejar cualidades que ya tienes pero no has desarrollado. Usar las relaciones como espejo es una herramienta poderosa de autoconocimiento.</p>
+    `,
+    references: ["Beck, A. - Terapia Cognitiva", "Watzlawick, P. - Teoría de la comunicación humana", "Satir, V. - En contacto íntimo"],
+    durationMinutes: 30
+  },
+  {
+    title: "El Lenguaje Interior y los Estados de Ánimo",
+    description: "La relación entre lo que te dices, cómo te sientes y cómo actúas",
+    contentHtml: `
+      <h2>Lo que te dices determina cómo te sientes</h2>
+      <p>La psicología cognitiva ha demostrado que <strong>no son las situaciones las que generan nuestras emociones, sino la interpretación que hacemos de ellas</strong>. Dos personas ante el mismo evento pueden sentir cosas completamente diferentes dependiendo de su diálogo interno.</p>
+
+      <h3>El modelo ABC (Albert Ellis)</h3>
+      <ul>
+        <li><strong>A — Acontecimiento:</strong> Lo que sucede (hechos objetivos)</li>
+        <li><strong>B — Belief (Creencia):</strong> Lo que te dices sobre lo que sucedió</li>
+        <li><strong>C — Consecuencia emocional:</strong> Lo que sientes y haces</li>
+      </ul>
+      <p><strong>Ejemplo:</strong> Tu jefe no te saluda al llegar (A). Te dices "seguro está enojado conmigo por algo" (B). Te sientes ansioso y evitas acercarte el resto del día (C). En realidad, tu jefe estaba distraído con un problema personal.</p>
+
+      <h3>Distorsiones cognitivas comunes</h3>
+      <ul>
+        <li><strong>Catastrofización:</strong> "Esto va a ser un desastre total"</li>
+        <li><strong>Personalización:</strong> "Es mi culpa que el proyecto fracasara" (cuando había 20 factores)</li>
+        <li><strong>Lectura de mente:</strong> "Sé que piensa que soy inútil" (sin evidencia)</li>
+        <li><strong>Generalización:</strong> "SIEMPRE me pasa lo mismo" / "NUNCA me sale bien"</li>
+        <li><strong>Filtro negativo:</strong> Ignoras 9 cosas positivas y te enfocas en la 1 negativa</li>
+      </ul>
+
+      <h3>Cómo cambiar tu lenguaje interior</h3>
+      <ol>
+        <li><strong>Detecta</strong> el pensamiento automático negativo</li>
+        <li><strong>Cuestiona:</strong> ¿Es verdad? ¿Tengo evidencia? ¿Hay otra explicación posible?</li>
+        <li><strong>Reemplaza</strong> con un pensamiento más realista (no positivo forzado, sino equilibrado)</li>
+      </ol>
+      <p>De "Soy un desastre en presentaciones" a "La última presentación no salió como quería, y puedo prepararme mejor para la siguiente."</p>
+    `,
+    references: ["Ellis, A. - Razón y emoción en psicoterapia", "Beck, A. - Terapia Cognitiva de la Depresión", "Burns, D. - Sentirse bien"],
+    durationMinutes: 30
+  },
+  {
+    title: "Comunicación y Calidad de Vida",
+    description: "El impacto de la comunicación en tu bienestar integral y tu entorno",
+    contentHtml: `
+      <h2>Cómo te comunicas determina cómo vives</h2>
+      <p>La calidad de tu comunicación es un reflejo directo de la calidad de tus relaciones. Y la calidad de tus relaciones es uno de los predictores más fuertes de tu bienestar y longevidad — más que el dinero, el estatus o incluso la genética.</p>
+
+      <h3>Comunicación y salud</h3>
+      <p>Investigaciones muestran que las personas con relaciones sólidas y comunicación abierta tienen:</p>
+      <ul>
+        <li>Menor riesgo de enfermedades cardiovasculares</li>
+        <li>Mejor sistema inmunológico</li>
+        <li>Menor incidencia de depresión y ansiedad</li>
+        <li>Mayor esperanza de vida</li>
+      </ul>
+      <p>Por el contrario, el aislamiento social y la comunicación tóxica son factores de riesgo comparables al tabaquismo.</p>
+
+      <h3>Comunicación en el trabajo y bienestar</h3>
+      <p>Pasamos entre 8 y 10 horas diarias en el trabajo. Si esas horas están llenas de comunicación agresiva, mensajes ambiguos, chismes o silencio hostil, el impacto en tu salud es directo. La NOM-035 reconoce exactamente esto: el <strong>liderazgo negativo y las relaciones hostiles</strong> son factores de riesgo psicosocial.</p>
+
+      <h3>Plan de mejora comunicacional</h3>
+      <ol>
+        <li><strong>Esta semana:</strong> Practica la escucha activa en 3 conversaciones sin interrumpir</li>
+        <li><strong>Este mes:</strong> Identifica tu estilo de comunicación predominante (pasivo, agresivo, asertivo) y practica la asertividad en una situación que normalmente evitarías</li>
+        <li><strong>Este trimestre:</strong> Transforma tu diálogo interior — detecta al menos 1 distorsión cognitiva diaria y cuestiónala</li>
+      </ol>
+
+      <h3>Reflexión final</h3>
+      <p>La comunicación es una habilidad que se entrena. Nadie nace siendo un comunicador excepcional. La buena noticia es que cada conversación es una oportunidad de práctica. Empieza hoy: elige una persona con la que quieras mejorar tu comunicación y aplica algo de lo aprendido.</p>
+    `,
+    references: ["Waldinger, R. - Harvard Study of Adult Development", "NOM-035-STPS-2018", "Goleman, D. - Inteligencia Social"],
+    durationMinutes: 30
+  }
+],
+
+// ═══ 5. RELACIONES HUMANAS ═══
+"relaciones-humanas": [
+  {
+    title: "El Hombre: Un Ser Social",
+    description: "La naturaleza social del ser humano y su necesidad de pertenencia",
+    contentHtml: `
+      <h2>Somos porque nos relacionamos</h2>
+      <p>El ser humano es, por naturaleza, un ser social. Desde el nacimiento dependemos de otros para sobrevivir, y a lo largo de la vida nuestras relaciones determinan en gran medida nuestra identidad, bienestar y éxito.</p>
+
+      <h3>La necesidad de pertenencia</h3>
+      <p>Abraham Maslow ubicó la <strong>necesidad de pertenencia</strong> en el tercer nivel de su pirámide, justo después de las necesidades básicas y de seguridad. Necesitamos sentirnos parte de algo: una familia, un grupo de amigos, un equipo de trabajo, una comunidad, una cooperativa.</p>
+
+      <h3>¿Qué son las relaciones humanas?</h3>
+      <p>Son las interacciones que establecemos con otras personas en diferentes contextos. En el ámbito laboral, incluyen la relación con compañeros, jefes, subordinados, clientes y proveedores. La calidad de estas relaciones afecta directamente la productividad, el clima laboral y la satisfacción personal.</p>
+
+      <h3>Factores que facilitan las relaciones humanas</h3>
+      <ul>
+        <li><strong>Respeto:</strong> Tratar al otro como persona, no como medio</li>
+        <li><strong>Empatía:</strong> La capacidad de entender la perspectiva del otro</li>
+        <li><strong>Comunicación abierta:</strong> Expresar y escuchar con honestidad</li>
+        <li><strong>Tolerancia:</strong> Aceptar las diferencias sin juzgar</li>
+        <li><strong>Cooperación:</strong> Trabajar juntos hacia objetivos comunes</li>
+      </ul>
+
+      <h3>Factores que deterioran las relaciones</h3>
+      <ul>
+        <li>Prejuicios y estereotipos</li>
+        <li>Competencia destructiva</li>
+        <li>Chismes y comunicación indirecta</li>
+        <li>Falta de reconocimiento</li>
+        <li>Incumplimiento de compromisos</li>
+      </ul>
+    `,
+    references: ["Maslow, A. - Motivación y personalidad", "Carnegie, D. - Cómo ganar amigos", "NOM-035-STPS-2018 - Entorno organizacional favorable"],
+    durationMinutes: 25
+  },
+  {
+    title: "La Personalidad en las Relaciones Humanas",
+    description: "Cómo los rasgos de personalidad influyen en nuestras interacciones",
+    contentHtml: `
+      <h2>Cada persona es un mundo</h2>
+      <p>La personalidad es el conjunto de <strong>rasgos, patrones de pensamiento, emociones y conductas</strong> que nos hacen únicos. Entender que cada persona tiene una personalidad distinta es el primer paso para mejorar nuestras relaciones.</p>
+
+      <h3>Temperamentos básicos</h3>
+      <p>Aunque cada persona es única, existen patrones generales que nos ayudan a entender las diferencias:</p>
+      <ul>
+        <li><strong>Extrovertido:</strong> Se energiza con la interacción social, habla antes de pensar, prefiere grupos grandes</li>
+        <li><strong>Introvertido:</strong> Se energiza con la soledad y la reflexión, piensa antes de hablar, prefiere interacciones uno a uno</li>
+        <li><strong>Orientado a tareas:</strong> Se enfoca en resultados, estructura, eficiencia</li>
+        <li><strong>Orientado a personas:</strong> Se enfoca en relaciones, armonía, bienestar grupal</li>
+      </ul>
+
+      <h3>Choques de personalidad en el trabajo</h3>
+      <p>Los conflictos laborales frecuentemente no son por el "qué" sino por el "cómo": una persona detallista choca con una pragmática; un introvertido se siente invadido por un extrovertido; un orientado a resultados frustra a un orientado a procesos.</p>
+
+      <h3>Clave: Adaptabilidad</h3>
+      <p>No puedes cambiar la personalidad de otros, pero puedes <strong>adaptar tu estilo de comunicación</strong> según la persona. Con un detallista, da datos. Con un emocional, conecta primero con sus sentimientos. Con un pragmático, ve al grano. Con un reflexivo, dale tiempo para procesar.</p>
+
+      <h3>Ejercicio</h3>
+      <p>Piensa en 3 personas con las que interactúas diario en el trabajo. ¿Cómo describirías su personalidad? ¿Cómo podrías adaptar tu comunicación para relacionarte mejor con cada una?</p>
+    `,
+    references: ["Jung, C.G. - Tipos psicológicos", "DISC Model - Marston, W.M.", "Goleman, D. - Inteligencia Emocional"],
+    durationMinutes: 25
+  },
+  {
+    title: "Apertura de Sí Mismo y Proceso de Comunicación",
+    description: "La vulnerabilidad como herramienta de conexión y la ventana de Johari",
+    contentHtml: `
+      <h2>Abrirte para conectar</h2>
+      <p>Las relaciones superficiales se mantienen en la superficie: hablamos del clima, del trabajo, de cosas seguras. Las relaciones significativas requieren <strong>apertura</strong> — la disposición a mostrar quién eres realmente, con tus fortalezas y vulnerabilidades.</p>
+
+      <h3>La Ventana de Johari</h3>
+      <p>Este modelo creado por Joseph Luft y Harrington Ingham describe 4 áreas de la personalidad en relación con los demás:</p>
+      <ul>
+        <li><strong>Área abierta:</strong> Lo que yo sé de mí y los demás también saben (nombre, rol, habilidades visibles)</li>
+        <li><strong>Área ciega:</strong> Lo que los demás ven de mí pero yo no veo (hábitos inconscientes, impacto que genero)</li>
+        <li><strong>Área oculta:</strong> Lo que yo sé de mí pero los demás no saben (miedos, inseguridades, sueños)</li>
+        <li><strong>Área desconocida:</strong> Lo que ni yo ni los demás conocemos (potencial sin descubrir)</li>
+      </ul>
+
+      <h3>Cómo expandir el área abierta</h3>
+      <ol>
+        <li><strong>Auto-revelación:</strong> Comparte gradualmente cosas de tu área oculta → Genera confianza y cercanía</li>
+        <li><strong>Retroalimentación:</strong> Pide y acepta feedback sobre tu área ciega → Genera autoconocimiento</li>
+      </ol>
+
+      <h3>Riesgos y beneficios de la apertura</h3>
+      <p><strong>Riesgos:</strong> Vulnerabilidad, posibilidad de que alguien use esa información en tu contra, sentirse expuesto.</p>
+      <p><strong>Beneficios:</strong> Relaciones más profundas, mayor confianza, mejor trabajo en equipo, reducción de malentendidos, autenticidad.</p>
+
+      <h3>La regla de la apertura gradual</h3>
+      <p>No necesitas contar tu vida entera al primer encuentro. La apertura es como quitar capas de una cebolla: empiezas con lo superficial y vas profundizando conforme la confianza se construye. En el trabajo, esto significa pasar de "bien, gracias" a conversaciones genuinas donde compartes opiniones, preocupaciones y aspiraciones reales.</p>
+    `,
+    references: ["Luft, J. & Ingham, H. - The Johari Window", "Brené Brown - El poder de la vulnerabilidad", "Rogers, C. - El proceso de convertirse en persona"],
+    durationMinutes: 25
+  },
+  {
+    title: "Construyendo Relaciones Laborales Saludables",
+    description: "Aplicación práctica para mejorar las relaciones en el entorno de trabajo",
+    contentHtml: `
+      <h2>De la teoría a la práctica</h2>
+      <p>Conocer la teoría de las relaciones humanas es el primer paso. Aplicarla todos los días en tu centro de trabajo es el verdadero reto. Este módulo integra todo lo aprendido en un plan de acción concreto.</p>
+
+      <h3>Las 5 prácticas diarias para relaciones laborales sanas</h3>
+      <ol>
+        <li><strong>Saluda con intención:</strong> Un "buenos días" con contacto visual y genuino interés es diferente a un murmullo distraído. Pequeños gestos construyen grandes relaciones</li>
+        <li><strong>Practica el reconocimiento:</strong> Reconoce el esfuerzo y logros de tus compañeros. Un "gracias por tu apoyo en esto" o "noté que hiciste un excelente trabajo" fortalece vínculos</li>
+        <li><strong>Maneja los conflictos en el momento:</strong> No acumules resentimientos. Aborda las diferencias de forma directa, respetuosa y oportuna</li>
+        <li><strong>Ofrece ayuda sin esperar reciprocidad:</strong> La cooperación genuina construye un ambiente de confianza</li>
+        <li><strong>Respeta los límites:</strong> De tiempo, de espacio, de opiniones. No todos quieren socializar al mismo nivel que tú — y eso está bien</li>
+      </ol>
+
+      <h3>Protocolo para relaciones difíciles</h3>
+      <p>Siempre habrá personas con las que te cueste relacionarte. Para esos casos:</p>
+      <ul>
+        <li>Mantén la relación profesional — no necesitas ser amigo de todos</li>
+        <li>Enfócate en el objetivo compartido, no en las diferencias personales</li>
+        <li>No participes en chismes ni triangulaciones</li>
+        <li>Si el conflicto escala, busca mediación formal</li>
+      </ul>
+
+      <h3>Relaciones en la cooperativa</h3>
+      <p>En una cooperativa, las relaciones humanas son aún más importantes porque <strong>todos son socios</strong>. No hay un jefe que imponga — la convivencia se construye por acuerdo. Esto requiere más madurez relacional, más comunicación y más disposición a resolver diferencias de forma democrática.</p>
+
+      <h3>Compromiso personal</h3>
+      <p>Escribe 3 acciones concretas que te comprometes a hacer a partir de mañana para mejorar tus relaciones en el trabajo. Compártelas con alguien de confianza que pueda recordártelas.</p>
+    `,
+    references: ["Carnegie, D. - Cómo ganar amigos", "NOM-035-STPS-2018", "Principios cooperativos ACI"],
+    durationMinutes: 25
+  }
+],
+
+// ═══ 6. AUTOESTIMA ═══
+"autoestima": [
+  {
+    title: "Autoestima como Marco de Referencia",
+    description: "La autoestima como lente a través del cual interpretamos el mundo y nos proyectamos",
+    contentHtml: `
+      <h2>Cómo te ves determina cómo vives</h2>
+      <p>La autoestima es la <strong>valoración que haces de ti mismo</strong>. No es lo que otros piensan de ti, ni tus logros acumulados, ni tu apariencia. Es la opinión profunda que tienes sobre tu propio valor como persona. Y esa opinión afecta absolutamente todo: cómo trabajas, cómo te relacionas, qué oportunidades tomas y cuáles dejas pasar.</p>
+
+      <h3>La autoestima como marco de referencia</h3>
+      <p>Nathaniel Branden define la autoestima como la disposición a saberse <strong>competente para enfrentar los desafíos de la vida</strong> y <strong>merecedor de la felicidad</strong>. Es decir, tiene dos componentes:</p>
+      <ul>
+        <li><strong>Autoeficacia:</strong> "Puedo" — La confianza en tu capacidad para pensar, aprender y resolver</li>
+        <li><strong>Autodignidad:</strong> "Merezco" — La convicción de que mereces respeto, amor y bienestar</li>
+      </ul>
+
+      <h3>Cómo la autoestima se refleja en el trabajo</h3>
+      <ul>
+        <li><strong>Alta autoestima:</strong> Aceptas retos, pides retroalimentación, reconoces errores sin destruirte, pones límites, celebras logros propios y ajenos</li>
+        <li><strong>Baja autoestima:</strong> Evitas retos por miedo al fracaso, te comparas constantemente, necesitas validación externa, aceptas trato que no mereces, saboteas tus propios éxitos</li>
+      </ul>
+
+      <h3>Los 6 pilares de la autoestima (Nathaniel Branden)</h3>
+      <ol>
+        <li><strong>Vivir conscientemente:</strong> Estar presente y atento a tu realidad</li>
+        <li><strong>Aceptarse a uno mismo:</strong> No resignación, sino reconocimiento honesto</li>
+        <li><strong>Responsabilidad personal:</strong> Ser autor de tu vida, no víctima</li>
+        <li><strong>Autoafirmación:</strong> Respetar tus necesidades y valores</li>
+        <li><strong>Vivir con propósito:</strong> Tener metas y trabajar hacia ellas</li>
+        <li><strong>Integridad personal:</strong> Alinear acciones con valores</li>
+      </ol>
+    `,
+    references: ["Branden, N. - Los seis pilares de la autoestima", "Rosenberg, M. - Society and the Adolescent Self-Image", "Rogers, C. - El proceso de convertirse en persona"],
+    durationMinutes: 30
+  },
+  {
+    title: "Autoestima Alta y Baja",
+    description: "Características, manifestaciones y consecuencias de cada nivel de autoestima",
+    contentHtml: `
+      <h2>Reconocer dónde estás</h2>
+      <p>La autoestima no es binaria — no eres "alta autoestima" o "baja autoestima" como un interruptor. Es un <strong>espectro que fluctúa</strong> según las circunstancias, las etapas de vida y las áreas. Puedes tener alta autoestima profesional pero baja autoestima en relaciones, o viceversa.</p>
+
+      <h3>Señales de autoestima saludable</h3>
+      <ul>
+        <li>Te tratas con respeto y compasión</li>
+        <li>Reconoces tus fortalezas sin arrogancia y tus debilidades sin vergüenza</li>
+        <li>Puedes decir "no" sin culpa excesiva</li>
+        <li>No necesitas la aprobación constante de otros para sentirte bien</li>
+        <li>Aceptas la crítica constructiva sin sentir que te destruyen</li>
+        <li>Celebras los éxitos de otros sin sentirte amenazado</li>
+        <li>Te permites cometer errores y aprender de ellos</li>
+      </ul>
+
+      <h3>Señales de autoestima deteriorada</h3>
+      <ul>
+        <li>Autocrítica implacable: "Soy un desastre", "Todo lo hago mal"</li>
+        <li>Comparación constante con otros (y siempre sales perdiendo)</li>
+        <li>Dificultad para recibir cumplidos: "No, no es para tanto"</li>
+        <li>Perfeccionismo paralizante: si no es perfecto, no sirve</li>
+        <li>Necesidad de control excesivo (porque no confías en ti)</li>
+        <li>Relaciones donde permites trato que no mereces</li>
+        <li>Sabotaje: cuando algo va bien, haces algo para arruinarlo</li>
+      </ul>
+
+      <h3>Importante: autoestima alta ≠ narcisismo</h3>
+      <p>La autoestima saludable es silenciosa y firme. No necesita presumir ni menospreciar a otros. El narcisismo es una máscara de seguridad que esconde una profunda inseguridad. La persona con autoestima genuina no necesita demostrar nada — simplemente actúa desde la confianza en su valor.</p>
+
+      <h3>Ejercicio de reflexión</h3>
+      <p>En una escala del 1 al 10, ¿cómo calificarías tu autoestima en estas áreas: profesional, relaciones, aspecto físico, intelectual, como padre/madre (si aplica)? ¿Dónde está tu fortaleza y dónde tu área de oportunidad?</p>
+    `,
+    references: ["Branden, N. - Los seis pilares de la autoestima", "Brown, B. - Los dones de la imperfección", "Ellis, A. - Cómo controlar la ansiedad antes de que le controle a usted"],
+    durationMinutes: 25
+  },
+  {
+    title: "Concepto de Sí Mismo",
+    description: "Cómo se forma el autoconcepto y cómo transformarlo positivamente",
+    contentHtml: `
+      <h2>La imagen que tienes de ti</h2>
+      <p>El <strong>autoconcepto</strong> es la imagen mental que tienes de ti mismo — quién crees que eres. Es más amplio que la autoestima: incluye tus creencias sobre tus capacidades, tu personalidad, tu rol social y tu cuerpo.</p>
+
+      <h3>¿Cómo se forma el autoconcepto?</h3>
+      <ol>
+        <li><strong>Espejo de los demás:</strong> De niños, nos vemos a través de los ojos de nuestros padres y figuras significativas. Si nos dijeron "eres inteligente" o "eres un inútil", esas palabras se convirtieron en creencias</li>
+        <li><strong>Experiencias de éxito y fracaso:</strong> Cada logro refuerza la creencia "puedo" y cada fracaso no procesado refuerza "no puedo"</li>
+        <li><strong>Comparación social:</strong> Nos medimos contra otros y construimos una imagen relativa</li>
+        <li><strong>Rol social:</strong> Los roles que desempeñamos (padre, profesional, amigo) moldean nuestra identidad</li>
+      </ol>
+
+      <h3>Creencias limitantes vs. creencias potenciadoras</h3>
+      <ul>
+        <li>"No soy bueno para hablar en público" → <strong>Limitante</strong> → Te impide crecer</li>
+        <li>"Estoy aprendiendo a comunicarme mejor" → <strong>Potenciadora</strong> → Te abre posibilidades</li>
+        <li>"A mi edad ya no se puede cambiar" → <strong>Limitante</strong></li>
+        <li>"Cada día puedo aprender algo nuevo" → <strong>Potenciadora</strong></li>
+      </ul>
+
+      <h3>Cómo transformar tu autoconcepto</h3>
+      <ol>
+        <li><strong>Identifica la creencia:</strong> ¿Qué creo sobre mí que me limita?</li>
+        <li><strong>Cuestiona su origen:</strong> ¿De dónde viene? ¿Quién me lo dijo? ¿Es un hecho o una interpretación?</li>
+        <li><strong>Busca evidencia contraria:</strong> ¿Alguna vez logré algo que contradice esa creencia?</li>
+        <li><strong>Reformula:</strong> Construye una creencia más realista y funcional</li>
+        <li><strong>Actúa en consecuencia:</strong> Haz algo pequeño que sea coherente con la nueva creencia</li>
+      </ol>
+
+      <h3>Ejercicio final: Carta a ti mismo</h3>
+      <p>Escribe una carta breve a ti mismo reconociendo 5 cosas que valoras de ti, 3 logros que te enorgullecen, y 1 compromiso de mejora. Léela cuando tu autoestima flaquee.</p>
+    `,
+    references: ["Branden, N. - Los seis pilares de la autoestima", "Bandura, A. - Self-Efficacy", "Beck, A. - Terapia Cognitiva"],
+    durationMinutes: 30
+  },
+  {
+    title: "Autoestima en el Entorno Laboral",
+    description: "Cómo fortalecer la autoestima para un mejor desempeño y bienestar en el trabajo",
+    contentHtml: `
+      <h2>Tu valor no depende de tu puesto</h2>
+      <p>En el mundo laboral es fácil confundir <strong>valor personal con desempeño laboral</strong>. Si me va bien en el trabajo, valgo. Si me despiden o me critican, no valgo. Esta trampa destruye la autoestima de millones de personas.</p>
+
+      <h3>Separar identidad de rol</h3>
+      <p>Tú no ERES tu trabajo. Tú HACES un trabajo. Cuando te despiden, no se borran tus habilidades, tu experiencia ni tu valor como persona. Cuando te ascienden, no eres "mejor persona" — eres la misma persona con más responsabilidades.</p>
+
+      <h3>Cómo los líderes afectan la autoestima del equipo</h3>
+      <ul>
+        <li><strong>Líderes que construyen:</strong> Reconocen logros, dan retroalimentación constructiva, confían, empoderan, respetan</li>
+        <li><strong>Líderes que destruyen:</strong> Critican en público, microgerencian, ignoran esfuerzos, humillan, comparan</li>
+      </ul>
+      <p>Si eres líder, recuerda: cada interacción con tu equipo construye o erosiona su autoestima. Esa responsabilidad es enorme.</p>
+
+      <h3>Prácticas para fortalecer tu autoestima laboral</h3>
+      <ol>
+        <li><strong>Lleva un registro de logros:</strong> Apunta cada semana algo que hiciste bien. Cuando dudes de ti, revísalo</li>
+        <li><strong>Pide retroalimentación proactivamente:</strong> No esperes a la evaluación anual. Pregunta: "¿Qué hago bien? ¿Qué puedo mejorar?"</li>
+        <li><strong>Celebra tus avances:</strong> No solo los grandes logros — también los pequeños pasos</li>
+        <li><strong>Establece límites:</strong> No aceptes trato irrespetuoso, sin importar el nivel jerárquico de quien lo haga</li>
+        <li><strong>Invierte en tu desarrollo:</strong> Tomar este curso ya es un acto de autoestima — estás invirtiendo en ti</li>
+      </ol>
+
+      <h3>Compromiso</h3>
+      <p>Escribe 1 acción concreta que vas a implementar esta semana para cuidar tu autoestima en el trabajo.</p>
+    `,
+    references: ["Branden, N. - La autoestima en el trabajo", "NOM-035-STPS-2018", "Goleman, D. - Inteligencia Emocional"],
+    durationMinutes: 25
+  }
+],
+
+// ═══ 7. MANEJO DE CONFLICTOS Y TOMA DE DECISIONES ═══
+// (Ya desarrollado como Template B completo)
+"manejo-conflictos-toma-decisiones": [
+  {
+    title: "Trascendencia de las Decisiones",
+    description: "Impacto de las decisiones en la organización, sesgos cognitivos y factores emocionales",
+    contentHtml: `
+      <h2>Las decisiones importan más de lo que crees</h2>
+      <p>Tomamos cientos de decisiones diarias. En el contexto laboral, una sola decisión mal tomada puede afectar a decenas de personas, desperdiciar recursos, o generar conflictos que tardan meses en resolverse.</p>
+
+      <h3>Niveles de decisión</h3>
+      <ul>
+        <li><strong>Estratégicas:</strong> Alta dirección, largo plazo, alta incertidumbre (ej: abrir nueva línea de negocio)</li>
+        <li><strong>Tácticas:</strong> Mandos medios, mediano plazo (ej: redistribuir presupuesto)</li>
+        <li><strong>Operativas:</strong> Supervisores, corto plazo (ej: asignar turnos)</li>
+      </ul>
+
+      <h3>Sesgos cognitivos que distorsionan nuestras decisiones</h3>
+      <ul>
+        <li><strong>Confirmación:</strong> Buscamos solo info que confirme lo que ya creemos</li>
+        <li><strong>Anclaje:</strong> Damos demasiado peso a la primera información recibida</li>
+        <li><strong>Status quo:</strong> Preferimos no cambiar aunque el cambio sea mejor</li>
+        <li><strong>Efecto manada:</strong> Decidimos según lo que hacen los demás</li>
+        <li><strong>Disponibilidad:</strong> Juzgamos probabilidad por lo fácil que recordamos ejemplos</li>
+      </ul>
+
+      <h3>El papel de las emociones</h3>
+      <p>Las emociones no son enemigas de las buenas decisiones, pero necesitan gestionarse: el miedo paraliza o precipita, el enojo lleva a decisiones impulsivas, el entusiasmo excesivo nos ciega ante riesgos, y la ansiedad nos hace evitar decidir.</p>
+    `,
+    references: ["Kahneman, D. - Pensar rápido, pensar despacio", "Ariely, D. - Las trampas del deseo", "Simon, H. - Racionalidad limitada"],
+    durationMinutes: 35
+  },
+  {
+    title: "El Proceso Decisional: Fases y Etapas",
+    description: "Modelo de 7 pasos para tomar decisiones estructuradas y efectivas",
+    contentHtml: `
+      <h2>Decidir es un proceso, no un instante</h2>
+      <p>Un proceso estructurado mejora dramáticamente la calidad de las decisiones.</p>
+
+      <h3>Los 7 pasos</h3>
+      <ol>
+        <li><strong>Identificar el problema:</strong> Usa la técnica de los "5 Porqués" para llegar a la causa raíz</li>
+        <li><strong>Establecer criterios:</strong> ¿Qué es importante? (costo, tiempo, calidad, riesgo, impacto en equipo)</li>
+        <li><strong>Ponderar criterios:</strong> Asigna peso relativo del 1 al 10</li>
+        <li><strong>Generar alternativas:</strong> Mínimo 3. Usa lluvia de ideas, benchmarks, consulta con expertos</li>
+        <li><strong>Evaluar con matriz de decisión:</strong> Califica cada alternativa contra cada criterio ponderado</li>
+        <li><strong>Seleccionar:</strong> La matriz guía, pero también considera tu intuición informada y factores cualitativos</li>
+        <li><strong>Implementar y evaluar:</strong> Define quién, cuándo, cómo medir, y cuál es el Plan B</li>
+      </ol>
+
+      <h3>Técnica de los 5 Porqués (ejemplo)</h3>
+      <p>Problema: La producción se retrasó → ¿Por qué? La máquina paró → ¿Por qué? Se sobrecalentó → ¿Por qué? Falló el enfriamiento → ¿Por qué? No hubo mantenimiento → ¿Por qué? No hay calendario de mantenimiento. <strong>Causa raíz encontrada.</strong></p>
+
+      <h3>Regla de oro</h3>
+      <p>Nunca te quedes con la primera opción que aparece. Genera al menos 3 alternativas antes de decidir. La primera idea rara vez es la mejor — es solo la más obvia.</p>
+    `,
+    references: ["Kepner & Tregoe - El nuevo directivo racional", "De Bono, E. - Seis sombreros para pensar", "Hammond, Keeney & Raiffa - Smart Choices"],
+    durationMinutes: 35
+  },
+  {
+    title: "Manejo de Conflictos en el Contexto Institucional",
+    description: "Estilos de manejo de conflictos, comunicación no violenta y protocolos de resolución",
+    contentHtml: `
+      <h2>El conflicto no es el enemigo</h2>
+      <p>Los conflictos son inevitables en cualquier organización. Lo que marca la diferencia es cómo los gestionamos. Un conflicto bien manejado puede fortalecer relaciones y generar mejores soluciones.</p>
+
+      <h3>5 Estilos de Thomas-Kilmann</h3>
+      <ul>
+        <li><strong>Competir (ganar-perder):</strong> Útil en emergencias. Riesgo: daña relaciones</li>
+        <li><strong>Colaborar (ganar-ganar):</strong> Ideal para problemas complejos. Requiere tiempo</li>
+        <li><strong>Compromiso:</strong> Ambos ceden algo. Útil bajo presión de tiempo</li>
+        <li><strong>Evitar:</strong> Útil si el conflicto es trivial o las emociones están muy altas</li>
+        <li><strong>Ceder:</strong> Útil cuando la relación importa más que el tema</li>
+      </ul>
+
+      <h3>Comunicación No Violenta (Marshall Rosenberg)</h3>
+      <p>Estructura: "Cuando [conducta observada], me siento [emoción], porque necesito [necesidad]. ¿Estarías dispuesto/a a [petición concreta]?"</p>
+      <p>Ejemplo: "Cuando las entregas llegan después de la fecha, me siento presionado porque necesito cumplir con el cliente. ¿Podrías avisarme con 3 días de anticipación si habrá retraso?"</p>
+
+      <h3>Protocolo de resolución organizacional</h3>
+      <ol>
+        <li>Reconocer el conflicto (no ignorarlo)</li>
+        <li>Separar personas de problemas</li>
+        <li>Escuchar activamente a todas las partes</li>
+        <li>Identificar intereses subyacentes (no posiciones)</li>
+        <li>Generar opciones de solución conjuntamente</li>
+        <li>Evaluar y acordar</li>
+        <li>Documentar y dar seguimiento</li>
+      </ol>
+    `,
+    references: ["Thomas, K. & Kilmann, R. - Conflict Mode Instrument", "Rosenberg, M. - Comunicación No Violenta", "Fisher & Ury - Getting to Yes"],
+    durationMinutes: 35
+  },
+  {
+    title: "Aplicación Práctica: Casos y Herramientas",
+    description: "Casos de estudio y herramientas aplicables para resolver conflictos y tomar decisiones",
+    contentHtml: `
+      <h2>De la teoría a la acción</h2>
+
+      <h3>Caso 1: El presupuesto disputado</h3>
+      <p>Dos áreas de tu cooperativa necesitan el mismo presupuesto limitado: Producción quiere comprar maquinaria nueva y Ventas quiere invertir en marketing digital. El comité debe decidir.</p>
+      <p><strong>Aplica:</strong> Matriz de decisión con criterios ponderados (ROI, urgencia, impacto en socios, riesgo). ¿Qué alternativa gana? ¿Existe una tercera opción (phasing, financiamiento)?</p>
+
+      <h3>Caso 2: El conflicto entre turnos</h3>
+      <p>El turno matutino se queja de que el turno vespertino deja el área desordenada. El turno vespertino dice que tienen más carga de trabajo. La tensión crece.</p>
+      <p><strong>Aplica:</strong> CNV para expresar el problema. Identifica intereses (ambos quieren condiciones dignas). Genera soluciones conjuntas (checklist de entrega de turno, redistribución de carga).</p>
+
+      <h3>Caso 3: La decisión impopular</h3>
+      <p>Como líder, debes reducir horas extras (la cooperativa no puede pagarlas). El equipo depende de ese ingreso adicional. ¿Cómo comunicas y decides?</p>
+      <p><strong>Aplica:</strong> Modelo Vroom-Yetton (la aceptación es crucial → involucra al equipo). Transparencia sobre la situación financiera. Genera alternativas conjuntas para compensar.</p>
+
+      <h3>Herramientas descargables para tu día a día</h3>
+      <ul>
+        <li>Plantilla de Matriz de Decisión (Excel/papel)</li>
+        <li>Formato de 5 Porqués para análisis de causa raíz</li>
+        <li>Guía rápida de los 5 estilos de Thomas-Kilmann</li>
+        <li>Protocolo de resolución de conflictos (paso a paso)</li>
+      </ul>
+
+      <h3>Compromiso final</h3>
+      <p>Identifica 1 decisión pendiente y 1 conflicto activo en tu trabajo. Aplica las herramientas de este curso a ambos esta semana. Documenta el proceso y el resultado.</p>
+    `,
+    references: ["Harvard Business Review - Gestión de conflictos", "PMI - Habilidades interpersonales del PM", "LFT - Condiciones de trabajo"],
+    durationMinutes: 35
+  }
+],
+
+// ═══ 8. INTEGRACIÓN DE GRUPOS Y EL EQUIPO ═══
+"integracion-grupos-equipo": [
+  {
+    title: "Tipos de Grupos y el Equipo",
+    description: "Diferencias entre grupo y equipo, tipos de grupos y etapas de formación",
+    contentHtml: `
+      <h2>No todo grupo es un equipo</h2>
+      <p>Un <strong>grupo</strong> es un conjunto de personas que comparten un espacio o actividad. Un <strong>equipo</strong> es un grupo con un objetivo compartido, roles complementarios y responsabilidad mutua. La diferencia es enorme.</p>
+
+      <h3>Grupo vs. Equipo</h3>
+      <ul>
+        <li><strong>Grupo:</strong> Líder designado, responsabilidad individual, resultado individual, reuniones informativas</li>
+        <li><strong>Equipo:</strong> Liderazgo compartido, responsabilidad mutua, resultado colectivo, reuniones de trabajo colaborativo</li>
+      </ul>
+
+      <h3>Tipos de grupos en la organización</h3>
+      <ul>
+        <li><strong>Formales:</strong> Creados por la organización con un propósito específico (comités, departamentos, brigadas)</li>
+        <li><strong>Informales:</strong> Surgen espontáneamente por afinidad (grupo del café, amigos del almuerzo)</li>
+        <li><strong>Funcionales:</strong> Misma área o especialidad</li>
+        <li><strong>Multifuncionales:</strong> Diferentes áreas trabajando en un proyecto</li>
+        <li><strong>Autogestionados:</strong> Sin jefe formal — deciden y organizan su trabajo (muy relevante en cooperativas)</li>
+      </ul>
+
+      <h3>Etapas de formación de un equipo (Tuckman)</h3>
+      <ol>
+        <li><strong>Formación:</strong> Los miembros se conocen, hay cortesía pero también incertidumbre</li>
+        <li><strong>Tormenta:</strong> Surgen conflictos, choques de personalidad, luchas por liderazgo</li>
+        <li><strong>Normalización:</strong> Se establecen normas, roles claros y confianza</li>
+        <li><strong>Desempeño:</strong> El equipo funciona con fluidez, alta productividad</li>
+        <li><strong>Disolución:</strong> El equipo cumple su objetivo y se disuelve (en equipos temporales)</li>
+      </ol>
+      <p>La etapa de <strong>tormenta</strong> es la más incómoda pero la más importante. Los equipos que la evitan nunca llegan al desempeño real.</p>
+    `,
+    references: ["Tuckman, B. - Developmental sequence in small groups", "Katzenbach & Smith - The Wisdom of Teams", "Lencioni, P. - Las cinco disfunciones de un equipo"],
+    durationMinutes: 30
+  },
+  {
+    title: "Dinámica Grupal",
+    description: "Fuerzas que operan dentro de los grupos: roles, normas, cohesión y conflicto",
+    contentHtml: `
+      <h2>Lo que pasa dentro del grupo</h2>
+      <p>Todo grupo tiene una vida interna que no siempre se ve: alianzas, rivalidades, normas no escritas, roles asumidos sin que nadie los asigne. Entender esta dinámica es clave para quien quiere integrar y gestionar equipos.</p>
+
+      <h3>Roles en el grupo (Belbin)</h3>
+      <p>Meredith Belbin identificó 9 roles que naturalmente se distribuyen en los equipos:</p>
+      <ul>
+        <li><strong>Roles de acción:</strong> Implementador (estructura), Impulsor (energía), Finalizador (atención al detalle)</li>
+        <li><strong>Roles sociales:</strong> Coordinador (facilita), Cohesionador (armoniza), Investigador de recursos (conecta con el exterior)</li>
+        <li><strong>Roles mentales:</strong> Cerebro (ideas creativas), Monitor-evaluador (análisis crítico), Especialista (conocimiento técnico)</li>
+      </ul>
+      <p>Un equipo efectivo necesita diversidad de roles. Si todos son "cerebros", habrá muchas ideas y poca ejecución.</p>
+
+      <h3>Normas grupales</h3>
+      <p>Todo grupo desarrolla normas — reglas implícitas o explícitas sobre cómo comportarse. Algunas son productivas ("aquí empezamos puntuales") y otras son tóxicas ("aquí no se cuestiona al jefe"). El líder debe identificar y reforzar las normas productivas y desafiar las tóxicas.</p>
+
+      <h3>Cohesión grupal</h3>
+      <p>La cohesión es la fuerza que mantiene unido al grupo. Se construye con:</p>
+      <ul>
+        <li>Objetivos compartidos y claros</li>
+        <li>Éxitos celebrados juntos</li>
+        <li>Comunicación abierta y frecuente</li>
+        <li>Confianza entre los miembros</li>
+        <li>Identidad grupal ("somos el equipo de...")</li>
+      </ul>
+
+      <h3>El pensamiento grupal (Groupthink)</h3>
+      <p>Cuidado: demasiada cohesión puede generar <strong>pensamiento grupal</strong> — cuando el grupo valora tanto la armonía que evita cuestionar, disentir o considerar alternativas. Resultado: decisiones malas que nadie se atrevió a cuestionar.</p>
+    `,
+    references: ["Belbin, M. - Team Roles at Work", "Janis, I. - Groupthink", "Lewin, K. - Field Theory in Social Science"],
+    durationMinutes: 30
+  },
+  {
+    title: "Manejo de Grupos",
+    description: "Técnicas y herramientas para facilitar, motivar y gestionar grupos de trabajo",
+    contentHtml: `
+      <h2>El arte de facilitar</h2>
+      <p>Manejar un grupo no es controlarlo — es <strong>facilitar que logre su objetivo</strong>. Un buen facilitador crea las condiciones para que el equipo funcione, interviene cuando es necesario, y se retira cuando el equipo fluye solo.</p>
+
+      <h3>Técnicas de facilitación grupal</h3>
+      <ol>
+        <li><strong>Check-in inicial:</strong> Empezar reuniones con una pregunta breve que conecte al grupo ("¿cómo llegas hoy?" o "¿qué esperas de esta sesión?")</li>
+        <li><strong>Reglas del juego:</strong> Establecer acuerdos de convivencia al inicio (respetar turnos, celulares en silencio, lo que se dice aquí se queda aquí)</li>
+        <li><strong>Lluvia de ideas estructurada:</strong> Primero generar sin juzgar, luego evaluar y priorizar</li>
+        <li><strong>Rondas de opinión:</strong> Dar voz a todos, no solo a los más extrovertidos</li>
+        <li><strong>Parking lot:</strong> Anotar temas que surgen pero no son del momento para atenderlos después</li>
+        <li><strong>Check-out:</strong> Cerrar con "¿qué te llevas?" o "¿qué acuerdos tenemos?"</li>
+      </ol>
+
+      <h3>Manejo de situaciones difíciles en grupos</h3>
+      <ul>
+        <li><strong>El que habla mucho:</strong> "Gracias por tu aporte, me gustaría escuchar también a los demás"</li>
+        <li><strong>El que no habla:</strong> "María, ¿cuál es tu perspectiva sobre esto?"</li>
+        <li><strong>El que siempre está en contra:</strong> "Entiendo tu preocupación. ¿Qué alternativa propones?"</li>
+        <li><strong>El que desvía el tema:</strong> "Interesante punto, lo anoto en el parking lot. Volvamos al tema"</li>
+        <li><strong>Dos que chocan:</strong> "Veo que hay perspectivas diferentes. Escuchemos una a la vez"</li>
+      </ul>
+
+      <h3>Motivación grupal</h3>
+      <p>Un equipo motivado no necesita supervisión constante. Las claves: propósito claro (¿para qué hacemos esto?), autonomía (confiar en que el equipo puede), reconocimiento (celebrar logros), y desarrollo (oportunidades de aprendizaje).</p>
+    `,
+    references: ["Schwarz, R. - The Skilled Facilitator", "Hackman, R. - Leading Teams", "Pink, D. - Drive: La sorprendente verdad sobre qué nos motiva"],
+    durationMinutes: 30
+  },
+  {
+    title: "Integración Práctica en la Cooperativa",
+    description: "Aplicación de técnicas de integración en el contexto cooperativo",
+    contentHtml: `
+      <h2>Equipos en la cooperativa: un caso especial</h2>
+      <p>Las cooperativas son un contexto único para la integración de equipos porque <strong>todos son socios</strong>. No hay un jefe que mande — hay una asamblea que decide, un consejo que coordina, y equipos que ejecutan. Esto requiere más habilidades de integración, no menos.</p>
+
+      <h3>Retos específicos de los equipos cooperativos</h3>
+      <ul>
+        <li>Toma de decisiones democrática puede ser más lenta</li>
+        <li>El doble rol de "trabajador" y "dueño" genera tensiones</li>
+        <li>La igualdad formal no elimina las dinámicas informales de poder</li>
+        <li>El compromiso desigual ("unos trabajan más que otros") genera resentimiento</li>
+      </ul>
+
+      <h3>Dinámicas de integración recomendadas</h3>
+      <ol>
+        <li><strong>Sesión de alineación trimestral:</strong> ¿Cuáles son nuestros objetivos compartidos? ¿Cómo va cada equipo? ¿Qué necesitamos unos de otros?</li>
+        <li><strong>Rotación de roles:</strong> Permitir que los socios conozcan diferentes áreas genera empatía y entendimiento</li>
+        <li><strong>Retrospectivas mensuales:</strong> ¿Qué funcionó? ¿Qué no? ¿Qué cambiamos?</li>
+        <li><strong>Espacios de convivencia:</strong> No todo puede ser trabajo — los vínculos se fortalecen en espacios informales</li>
+      </ol>
+
+      <h3>Herramientas para evaluar la salud de tu equipo</h3>
+      <p>Las 5 disfunciones de un equipo (Lencioni):</p>
+      <ol>
+        <li>Ausencia de <strong>confianza</strong></li>
+        <li>Temor al <strong>conflicto</strong></li>
+        <li>Falta de <strong>compromiso</strong></li>
+        <li>Evasión de <strong>responsabilidad</strong></li>
+        <li>Desatención a los <strong>resultados</strong></li>
+      </ol>
+      <p>Si identificas alguna de estas disfunciones en tu equipo, ahí está tu punto de partida para mejorar.</p>
+
+      <h3>Ejercicio final</h3>
+      <p>Evalúa a tu equipo actual contra las 5 disfunciones (escala 1-5). Identifica la disfunción más crítica y diseña 3 acciones concretas para abordarla en las próximas 4 semanas.</p>
+    `,
+    references: ["Lencioni, P. - Las cinco disfunciones de un equipo", "Principios cooperativos ACI", "LFT - Cooperativas de trabajo"],
+    durationMinutes: 30
+  }
+],
+
+// ═══ 9. PLANEACIÓN DE VIDA Y TRABAJO ═══
+"planeacion-vida-trabajo": [
+  {
+    title: "Necesidad de una Planeación Significativa de Vida y Trabajo",
+    description: "Por qué es crucial tener un plan de vida y cómo integrarlo con tu carrera",
+    contentHtml: `
+      <h2>¿A dónde vas?</h2>
+      <p>Si no sabes a dónde vas, cualquier camino te lleva. Muchas personas llegan a los 40 o 50 años y se preguntan: "¿Cómo llegué aquí? ¿Esto es lo que quería?" La planeación de vida y trabajo no es un lujo — es una <strong>necesidad para vivir con propósito</strong>.</p>
+
+      <h3>¿Por qué planear?</h3>
+      <ul>
+        <li>Da dirección y sentido a tus decisiones cotidianas</li>
+        <li>Reduce la ansiedad ante la incertidumbre</li>
+        <li>Te ayuda a decir "no" a lo que no está alineado con tus metas</li>
+        <li>Convierte sueños vagos en objetivos concretos</li>
+        <li>Integra las diferentes dimensiones de tu vida (no solo el trabajo)</li>
+      </ul>
+
+      <h3>Las 6 dimensiones de una vida plena</h3>
+      <ol>
+        <li><strong>Profesional/Laboral:</strong> Tu trabajo, tu carrera, tu desarrollo profesional</li>
+        <li><strong>Personal/Emocional:</strong> Tu autoconocimiento, tu salud mental, tu crecimiento</li>
+        <li><strong>Familiar/Relacional:</strong> Tu pareja, hijos, familia extendida, amigos</li>
+        <li><strong>Física/Salud:</strong> Tu cuerpo, alimentación, ejercicio, descanso</li>
+        <li><strong>Económica/Financiera:</strong> Tus ingresos, ahorro, patrimonio, seguridad</li>
+        <li><strong>Espiritual/Trascendente:</strong> Tu conexión con algo mayor, tu legado</li>
+      </ol>
+      <p>Un plan de vida integral atiende las 6 dimensiones — si solo planeas la profesional, las demás se deterioran.</p>
+
+      <h3>Ejercicio: La Rueda de la Vida</h3>
+      <p>Califica cada dimensión del 1 al 10 según tu satisfacción actual. Dibuja un círculo con 6 ejes. Las áreas con menor puntaje son tus prioridades de atención.</p>
+    `,
+    references: ["Casares, D. - Planeación de vida y carrera", "Covey, S. - Los 7 hábitos", "Senge, P. - La quinta disciplina"],
+    durationMinutes: 30
+  },
+  {
+    title: "Fortalezas y Debilidades",
+    description: "Análisis personal FODA para construir sobre tus fortalezas y gestionar tus áreas de mejora",
+    contentHtml: `
+      <h2>Conócete con honestidad</h2>
+      <p>Para planear tu vida y trabajo necesitas un diagnóstico realista de quién eres hoy. No lo que quisieras ser, no lo que otros dicen que eres — sino una evaluación honesta de tus recursos y limitaciones actuales.</p>
+
+      <h3>FODA Personal</h3>
+      <ul>
+        <li><strong>Fortalezas (internas):</strong> Habilidades, conocimientos, talentos, experiencias, rasgos de personalidad que te favorecen</li>
+        <li><strong>Oportunidades (externas):</strong> Tendencias del mercado, contactos, recursos disponibles, cambios favorables en tu entorno</li>
+        <li><strong>Debilidades (internas):</strong> Carencias de habilidades, hábitos que te limitan, áreas sin experiencia</li>
+        <li><strong>Amenazas (externas):</strong> Competencia, cambios tecnológicos, situaciones económicas, factores fuera de tu control</li>
+      </ul>
+
+      <h3>Estrategia: Construir sobre fortalezas</h3>
+      <p>La investigación de Gallup (StrengthsFinder) muestra que las personas que enfocan su desarrollo en sus fortalezas son <strong>6 veces más propensas a estar comprometidas</strong> con su trabajo. No ignores las debilidades, pero invierte la mayor parte de tu energía en potenciar lo que ya haces bien.</p>
+
+      <h3>Cómo identificar fortalezas que no ves</h3>
+      <ol>
+        <li><strong>Pregunta a otros:</strong> "¿Qué crees que hago mejor?" — muchas veces los demás ven fortalezas que tú das por sentado</li>
+        <li><strong>Observa lo que te fluye:</strong> ¿Qué actividades te absorben tanto que pierdes la noción del tiempo?</li>
+        <li><strong>Revisa tus logros:</strong> ¿Qué habilidades usaste en tus mayores éxitos?</li>
+      </ol>
+
+      <h3>Gestionar debilidades: 3 estrategias</h3>
+      <ol>
+        <li><strong>Capacitarte:</strong> Si la debilidad es de conocimiento, la solución es aprender</li>
+        <li><strong>Delegar:</strong> Si no es tu fuerte y alguien más lo hace mejor, forma equipo</li>
+        <li><strong>Minimizar el impacto:</strong> Organiza tu trabajo para que tus debilidades no sean críticas</li>
+      </ol>
+    `,
+    references: ["Rath, T. - StrengthsFinder 2.0", "Casares, D. - Planeación de vida y carrera", "Drucker, P. - Managing Oneself"],
+    durationMinutes: 30
+  },
+  {
+    title: "Discriminación de Necesidades y Valores",
+    description: "Distinguir entre necesidades reales y deseos, alinear valores con metas de vida",
+    contentHtml: `
+      <h2>¿Qué necesitas realmente?</h2>
+      <p>Muchos planes de vida fracasan porque están construidos sobre <strong>deseos superficiales</strong> en lugar de necesidades profundas. "Quiero ganar más dinero" no es un plan — es un deseo. La pregunta es: ¿para qué? ¿Qué necesidad profunda hay detrás?</p>
+
+      <h3>Necesidades vs. Deseos</h3>
+      <ul>
+        <li><strong>Necesidad:</strong> Seguridad económica para mi familia → Profunda, duradera</li>
+        <li><strong>Deseo:</strong> Un coche nuevo → Superficial, temporal</li>
+        <li><strong>Necesidad:</strong> Sentirme valorado y competente → Motor de crecimiento</li>
+        <li><strong>Deseo:</strong> Un título más en mi currículum → Puede o no satisfacer la necesidad</li>
+      </ul>
+
+      <h3>Alinear valores con metas</h3>
+      <p>Una meta que contradice tus valores generará conflicto interno aunque la logres. Ejemplo: si tu valor principal es la familia y tu meta es un puesto que requiere viajar 80% del tiempo, el logro vendrá acompañado de malestar.</p>
+
+      <h3>Diseña tu plan de vida</h3>
+      <p>Para cada una de las 6 dimensiones de vida:</p>
+      <ol>
+        <li>Define tu <strong>visión a 5 años:</strong> ¿Cómo quiero estar en esta dimensión?</li>
+        <li>Define <strong>3 metas a 1 año</strong> que te acerquen a esa visión (SMART: específicas, medibles, alcanzables, relevantes, con tiempo definido)</li>
+        <li>Define <strong>3 acciones para esta semana</strong> que contribuyan a esas metas</li>
+      </ol>
+
+      <h3>La revisión periódica</h3>
+      <p>Un plan de vida no es un documento que haces una vez y guardas. Revísalo cada trimestre: ¿estoy avanzando? ¿siguen vigentes mis metas? ¿necesito ajustar? La vida cambia, y tu plan debe evolucionar contigo.</p>
+    `,
+    references: ["Maslow, A. - Motivación y personalidad", "Casares, D. - Planeación de vida y carrera", "Frankl, V. - El hombre en busca de sentido"],
+    durationMinutes: 30
+  },
+  {
+    title: "Mi Plan de Vida y Trabajo: Integración Final",
+    description: "Construcción del plan integral de vida y trabajo personalizado",
+    contentHtml: `
+      <h2>Tu plan, tus reglas</h2>
+      <p>Este módulo es completamente práctico. Con todo lo aprendido, vas a construir tu <strong>Plan de Vida y Trabajo personalizado</strong>.</p>
+
+      <h3>Paso 1: Tu declaración de propósito</h3>
+      <p>Completa: "Quiero ser recordado/a como una persona que _________ y que contribuyó a _________." Esta es tu brújula. Cuando dudes entre dos caminos, elige el que esté más alineado con esta declaración.</p>
+
+      <h3>Paso 2: Visión por dimensiones (5 años)</h3>
+      <p>Escribe en presente, como si ya lo hubieras logrado:</p>
+      <ul>
+        <li>"En mi trabajo, yo soy/hago..."</li>
+        <li>"En mi salud, yo..."</li>
+        <li>"En mis relaciones, yo..."</li>
+        <li>"En mis finanzas, yo..."</li>
+        <li>"En mi desarrollo personal, yo..."</li>
+        <li>"En mi trascendencia, yo..."</li>
+      </ul>
+
+      <h3>Paso 3: Metas SMART a 1 año</h3>
+      <p>Selecciona las 3 dimensiones más urgentes. Para cada una, define una meta SMART:</p>
+      <ul>
+        <li><strong>S</strong>pecífica: ¿Qué exactamente?</li>
+        <li><strong>M</strong>edible: ¿Cómo sé que lo logré?</li>
+        <li><strong>A</strong>lcanzable: ¿Es realista con mis recursos actuales?</li>
+        <li><strong>R</strong>elevante: ¿Contribuye a mi visión?</li>
+        <li><strong>T</strong>emporal: ¿Para cuándo?</li>
+      </ul>
+
+      <h3>Paso 4: Plan de acción semanal</h3>
+      <p>Las metas grandes se logran con acciones pequeñas y consistentes. Define 3 acciones semanales (una por meta prioritaria) que puedas hacer sin excusas.</p>
+
+      <h3>Paso 5: Sistema de revisión</h3>
+      <ul>
+        <li><strong>Semanal:</strong> ¿Hice mis 3 acciones? ¿Qué me frenó?</li>
+        <li><strong>Mensual:</strong> ¿Estoy avanzando hacia las metas anuales?</li>
+        <li><strong>Trimestral:</strong> ¿Necesito ajustar el plan?</li>
+        <li><strong>Anual:</strong> Balance completo y replaneación</li>
+      </ul>
+
+      <h3>Tu plan empieza hoy</h3>
+      <p>No mañana, no el lunes, no en enero. El mejor momento para empezar a vivir con propósito es ahora. Tu plan no tiene que ser perfecto — tiene que ser <strong>tuyo</strong> y tiene que estar <strong>en acción</strong>.</p>
+    `,
+    references: ["Casares, D. - Planeación de vida y carrera", "Doran, G.T. - SMART Goals", "Allen, D. - Getting Things Done"],
+    durationMinutes: 30
+  }
+],
+
+// ═══ 10. CAPACIDAD ANALÍTICA Y RESOLUCIÓN DE PROBLEMAS ═══
+"capacidad-analitica-resolucion-problemas": [
+  {
+    title: "Pensamiento Analítico y Crítico",
+    description: "Fundamentos del pensamiento analítico para resolver problemas laborales con método",
+    contentHtml: `
+      <h2>Pensar con método</h2>
+      <p>El pensamiento analítico es la capacidad de <strong>descomponer un problema complejo en partes manejables</strong>, examinar cada parte, y construir una solución fundamentada. Es la diferencia entre "reaccionar" ante un problema y "resolverlo".</p>
+
+      <h3>Pensamiento analítico vs. pensamiento intuitivo</h3>
+      <ul>
+        <li><strong>Intuitivo:</strong> Rápido, automático, basado en experiencia y emociones. Útil para decisiones rutinarias. Riesgo: sesgos y errores sistemáticos</li>
+        <li><strong>Analítico:</strong> Deliberado, estructurado, basado en datos y lógica. Necesario para problemas complejos. Requiere tiempo y disciplina</li>
+      </ul>
+      <p>La clave no es elegir uno u otro, sino saber cuándo usar cada uno.</p>
+
+      <h3>Habilidades del pensador analítico</h3>
+      <ol>
+        <li><strong>Observación:</strong> Ver lo que otros no ven — los detalles, los patrones, las anomalías</li>
+        <li><strong>Descomposición:</strong> Dividir un problema grande en problemas pequeños y manejables</li>
+        <li><strong>Razonamiento lógico:</strong> Conectar causas con efectos de manera fundamentada</li>
+        <li><strong>Evaluación de evidencia:</strong> Distinguir hechos de opiniones, datos de suposiciones</li>
+        <li><strong>Síntesis:</strong> Integrar las partes analizadas en una visión coherente</li>
+      </ol>
+
+      <h3>Pensamiento crítico: el complemento</h3>
+      <p>El pensamiento crítico agrega la capacidad de <strong>cuestionar</strong>: ¿Es cierto? ¿Cómo lo sabemos? ¿Hay otra explicación? ¿Quién se beneficia de que aceptemos esta versión? Es pensar sobre cómo pensamos.</p>
+
+      <h3>Ejercicio</h3>
+      <p>Piensa en un problema actual en tu trabajo. Antes de buscar soluciones, dedica 10 minutos solo a analizarlo: ¿Cuáles son los hechos? ¿Qué supuestos estoy haciendo? ¿Qué información me falta? ¿Cuál es la verdadera causa?</p>
+    `,
+    references: ["Paul, R. & Elder, L. - Critical Thinking", "Kahneman, D. - Pensar rápido, pensar despacio", "Goldratt, E. - La Meta"],
+    durationMinutes: 30
+  },
+  {
+    title: "Metodologías de Resolución de Problemas",
+    description: "Herramientas prácticas: Ishikawa, 5 Porqués, 8D y análisis de causa raíz",
+    contentHtml: `
+      <h2>Herramientas que funcionan</h2>
+      <p>No necesitas reinventar la rueda. Existen metodologías probadas que te guían paso a paso para resolver problemas de manera efectiva.</p>
+
+      <h3>1. Los 5 Porqués</h3>
+      <p>La herramienta más simple y poderosa. Pregunta "¿por qué?" 5 veces hasta llegar a la causa raíz.</p>
+      <p><strong>Ejemplo:</strong> El cliente recibió el pedido equivocado → ¿Por qué? Se empacó mal → ¿Por qué? La etiqueta era incorrecta → ¿Por qué? El sistema imprimió la etiqueta del pedido anterior → ¿Por qué? No se actualiza automáticamente entre pedidos → ¿Por qué? No se programó la función de auto-reset. <strong>Solución: programar auto-reset entre pedidos.</strong></p>
+
+      <h3>2. Diagrama de Ishikawa (Espina de Pescado)</h3>
+      <p>Organiza las posibles causas de un problema en 6 categorías (6M):</p>
+      <ul>
+        <li><strong>Mano de obra:</strong> ¿El personal está capacitado? ¿Hay suficiente?</li>
+        <li><strong>Método:</strong> ¿El proceso está bien diseñado? ¿Se sigue?</li>
+        <li><strong>Maquinaria:</strong> ¿El equipo funciona correctamente? ¿Tiene mantenimiento?</li>
+        <li><strong>Material:</strong> ¿La materia prima cumple especificaciones?</li>
+        <li><strong>Medición:</strong> ¿Se mide correctamente? ¿Los instrumentos están calibrados?</li>
+        <li><strong>Medio ambiente:</strong> ¿Las condiciones del entorno afectan? (temperatura, iluminación, ruido)</li>
+      </ul>
+
+      <h3>3. Metodología 8D (8 Disciplinas)</h3>
+      <ol>
+        <li>Formar equipo</li>
+        <li>Describir el problema</li>
+        <li>Implementar contención (acción inmediata temporal)</li>
+        <li>Identificar causa raíz</li>
+        <li>Verificar acciones correctivas</li>
+        <li>Implementar acciones correctivas permanentes</li>
+        <li>Prevenir recurrencia</li>
+        <li>Reconocer al equipo</li>
+      </ol>
+
+      <h3>¿Cuál usar?</h3>
+      <ul>
+        <li><strong>5 Porqués:</strong> Problemas simples con una causa principal</li>
+        <li><strong>Ishikawa:</strong> Problemas con múltiples posibles causas</li>
+        <li><strong>8D:</strong> Problemas complejos que requieren equipo y seguimiento formal</li>
+      </ul>
+    `,
+    references: ["Ishikawa, K. - ¿Qué es el control total de calidad?", "Ohno, T. - Sistema de producción Toyota", "AIAG - 8D Problem Solving"],
+    durationMinutes: 30
+  },
+  {
+    title: "Toma de Decisiones Basada en Datos",
+    description: "Cómo usar información y datos para tomar decisiones más efectivas",
+    contentHtml: `
+      <h2>Datos, no corazonadas</h2>
+      <p>En muchas organizaciones, las decisiones se toman por costumbre, por presión del más fuerte, o por "gut feeling". La toma de decisiones basada en datos propone algo diferente: <strong>recopilar información relevante, analizarla y usarla como base para decidir</strong>.</p>
+
+      <h3>El ciclo datos → información → decisión</h3>
+      <ol>
+        <li><strong>Datos:</strong> Números crudos, registros, observaciones (ej: "produjimos 500 piezas hoy")</li>
+        <li><strong>Información:</strong> Datos con contexto y significado (ej: "produjimos 500 piezas, 15% menos que el promedio")</li>
+        <li><strong>Conocimiento:</strong> Información interpretada con experiencia (ej: "la baja se debe al cambio de turno sin capacitación")</li>
+        <li><strong>Decisión:</strong> Acción basada en conocimiento (ej: "capacitar al turno nuevo antes del cambio")</li>
+      </ol>
+
+      <h3>Herramientas simples de análisis</h3>
+      <ul>
+        <li><strong>Diagrama de Pareto (80/20):</strong> El 80% de los problemas viene del 20% de las causas. Identifica ese 20% y enfócate ahí</li>
+        <li><strong>Gráficos de tendencia:</strong> ¿El problema está mejorando, empeorando o estable? Un simple gráfico de línea te lo dice</li>
+        <li><strong>Comparaciones:</strong> Antes vs. después, este mes vs. el anterior, mi área vs. el estándar</li>
+      </ul>
+
+      <h3>Errores comunes al usar datos</h3>
+      <ul>
+        <li><strong>Cherry-picking:</strong> Seleccionar solo los datos que apoyan tu conclusión preconcebida</li>
+        <li><strong>Correlación ≠ Causalidad:</strong> Que dos cosas sucedan juntas no significa que una cause la otra</li>
+        <li><strong>Muestras pequeñas:</strong> Sacar conclusiones de muy pocos datos</li>
+        <li><strong>Ignorar el contexto:</strong> Los números sin contexto mienten</li>
+      </ul>
+
+      <h3>Ejercicio</h3>
+      <p>Identifica un problema recurrente en tu trabajo. Recopila datos reales de las últimas 4 semanas. Haz un Pareto simple: ¿cuáles son las causas más frecuentes? ¿Dónde está el 20% que genera el 80% del problema?</p>
+    `,
+    references: ["Deming, W.E. - Out of the Crisis", "Pareto, V. - Principio de Pareto", "Davenport, T. - Competing on Analytics"],
+    durationMinutes: 30
+  },
+  {
+    title: "Casos Prácticos: Resolución de Problemas en el Ámbito Laboral",
+    description: "Aplicación integrada de herramientas analíticas a problemas reales del trabajo",
+    contentHtml: `
+      <h2>Manos a la obra</h2>
+
+      <h3>Caso 1: El desperdicio en producción</h3>
+      <p><strong>Situación:</strong> Una cooperativa de manufactura tiene un 12% de desperdicio en su línea principal. El promedio de la industria es 5%. El costo mensual del desperdicio es de $85,000 MXN.</p>
+      <p><strong>Aplica:</strong></p>
+      <ol>
+        <li>Ishikawa: Analiza las 6M para identificar todas las posibles causas</li>
+        <li>Pareto: Con datos de las últimas 4 semanas, identifica las 3 causas principales</li>
+        <li>5 Porqués: Para cada causa principal, llega a la raíz</li>
+        <li>Plan de acción: Define acciones correctivas con responsable y fecha</li>
+      </ol>
+
+      <h3>Caso 2: La queja de clientes</h3>
+      <p><strong>Situación:</strong> Las quejas de clientes han aumentado un 40% en el último trimestre. La principal queja es "tiempo de respuesta lento".</p>
+      <p><strong>Aplica:</strong> 5 Porqués → ¿Por qué es lento? → ¿Por qué hay retraso en esa etapa? → ¿Cuál es la causa raíz? Diseña una solución que ataque la raíz, no el síntoma.</p>
+
+      <h3>Caso 3: La rotación de personal</h3>
+      <p><strong>Situación:</strong> 8 de 30 operarios han renunciado en 6 meses. El costo de reemplazo y capacitación es de $15,000 MXN por persona.</p>
+      <p><strong>Aplica:</strong> Recopila datos (entrevistas de salida, encuestas de clima). Ishikawa con las 6M adaptadas a RH. Identifica patrones. ¿Es liderazgo? ¿Salario? ¿Condiciones? ¿Oportunidades? Diseña intervención basada en datos.</p>
+
+      <h3>Framework de resolución rápida (para problemas del día a día)</h3>
+      <ol>
+        <li><strong>PARA:</strong> No reacciones impulsivamente. Tómate 2 minutos para pensar</li>
+        <li><strong>DEFINE:</strong> ¿Cuál es el problema real? (no el síntoma)</li>
+        <li><strong>ANALIZA:</strong> ¿Qué sé? ¿Qué me falta? ¿Cuál es la causa?</li>
+        <li><strong>OPCIONES:</strong> Genera al menos 2 alternativas</li>
+        <li><strong>DECIDE:</strong> Elige la mejor con los datos disponibles</li>
+        <li><strong>ACTÚA:</strong> Implementa y mide el resultado</li>
+      </ol>
+    `,
+    references: ["Goldratt, E. - La Meta", "Toyota - Método de resolución de problemas", "Deming, W.E. - Ciclo PDCA"],
+    durationMinutes: 30
+  }
+]
+
+};

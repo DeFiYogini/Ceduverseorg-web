@@ -1,0 +1,281 @@
+# CEDUVERSE — Resumen Técnico y General para Replit
+
+## ¿Qué es Ceduverse?
+
+Ceduverse es una plataforma EdTech (educación + tecnología) que combina inteligencia artificial, certificados blockchain (Web3), y contenido experto para transformar la educación profesional en Latinoamérica. Es el brazo de aprendizaje del ecosistema Ceducap.
+
+**Tagline:** "El universo del aprendizaje inteligente"
+**Dominio app:** ceducap.mx
+**Dominio academy (WordPress):** ceducap.academy
+**Marca visual:** Navy #0D1B4B + Cyan #00C5D4 (brand manual), app usa Blue #1b5adf + Orange #f28023
+
+---
+
+## Visión del Producto
+
+Ceduverse es una plataforma donde:
+1. **Estudiantes** se registran, exploran cursos, aprenden con tutor IA, y obtienen certificados verificables en blockchain
+2. **Empresas** inscriben equipos, dan seguimiento a progreso grupal, y reciben reportes ejecutivos
+3. **Instructores** publican cursos en WordPress y la plataforma los expone automáticamente
+4. Los **certificados** se emiten como tokens en Ethereum (Web3) — inmutables y verificables
+5. La **gamificación** (logros, rachas, rankings) incentiva la retención
+
+---
+
+## Arquitectura Técnica
+
+```
+┌──────────────────────┐        MCP (JSON-RPC)        ┌─────────────────────┐
+│   ceducap.mx         │◄──────────────────────────►   │  ceducap.academy    │
+│   (Next.js 16 App)   │        via JWT auth           │  (WordPress LMS)    │
+│                      │                                │                     │
+│   Frontend + API     │                                │  Cursos, Lecciones  │
+│   Auth (Supabase)    │                                │  Quizzes, Productos │
+│   Wallet (Ethers.js) │                                │  MCP Endpoint PHP   │
+│   Tailwind CSS 4     │                                └─────────────────────┘
+│   React 19           │
+│   TypeScript          │
+└──────────┬───────────┘
+           │
+           ▼
+┌──────────────────────┐
+│   Supabase           │
+│   Auth + Database    │
+│   User profiles      │
+│   Enrollments (TBD)  │
+│   Progress (TBD)     │
+└──────────────────────┘
+```
+
+### Stack Principal
+- **Framework:** Next.js 16.1.1 (App Router, Server Components, Server Actions)
+- **UI:** React 19.2.3 + Tailwind CSS 4 + Lucide icons + Motion (Framer Motion)
+- **Auth:** Supabase SSR (@supabase/ssr)
+- **Blockchain:** Ethers.js 6 (crear/conectar wallet Ethereum)
+- **Validation:** Zod 4
+- **Backend de cursos:** WordPress con endpoint MCP custom (JSON-RPC 2.0 sobre HTTP con JWT)
+- **Hosting:** TBD (Replit / Vercel / similar)
+
+### Variables de Entorno Requeridas
+```env
+NEXT_PUBLIC_SUPABASE_URL=<tu_supabase_url>
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<tu_anon_key>
+ACADEMY_SITE_URL=https://ceducap.academy
+ACADEMY_SECRET=<jwt_token_para_mcp>
+```
+
+---
+
+## Estructura del Codebase
+
+```
+src/
+├── app/                          # App Router (páginas)
+│   ├── page.tsx                  # Landing page (básica, placeholder)
+│   ├── auth/
+│   │   ├── login/page.tsx        # Login con Supabase (magic link)
+│   │   ├── confirm/route.ts      # Confirmar email
+│   │   └── signout/route.ts      # Cerrar sesión
+│   ├── welcome/page.tsx          # Onboarding (perfil → wallet → marketing → finish)
+│   ├── courses/
+│   │   ├── page.tsx              # Catálogo de cursos ✅ (data real via MCP)
+│   │   └── [slug]/page.tsx       # Detalle de curso 🟡 (usa mock data)
+│   ├── user/
+│   │   ├── dashboard/page.tsx    # Dashboard del estudiante (mock data)
+│   │   ├── courses/page.tsx      # Mis cursos
+│   │   ├── achievements/         # Logros/gamificación
+│   │   └── settings/page.tsx     # Configuración
+│   ├── manager/
+│   │   ├── teams/page.tsx        # Gestión de equipos (empresas)
+│   │   └── users/[userId]/       # Detalle de usuario
+│   └── api/academy/              # API Routes que llaman al MCP
+│       ├── courses/route.ts      # GET /api/academy/courses
+│       ├── courses/[id]/         # GET curso individual + curriculum
+│       ├── units/[id]/route.ts   # GET unidad/lección
+│       ├── quizzes/[id]/route.ts # GET quiz
+│       ├── products/route.ts     # GET productos (WooCommerce)
+│       └── stats/route.ts        # GET estadísticas del LMS
+├── components/
+│   ├── ui/                       # Design system (Button, Box, ThemedText, Form, etc.)
+│   ├── auth/                     # Auth UI
+│   ├── courses/                  # CourseCard, CoursesGrid, FilterChips
+│   ├── ethereum/                 # CreateWalletButton, ConnectWalletButton
+│   ├── welcome/                  # Onboarding steps
+│   ├── user/                     # UserButton
+│   ├── manager/                  # Organization management
+│   ├── layout/                   # Topbar, Sidebar, PageHeader
+│   └── loading/                  # LoadingOverlay
+├── lib/
+│   ├── academy/academy.ts        # ⭐ MCP Client (JSON-RPC → WordPress)
+│   ├── supabase/                 # Supabase client (server, client, proxy)
+│   ├── actions/                  # Server Actions (auth, welcome)
+│   ├── database/                 # DB queries (achievements, user)
+│   └── constants/                # Routes, nav links
+├── mock/cursos.ts                # Mock course data (6 courses + detailed course + curriculum)
+├── providers/                    # React Context (modals, notifications)
+├── styles/globals.css            # Tailwind + CSS custom properties
+└── proxy.ts                      # Middleware (session refresh — currently disabled)
+```
+
+---
+
+## Design System
+
+### Colores
+```css
+--primary: #1b5adf;        /* Azul principal */
+--primary-hover: #124dcd;
+--primary-dark: #093caa;
+--primary-light: #4f9fff;
+--secondary: rgb(242, 128, 35);  /* Naranja */
+--error: rgb(236, 45, 80);
+/* Base: Slate palette (Tailwind) — bg-slate-100, text-slate-700 */
+```
+
+### Componentes UI Clave
+- `<Button>` — variantes: solid-color, outline, ghost; sizes: sm, md, lg
+- `<Box>` — contenedor con bordes redondeados y sombra
+- `<ThemedText>` — tipografía consistente (title, heading, subheading, body, caption)
+- `<TextField>` — inputs estilizados
+- `<Grid>` — layout grid responsive
+- `<DataTable>` — tabla de datos
+- `<Pagination>` — paginación
+
+### Estilo General
+- Bordes redondeados grandes: `rounded-2xl` a `rounded-[2.5rem]`
+- Fondo claro: `bg-slate-100` / `bg-slate-50`
+- Cards blancas con bordes sutiles y sombras suaves
+- Tipografía limpia y moderna (system fonts via Tailwind)
+
+---
+
+## API de Cursos (MCP Client)
+
+El `AcademyClient` se comunica con WordPress via JSON-RPC:
+
+```typescript
+// Métodos disponibles:
+academyClient.getCourses(page, perPage)     // Lista cursos publicados
+academyClient.getCourseDetails(courseId)     // Detalle de un curso
+academyClient.getCourseCurriculum(courseId)  // Curriculum (secciones + unidades)
+academyClient.getUnitDetails(unitId)        // Contenido de una lección
+academyClient.getQuizDetails(quizId)        // Preguntas de un quiz
+academyClient.getProducts(page, perPage)    // Productos WooCommerce
+academyClient.searchCourses(query, page)    // Buscar cursos
+academyClient.getStats()                    // Estadísticas del LMS
+```
+
+### Tipos principales:
+```typescript
+interface AcademyPost {
+    ID: number;
+    post_title: string;
+    post_status: string;
+    post_date: string;
+    post_author: string;
+    post_excerpt: string;
+    guid: string;
+}
+
+interface AcademyCurriculumItem {
+    type: 'section' | 'unit' | 'quiz';
+    title: string;
+    ID?: number;
+    unit_type?: string;
+    duration?: string;
+    index: number;
+}
+```
+
+---
+
+## Estado Actual del Desarrollo (~35-40% completado)
+
+### ✅ Funcionando
+- Autenticación completa (login, registro, magic link, signout)
+- Onboarding de 5 pasos (perfil → wallet → marketing → finish)
+- Catálogo de cursos con data real de WordPress via MCP
+- API routes para cursos, unidades, quizzes, productos, stats
+- Crear/conectar wallet Ethereum
+- Componentes UI base completos
+- Gestión de equipos (manager view)
+- Sistema de logros (estructura)
+
+### 🟡 Parcial / Mock Data
+- Página de detalle de curso (UI completa, pero usa mock data en vez de MCP)
+- Dashboard del estudiante (UI existe, data mock)
+- Mis cursos (estructura, sin enrollments reales)
+- Middleware de sesión (código existe, está comentado)
+- Thumbnails y precios en cards de curso (código comentado)
+
+### 🔴 Pendiente
+- **Course Player** — la página donde el estudiante consume el contenido (video/texto)
+- **Sistema de enrollment** — tabla de inscripciones en Supabase
+- **Progress tracking** — seguimiento de avance por lección
+- **Reviews/ratings** — sistema de evaluaciones de cursos
+- **Búsqueda funcional** — el input existe pero no filtra
+- **Pagos** — integración con pasarela (WooCommerce products existen en API)
+- **Certificados blockchain** — emisión real de NFT/token como diploma
+- **Notificaciones** — provider existe pero sin implementación
+- **Landing page pública** — la actual es placeholder (el HTML que recibirás es el diseño nuevo)
+
+---
+
+## Sobre el Landing Page HTML (V2 Editorial)
+
+El archivo HTML que recibirás es un **landing page estático** diseñado como la cara pública de Ceduverse. Es un single-file HTML con CSS y JavaScript embebido (sin dependencias externas excepto Google Fonts).
+
+### Características del diseño:
+- **Estilo:** Light mode editorial, fondo cream #faf8f4, serif headlines (DM Serif Display), body sans-serif (Plus Jakarta Sans)
+- **Secciones:** Hero con UI preview cards, features (6), stats bar, cursos (3 cards), proceso (4 pasos), testimonios (3), CTA, footer
+- **Animaciones:** Scroll-triggered (Intersection Observer), marquee strip, hover effects
+- **Responsive:** Mobile-first con breakpoints
+- **Contenido:** En español, orientado al mercado LATAM
+
+### Qué hacer con él en Replit:
+1. Puede servir como la **landing page pública** (`/` route o dominio separado)
+2. Eventualmente sus CTAs ("Comenzar Gratis", "Ver Curso") deben linkear a la app Next.js
+3. Puede convertirse a React/Next.js o mantenerse como HTML estático servido por Replit
+4. Los cursos mostrados en el HTML deben eventualmente jalarse dinámicamente de la API
+
+---
+
+## Cursos: Contenido Disponible
+
+### Primer curso desarrollado:
+**"Gestión de Proyectos en la Revolución de la IA"**
+- 6 módulos, 30 lecciones, 20 horas
+- Quizzes con respuestas por módulo
+- Proyecto final integrador
+- Contenido completo para módulos 1-2, outlines para 3-6
+- Listo para importar a WordPress LMS
+
+### Mock courses en el codebase (6 cursos):
+1. Diplomado en Marketing Digital ($2,499 MXN)
+2. Fundamentos de Programación Web (Gratis)
+3. Liderazgo y Gestión de Equipos ($1,799 MXN)
+4. Finanzas Personales Inteligentes (draft)
+5. Diseño UX/UI (draft)
+6. Data Science con Python (draft)
+
+---
+
+## Próximos Pasos Prioritarios
+
+1. **Deploar el landing HTML** como página pública
+2. **Descomentar thumbnails/pricing** en CourseCard component
+3. **Conectar curso detail page** a data real (MCP) en vez de mock
+4. **Crear tablas en Supabase**: enrollments, lesson_progress, course_reviews
+5. **Construir el Course Player** (`/courses/[slug]/learn/[unitId]`)
+6. **Habilitar middleware** de session refresh
+7. **Importar primer curso** a WordPress LMS
+
+---
+
+## Contacto / Contexto
+
+- **Repo:** raulrico-dev/ceducap-next-app (rama main)
+- **Brand manual:** Ceduverse (10 capítulos, navy #0D1B4B + cyan #00C5D4)
+- **Ecosistema:** Parte de un portafolio multi-venture que incluye Web3Travel.ai y MeCorrieron.mx
+- **Blockchain:** KAKAW Protocol / Token — certificados verificables, sistema de recompensas
+- **Target:** Profesionales en LATAM buscando upskilling en IA, blockchain, marketing digital, liderazgo

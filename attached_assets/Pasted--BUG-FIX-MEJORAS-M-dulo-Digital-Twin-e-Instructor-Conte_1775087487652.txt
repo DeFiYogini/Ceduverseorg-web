@@ -1,0 +1,262 @@
+# BUG FIX + MEJORAS: Módulo Digital Twin e Instructor
+
+## Contexto
+El módulo de acreditación de instructor y Digital Twin está implementado pero tiene 4 issues que necesitan corregirse. La URL es ceduverse.org/instructor/acreditacion.
+
+---
+
+## BUG 1: Número de instructor duplicado — Usar folio de socio existente
+
+### Problema:
+Al acreditarse como instructor, el sistema genera un NUEVO número de instructor (ej: `INS-INT-MNGN7GX1`), creando un folio adicional innecesario. El usuario ya tiene un número de socio cooperativo asignado al registrarse.
+
+### Solución:
+- **NO generar un nuevo número de instructor.** Usar el número/folio de socio cooperativo que el usuario ya tiene.
+- En la pantalla de "¡Felicidades, eres Instructor!" mostrar: `"Tu número de socio es [FOLIO_EXISTENTE]. Ahora tienes el rol de Instructor."`
+- Agregar un **logro/badge de "Instructor Interno"** (similar al Certificado de Asociación Cooperativa) que se muestre en el perfil del usuario, en formato de diploma Ceduverse.
+- Este logro debe ser un componente visual tipo diploma/certificado con:
+  - Logo Ceduverse
+  - Nombre del instructor
+  - Texto: "Instructor Interno Ceduverse" 
+  - Número de socio
+  - Fecha de acreditación
+  - Opción futura: si tiene DC-5, mostrar "Instructor Acreditado STPS (DC-5)" en vez de solo "Instructor Interno"
+- Guardar en la BD un campo `instructor_badge_type`: `'interno'` (sin DC-5) o `'acreditado_dc5'` (con DC-5)
+- El badge aparece en:
+  - Perfil del instructor
+  - Listado de instructores que ven los alumnos
+  - Certificados que emite el instructor
+
+### Archivos a modificar:
+- Lógica de acreditación (donde genera el número INS-INT-xxx) → eliminar generación de folio nuevo
+- Tabla `users` o equivalente → usar campo de folio de socio existente
+- Componente de pantalla "Felicidades" → mostrar folio de socio, no número nuevo
+- Crear componente de diploma/badge de instructor
+
+---
+
+## BUG 2: Cámara — Pantalla negra y cámara que no se detiene
+
+### Problema:
+1. Al iniciar la grabación del video, la pantalla del preview se ve **negra** (aunque la cámara sí está capturando correctamente)
+2. Al terminar de grabar, la **cámara sigue activa** (el LED de la cámara queda encendido)
+
+### Solución para pantalla negra:
+En el componente `DigitalTwinRecorder.tsx`, verificar que:
+- El `<video>` element tenga los atributos `autoPlay`, `playsInline`, y `muted` (los 3 son necesarios para que Chrome muestre el preview)
+- El `srcObject` se asigne DESPUÉS de que el stream esté activo
+- Agregar un pequeño delay o usar el evento `onloadedmetadata` para asegurar que el video se renderice
+
+```tsx
+const startCamera = async () => {
+  const stream = await navigator.mediaDevices.getUserMedia({
+    video: { width: 1280, height: 720, facingMode: 'user' },
+    audio: true,
+  });
+  streamRef.current = stream;
+  if (videoRef.current) {
+    videoRef.current.srcObject = stream;
+    // Asegurar que el video se reproduzca
+    videoRef.current.onloadedmetadata = () => {
+      videoRef.current?.play().catch(() => {});
+    };
+  }
+};
+```
+
+Verificar que el `<video>` tenga:
+```tsx
+<video
+  ref={videoRef}
+  autoPlay
+  playsInline
+  muted        // CRÍTICO: sin muted, Chrome bloquea autoplay
+  style={{ transform: 'scaleX(-1)' }}  // Efecto espejo para que sea natural
+/>
+```
+
+### Solución para cámara que no se detiene:
+Asegurar que `stopCamera()` se llame en TODOS los puntos de salida:
+- Al pasar de `consent-review` a `training-record` (detener y reiniciar)
+- Al pasar de `training-review` a `processing`
+- Al hacer clic en "Omitir"
+- Al navegar fuera de la página (cleanup en useEffect return)
+- Al cerrar el modal
+- Después de terminar cualquier grabación
+
+```tsx
+const stopCamera = useCallback(() => {
+  if (streamRef.current) {
+    streamRef.current.getTracks().forEach(track => {
+      track.stop();
+      track.enabled = false;
+    });
+    streamRef.current = null;
+  }
+  if (videoRef.current) {
+    videoRef.current.srcObject = null;
+  }
+}, []);
+
+// Cleanup al desmontar el componente
+useEffect(() => {
+  return () => {
+    stopCamera();
+    if (timerRef.current) clearInterval(timerRef.current);
+    if (mediaRecorderRef.current?.state === 'recording') {
+      mediaRecorderRef.current.stop();
+    }
+  };
+}, []);
+```
+
+También agregar `stopCamera()` explícitamente antes de `startTwinCreation()` y en el paso de `processing`.
+
+---
+
+## BUG 3: Error al subir videos / crear Digital Twin
+
+### Problema:
+Después de grabar y subir los dos videos, la pantalla muestra "Error al crear Digital Twin" sin detalle del error.
+
+### Diagnóstico probable:
+Los endpoints de HeyGen Digital Twin API pueden tener nombres de campos diferentes a los que implementamos. Necesitamos:
+
+1. **Agregar logging detallado** en el backend para ver la respuesta exacta de HeyGen:
+
+```typescript
+// En server/services/heygen.ts, método createDigitalTwin:
+async createDigitalTwin(trainingVideoUrl, consentVideoUrl, avatarName) {
+  console.log('[HeyGen] Creating Digital Twin with:', {
+    training_footage_url: trainingVideoUrl,
+    video_consent_url: consentVideoUrl,
+    avatar_name: avatarName,
+  });
+
+  const res = await fetch(`${HEYGEN_BASE_URL}/v2/avatars`, {
+    method: 'POST',
+    headers: this.headers,
+    body: JSON.stringify({
+      training_footage_url: trainingVideoUrl,
+      video_consent_url: consentVideoUrl,
+      avatar_name: avatarName,
+    }),
+  });
+
+  const data = await res.json();
+  console.log('[HeyGen] Digital Twin API response:', JSON.stringify(data, null, 2));
+
+  if (data.error || !data.data) {
+    throw new Error(`HeyGen API error: ${JSON.stringify(data.error || data)}`);
+  }
+
+  return { avatar_id: data.data.avatar_id, request_id: data.data.request_id };
+}
+```
+
+2. **Mostrar el error específico al usuario** en el frontend (no solo "Error al crear Digital Twin"):
+
+```tsx
+// En el paso 'error' del componente:
+<p className="text-red-500 text-sm">{error}</p>
+// Donde error contiene el mensaje detallado del backend
+```
+
+3. **Verificar los endpoints correctos** consultando https://docs.heygen.com/docs/video-avatars-api — los campos pueden ser diferentes. Posibles variaciones:
+   - El endpoint puede ser `/v1/avatar.create` en vez de `/v2/avatars`
+   - Los campos pueden llamarse `video_url` y `consent_url` en vez de `training_footage_url` y `video_consent_url`
+   - Puede requerir un campo `type: "digital_twin"` adicional
+
+4. **Verificar que las URLs de R2 sean accesibles públicamente.** Hacer un test manual:
+   - Copiar la URL del video subido a R2
+   - Abrirla en una ventana incógnito
+   - Si da error 403, el Public Access de R2 no está configurado correctamente
+
+5. **Agregar endpoint de debug** (temporal, solo para superadmin):
+
+```typescript
+// GET /api/heygen/debug/test-r2-urls
+router.get('/debug/test-r2-urls', requireAuth, requireSuperadmin, async (req, res) => {
+  const [avatar] = await db.select().from(instructorAvatars)
+    .where(eq(instructorAvatars.instructor_id, req.user.id));
+
+  const results = {
+    consent_url: avatar?.consent_video_r2_url,
+    training_url: avatar?.training_video_r2_url,
+    consent_accessible: false,
+    training_accessible: false,
+  };
+
+  // Test si las URLs son accesibles
+  if (results.consent_url) {
+    try {
+      const res = await fetch(results.consent_url, { method: 'HEAD' });
+      results.consent_accessible = res.ok;
+    } catch (e) { results.consent_accessible = false; }
+  }
+
+  if (results.training_url) {
+    try {
+      const res = await fetch(results.training_url, { method: 'HEAD' });
+      results.training_accessible = res.ok;
+    } catch (e) { results.training_accessible = false; }
+  }
+
+  res.json(results);
+});
+```
+
+---
+
+## BUG 4: Instructor pierde acceso a herramientas de estudiante
+
+### Problema:
+Cuando un perfil se convierte en instructor, pierde acceso a la vista de estudiante. No puede ver videos, tomar cursos, ni acceder a las herramientas de alumno.
+
+### Solución:
+El rol de instructor debe ser ADITIVO, no reemplazar al rol de estudiante. Un instructor es un estudiante CON privilegios adicionales.
+
+1. **Cambiar la lógica de roles:**
+   - No cambiar el rol de `student` a `instructor`
+   - En su lugar, AGREGAR el rol de instructor manteniendo el de estudiante
+   - Opciones de implementación:
+     - **Opción A (recomendada):** Campo `is_instructor BOOLEAN DEFAULT false` en tabla `users`. El rol principal sigue siendo el mismo, pero `is_instructor = true` desbloquea el dashboard de instructor.
+     - **Opción B:** Campo `roles TEXT[] DEFAULT '{student}'` que puede contener múltiples roles: `'{student,instructor}'`
+
+2. **Navegación dual:**
+   - En el sidebar/navbar, mostrar AMBAS opciones:
+     - "Mi Aprendizaje" → Vista de estudiante (cursos, videos, certificados)
+     - "Panel de Instructor" → Dashboard de instructor (crear cursos, Digital Twin, etc.)
+   - Toggle o tabs para cambiar entre vistas
+   - El instructor debe poder inscribirse en cursos de otros instructores como alumno normal
+
+3. **Curso obligatorio de onboarding para nuevos instructores:**
+   - Al acreditarse como instructor, se le inscribe automáticamente en un curso especial: **"Cómo crear tu personaje clon digital en Ceduverse"**
+   - Este curso del catálogo interno (no STPS) explica:
+     - Qué es un Digital Twin y cómo funciona
+     - Tips para grabar un buen video (iluminación, fondo, postura)
+     - Cómo funciona la generación de videos por módulo
+     - Cómo usar el Tutor IA en Vivo
+     - Cómo configurar sesiones privadas
+   - El curso puede ser uno de los 49 cursos de Tutor IA o un curso especial de la categoría "Academy"
+   - Al completarlo, se desbloquea el acceso completo al dashboard de instructor
+
+### Archivos a modificar:
+- Middleware de autenticación/autorización → verificar `is_instructor` en vez de comparar `role === 'instructor'`
+- Componente de navegación (sidebar/navbar) → mostrar opciones de ambos roles
+- Lógica de acreditación → no cambiar rol, solo setear `is_instructor = true`
+- Crear o asignar curso de onboarding de instructor
+- Rutas protegidas → `requireInstructor` verifica `is_instructor` no `role`
+
+---
+
+## Resumen de Cambios
+
+| Bug | Prioridad | Archivos principales |
+|-----|-----------|---------------------|
+| 1. Folio duplicado | Alta | Lógica acreditación, pantalla felicidades, schema users |
+| 2. Cámara negra/activa | Alta | DigitalTwinRecorder.tsx (video element attrs + stopCamera) |
+| 3. Error al crear twin | Alta | heygen.ts (logging), routes/heygen.ts (error detail), verificar endpoints API |
+| 4. Instructor sin acceso estudiante | Alta | Middleware auth, navbar, schema users (is_instructor), rutas |
+
+Los 4 son prioridad alta porque afectan la experiencia core del instructor.

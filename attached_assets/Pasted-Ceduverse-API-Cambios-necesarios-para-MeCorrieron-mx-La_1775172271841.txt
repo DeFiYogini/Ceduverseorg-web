@@ -1,0 +1,73 @@
+Ceduverse API — Cambios necesarios para MeCorrieron.mx
+
+La conexión entre MeCorrieron y Ceduverse ya está funcionando. La API responde correctamente en /health, /empresas/viewport, /empresas/search. Sin embargo, hay dos temas importantes:
+
+1. Incluir TODAS las empresas del DENUE (6.1M, no solo 781K)
+
+Actualmente /health reporta 781,778 empresas. El DENUE del INEGI tiene aproximadamente 6.1 millones de establecimientos. Las ~5.3M restantes probablemente se excluyeron por no tener coordenadas GPS.
+
+No se debe excluir ninguna empresa. Todas deben estar disponibles en la API:
+
+    Las empresas sin coordenadas deben aparecer en /empresas/search y /empresas/:id normalmente. Solo el viewport necesita lat/lng para posicionar en mapa.
+
+    Para las que no tienen coordenadas, asignar centroide del código postal como ubicación aproximada:
+
+UPDATE companies c
+SET latitude = cp.lat, longitude = cp.lng
+FROM codigos_postales cp
+WHERE c.postal_code = cp.codigo_postal
+AND c.latitude IS NULL;
+
+El catálogo de códigos postales de INEGI/Correos de México incluye coordenadas centroides.
+
+    Las que ni siquiera tienen código postal, asignar centroide del municipio + estado como fallback. Es mejor una ubicación aproximada que no aparecer en absoluto.
+
+    El endpoint /health debe reportar el total real de empresas (las 6.1M), no solo las geocodificadas.
+
+Verificar con estas queries:
+
+-- Total actual
+SELECT COUNT(*) FROM companies;
+-- Cuántas tienen dirección pero no coordenadas
+SELECT COUNT(*) FROM companies 
+WHERE (latitude IS NULL OR longitude IS NULL)
+AND (street IS NOT NULL OR postal_code IS NOT NULL);
+-- Distribución por estado
+SELECT state, COUNT(*) FROM companies GROUP BY state ORDER BY COUNT(*) DESC;
+
+2. Agregar el campo rfc a la respuesta de la API
+
+Actualmente la respuesta de las empresas no incluye RFC. MeCorrieron lo necesita para cruzar contra la lista SAT 69-B (14,232 empresas factureras de operaciones simuladas) y mostrar alertas visuales en el mapa.
+
+El RFC ya debería estar en la base de datos del DENUE. Solo falta incluirlo en el JSON de respuesta de todos los endpoints (/empresas/viewport, /empresas/search, /empresas/:id, /empresas/nearby).
+
+Ejemplo de respuesta actual:
+
+{
+  "id": "ceduverse-xxx",
+  "name": "Empresa X",
+  "legal_name": "Empresa X SA DE CV",
+  "sector": "Comercio",
+  ...
+}
+
+Agregar:
+
+{
+  "id": "ceduverse-xxx",
+  "name": "Empresa X",
+  "legal_name": "Empresa X SA DE CV",
+  "rfc": "EXE030101ABC",
+  "sector": "Comercio",
+  ...
+}
+
+Resumen de cambios:
+
+    No filtrar/excluir ninguna empresa — devolver las 6.1M completas
+    Geocodificar por código postal las que no tienen coordenadas
+    Agregar campo rfc a la respuesta de la API
+
+Todo lo demás funciona correctamente. La conexión, autenticación, viewport, search y el formato de respuesta están bien.
+
+Ese es el prompt completo. Cópialo y pásalo directo.

@@ -1,0 +1,433 @@
+# Prompt para Replit Agent — Inteligencia Comercial para Socios Ceduverse
+
+Pegar esto completo en el Replit Agent:
+
+```
+CONTEXTO: Ceduverse (ceduverse.org) — plataforma EdTech de capacitación laboral STPS
+en México. Stack: React 19 + Express + Drizzle ORM + PostgreSQL + Vite + Tailwind.
+
+Ya existe en el proyecto:
+- Admin dashboard con autenticación (roles: admin, superadmin, socio)
+- Tabla denue_prospects con ~21K registros de empresas scored en Monterrey metro
+  (tiene: nom_estab, sector_group, commercial_zone, municipio, employee_midpoint,
+  lead_score, priority, risk_level, estimated_contribution_monthly, telefono, 
+  correoelec, www, latitud, longitud, recommended_plan)
+- Página /socios con calculadora de comisiones
+- Usuarios demo: demosocio@ceduverse.org / Demo1234! (rol socio)
+
+NOMENCLATURA CRÍTICA — En TODA la interfaz visible al usuario:
+- NUNCA mencionar "DENUE", "INEGI", "denue_prospects", ni la fuente de los datos
+- Referirse SIEMPRE como: "Base de inteligencia comercial Ceduverse", 
+  "Directorio empresarial Ceduverse", o "Empresas identificadas"
+- En código/API los nombres de tablas y campos se quedan como están (denue_prospects)
+  pero en labels, títulos, y textos de UI → "Empresas", "Prospectos", "Mercado"
+
+===================================================
+MODELO OPERATIVO REAL DE CEDUVERSE (usar estos datos)
+===================================================
+
+PRICING EN UMAs (Unidad de Medida y Actualización):
+- UMA 2026: $113.14 MXN (diaria)
+- Plan Impulsa: 6 UMAs/colaborador/mes = $679/col/mes (1-10 colaboradores)
+  Fee Ceduverse: 15% de la aportación total
+- Plan Transforma: 10 UMAs/colaborador/mes = $1,131/col/mes (11-99 colaboradores)
+  Fee Ceduverse: 8% de la aportación total
+- Plan Lidera: 20 UMAs/colaborador/mes = $2,263/col/mes (100-500 colaboradores)
+  Fee Ceduverse: 5% de la aportación total
+
+COMISIONES (salen SOLO del fee de Ceduverse, nunca de la aportación):
+- Distribución del fee: 60% operaciones + 25% consultor + 5% director override + 10% reserva
+- Escalamiento consultor: 25% del fee (1-3 empresas) → 30% (4-7) → 35% (8+)
+- Override director: 5% del fee de todas las empresas de sus consultores
+- Comisión de cierre: 50% del fee del primer mes
+- DC3: $60/certificado (consultor) + $15 override (director)
+- SEP: $200/certificado (consultor) + $50 override (director)
+
+ZONAS NACIONALES (7 zonas, 32 estados):
+- Sureste: Quintana Roo, Yucatán, Campeche (3 estados)
+- Sur: Veracruz, Tabasco, Chiapas, Oaxaca (4 estados)
+- Centro: CDMX, Edo. México, Puebla, Tlaxcala, Hidalgo, Morelos (6 estados)
+- Bajío: Querétaro, Guanajuato, Aguascalientes, Zacatecas, SLP (5 estados)
+- Norte: Tamaulipas, Nuevo León, Coahuila, Durango (4 estados)
+- Pacífico: Guerrero, Michoacán, Colima, Jalisco, Nayarit, Sinaloa (6 estados)
+- Noroeste: BC Norte, BC Sur, Sonora, Chihuahua (4 estados)
+
+OBJETIVOS DE CRECIMIENTO (3 fases):
+- Objetivo 1: 1 socio/estado × 1 empresa/estado × 30 min empleados → 960 socios total
+  Comisión socio: 10% de aportaciones | Fee Ceduverse: 3% + 7%
+- Objetivo 2: 2 socios/estado × 2 empresas/estado × 30 min empleados → 1,920 socios
+  Comisión socio: 10% de aportaciones | Fee Ceduverse: 4% + 6%
+- Objetivo 3: 3 socios/estado × 3 empresas/estado × 30 min empleados → 2,880 socios
+  Comisión socio: 10% de aportaciones | Fee Ceduverse: 5% + 5%
+
+PRODUCTOS:
+- 29 cursos STPS Aula Virtual (DC3: $499 MXN, 20% dto empresas)
+- 49 cursos Tutor IA (gratuitos)
+- 988 cursos Academy vía ceducap.academy
+- Certificado SEP vía INEC: $1,999 MXN
+- Diplomas NFT: gratuitos
+
+===================================================
+TAREA: Crear sección "Inteligencia Comercial" para Socios
+===================================================
+
+Cuando un usuario con rol "socio" inicia sesión, debe ver un dashboard 
+diferente al admin. Esta es su herramienta de trabajo diaria.
+
+--- PARTE 1: API ENDPOINTS PARA SOCIOS ---
+
+Crear middleware: requireSocioAuth (verifica rol 'socio' o 'admin')
+Todos estos endpoints requieren autenticación de socio.
+
+GET /api/socio/dashboard
+  Retorna resumen personalizado del socio:
+  - nombre del socio, zona asignada, tipo (consultor/director)
+  - empresas en su pipeline (count por etapa)
+  - comisiones del mes actual (estimadas)
+  - comisiones acumuladas
+  - prospectos asignados count
+  - meta mensual y % de avance
+
+GET /api/socio/mercado/stats
+  Estadísticas del mercado en la zona del socio (datos de denue_prospects):
+  - total empresas identificadas en su zona
+  - distribución por sector (top 10)
+  - distribución por tamaño (11-30, 31-50, 51-100, 101-250, 251+)
+  - distribución por riesgo STPS (alto, medio, bajo)
+  - valor potencial total de la zona (sum estimated_contribution_monthly × 12)
+  - promedio de empleados por empresa
+  - % con datos de contacto (teléfono, email, web)
+  Response: stats object con todos estos números
+
+GET /api/socio/mercado/empresas
+  Lista de empresas en la zona del socio (FILTRADA a su zona asignada)
+  Query params: page, limit, search, sector, size, risk, score_min, 
+    has_phone, has_email, sort_by, sort_dir
+  IMPORTANTE: El socio solo ve empresas de su zona asignada
+  NO mostrar: clee, codigo_act, latitud, longitud exacta
+  SÍ mostrar: nom_estab, sector_group, municipio, per_ocu (como "Rango"), 
+    lead_score (como "Potencial"), priority (como "Prioridad"), 
+    risk_level (como "Riesgo STPS"), recommended_plan (como "Plan sugerido"),
+    estimated_contribution_monthly (como "Aportación estimada"),
+    has_phone (boolean), has_email (boolean), has_web (boolean)
+  Response: { data, pagination, zone_stats }
+
+GET /api/socio/mercado/empresas/:id
+  Detalle de una empresa (solo si está en la zona del socio)
+  Retorna: datos generales + score breakdown + plan recomendado + 
+    NOMs aplicables + datos de contacto + historial de interacciones
+  NO incluir: clee, SCIAN code exacto, lat/lng exactos
+
+POST /api/socio/mercado/empresas/:id/agregar-pipeline
+  Mover empresa a pipeline del socio como "Nuevo"
+  Body: { notes? }
+  Actualiza: pipeline_stage='Nuevo', assigned_socio_id=socio actual
+
+PATCH /api/socio/pipeline/:id
+  Actualizar etapa de una empresa en el pipeline del socio
+  Body: { pipeline_stage, notes? }
+  Solo puede mover empresas que le estén asignadas
+
+GET /api/socio/pipeline
+  Lista de empresas en el pipeline del socio (assigned_socio_id = current user)
+  Agrupadas por etapa: Nuevo, Contactado, Demo, Propuesta, Negociación, Cliente
+  Cada empresa con: nombre, sector, empleados, aportación estimada, etapa, 
+    última interacción, días en etapa actual
+
+POST /api/socio/pipeline/:id/interaccion
+  Registrar interacción con una empresa
+  Body: { tipo: 'llamada'|'email'|'visita'|'demo'|'nota', descripcion }
+
+GET /api/socio/comisiones
+  Proyección de comisiones del socio basada en su pipeline actual:
+  - Empresas en etapa "Cliente": comisión residual activa
+  - Empresas en "Negociación"/"Propuesta": comisión proyectada
+  - Desglose: residual mensual + certificaciones estimadas + override (si director)
+  - Histórico de comisiones (últimos 6 meses)
+  - Meta vs actual
+
+GET /api/socio/proyecciones
+  Calculadora dinámica basada en datos reales de su zona:
+  Input (query params): num_empresas, avg_empleados, plan, tipo_socio
+  Output: {
+    aportacion_mensual_total,
+    fee_ceduverse,
+    comision_residual_mensual,
+    comision_residual_anual,
+    dc3_estimados (40% de empleados × $60),
+    sep_estimados (5% de empleados × $200),
+    ingreso_total_anual,
+    override_si_director
+  }
+
+--- PARTE 2: FRONTEND — DASHBOARD DEL SOCIO ---
+
+Crear layout nuevo para socios (NO el admin layout). 
+Ruta base: /socio (después de login con rol socio, redirect aquí)
+
+DISEÑO: Profesional, motivacional, orientado a resultados.
+Colores: azul Ceduverse (#0f172a, #2563eb) + verde para dinero/comisiones (#059669)
+El socio debe sentir que tiene una herramienta premium de ventas.
+
+--- Página /socio (Dashboard principal) ---
+
+HEADER:
+- "Buenos días, [nombre]" con fecha actual
+- Badge de zona: "Zona Norte — Nuevo León, Coahuila, Tamaulipas, Durango"
+- Badge de tipo: "Socio Consultor Regional" o "Socio Director Regional"
+
+FILA 1 — 4 KPI cards grandes:
+1. "Mi cartera" — # empresas activas (etapa=Cliente) + trend vs mes anterior
+2. "Comisión este mes" — $X,XXX MXN estimado (verde, grande, bold)
+3. "Pipeline activo" — # empresas en pipeline (no cliente) + valor potencial
+4. "Meta mensual" — progress bar circular con % de avance
+
+FILA 2 — Gráfica + Tabla lado a lado:
+Left: Gráfica de barras "Mis comisiones últimos 6 meses" (residual + certs)
+Right: "Pipeline rápido" — mini tabla con top 5 oportunidades 
+  ordenadas por aportación estimada, con botón "Ver" en cada una
+
+FILA 3 — "Actividad reciente"
+Timeline de últimas 10 interacciones del socio (llamadas, visitas, demos)
+Cada una con: fecha, empresa, tipo, descripción breve
+
+--- Página /socio/mercado (Inteligencia de mercado) ---
+
+HEADER:
+- "Mercado de tu zona" + badge zona
+- 6 stat cards:
+  - Total empresas identificadas en tu zona
+  - Potencial anual (sum aportaciones estimadas, en millones)
+  - Empresas con alta prioridad (score 70+)
+  - Con datos de contacto (teléfono o email)
+  - Sector principal (el que más empresas tiene)
+  - Aportación promedio por empresa
+
+SECCIÓN "Análisis de mercado":
+- Gráfica de dona: distribución por sector (top 8 + "Otros")
+- Gráfica de barras horizontales: empresas por tamaño de empleados
+- Gráfica de barras: distribución por municipio (solo los de su zona)
+- Card destacada: "Oportunidad #1 de tu zona" 
+  → El sector con mayor aportación potencial total
+  Texto: "El sector [X] en tu zona tiene [N] empresas con un potencial de 
+  $[Y] MXN/año. [Z] de ellas tienen riesgo STPS alto — necesitan 
+  capacitación urgente."
+
+SECCIÓN "Directorio de empresas":
+- Barra de búsqueda + filtros (sector, tamaño, riesgo, prioridad, contacto)
+- Tabla con columnas:
+  - Empresa (nombre)
+  - Sector
+  - Municipio  
+  - Empleados (rango)
+  - Potencial (score como barra de color: rojo/naranja/verde)
+  - Prioridad (badge: Alta/Media/Baja)
+  - Plan sugerido (Impulsa/Transforma/Lidera)
+  - Aportación est. ($/mes formateado)
+  - Contacto (íconos: teléfono/email/web, grayed out si no tiene)
+  - Acción: botón "Agregar a mi pipeline" (→ POST /agregar-pipeline)
+- Paginación (25 por página)
+- "Mostrando X de Y empresas en tu zona"
+
+Al click en una empresa → modal/drawer con ficha:
+  - Datos generales (nombre, sector, municipio, empleados)
+  - "Potencial comercial":
+    - Aportación mensual estimada: $X,XXX MXN
+    - Aportación anual estimada: $XX,XXX MXN
+    - Plan recomendado: [Plan] ([UMAs] UMAs/col)
+    - Fee Ceduverse estimado: $X,XXX MXN/mes
+    - "Tu comisión estimada: $X,XXX MXN/mes" (en VERDE, grande)
+    - DC3 estimados/año: X certificados × $60 = $X,XXX
+    - Ingreso total estimado anual: $XX,XXX (MUY prominente)
+  - Riesgo STPS: [nivel] + NOMs que le aplican
+  - Datos de contacto (si los tiene)
+  - Botón grande: "Agregar a mi pipeline →"
+
+--- Página /socio/pipeline (Mi pipeline) ---
+
+KANBAN BOARD:
+Columnas: Nuevo → Contactado → Demo → Propuesta → Negociación → Cliente
+Columna colapsable: "Perdido"
+
+Cada tarjeta:
+- Nombre empresa
+- Sector badge (color)
+- Empleados
+- Aportación estimada/mes
+- "Tu comisión: $XXX/mes" (verde)
+- Días en esta etapa
+- Última interacción (fecha + tipo)
+- Click → abrir ficha completa
+
+Drag-and-drop entre columnas para mover etapas.
+Al mover a "Cliente" → modal de celebración: "¡Felicidades! Esta empresa 
+te generará $XXX/mes en comisiones residuales."
+
+BARRA SUPERIOR del kanban:
+- "Valor total del pipeline: $XX,XXX MXN/mes" (sum de aportaciones estimadas)
+- "Comisión potencial: $X,XXX MXN/mes" (sum de comisiones si todas cierran)
+- "Empresas activas (Clientes): X" 
+- "Comisión residual actual: $X,XXX MXN/mes"
+
+--- Página /socio/comisiones (Mis comisiones) ---
+
+HEADER: "Mis ingresos" + mes actual
+
+FILA 1 — 3 cards grandes:
+1. "Residual mensual actual" — $X,XXX MXN (basado en empresas etapa=Cliente)
+   Subtítulo: "X empresas activas × promedio $XXX/empresa"
+2. "Certificaciones este mes" — $X,XXX MXN (DC3 + SEP estimados)
+3. "Ingreso anual proyectado" — $XX,XXX MXN (residual × 12 + certs × 12)
+   Si es director: + línea "Override: $X,XXX MXN/mes"
+
+SECCIÓN "Desglose por empresa":
+Tabla con cada empresa activa (Cliente):
+- Empresa | Plan | Colaboradores | Aportación mensual | Fee Ceduverse | 
+  Mi comisión mensual | % del fee | Desde (fecha)
+- Totales al final
+
+SECCIÓN "Simulador de crecimiento":
+Sliders interactivos:
+- "Empresas que puedo cerrar en los próximos 12 meses" (slider 1-20)
+- "Promedio de colaboradores por empresa" (slider 10-200)
+- "Plan más probable" (selector: Impulsa/Transforma/Lidera)
+- "Mi perfil" (selector: Consultor/Director)
+
+Resultado en tiempo real (debajo de los sliders):
+- "Con {X} empresas plan {Plan} de {Y} colaboradores:"
+- Aportación total mensual: $XXX,XXX
+- Fee Ceduverse ({%}): $XX,XXX
+- Tu comisión residual mensual: $X,XXX (resaltar en verde grande)
+- Tu comisión anual: $XX,XXX
+- Certificaciones estimadas (DC3 40% + SEP 5%): $X,XXX/año
+- "Ingreso total proyectado: $XXX,XXX/año" (BOX grande, verde, bold)
+- Si director: "Override adicional (5% de tus 3 consultores): +$X,XXX/mes"
+
+Gráfica de línea: "Proyección de ingresos a 12 meses"
+- Eje X: meses (1-12)
+- Línea 1: ingreso acumulado si cierra 1 empresa/mes
+- Línea 2: ingreso acumulado si cierra 2 empresas/mes
+- Mostrar el efecto acumulativo del residual
+
+SECCIÓN "Objetivos nacionales":
+Card informativa que muestra los 3 objetivos de crecimiento:
+- Objetivo 1: 1 socio × 1 empresa × 30 empleados por estado (total 960 socios)
+- Objetivo 2: 2 × 2 × 30 (1,920 socios)
+- Objetivo 3: 3 × 3 × 30 (2,880 socios)
+Para cada objetivo: aportación total de la zona del socio, su % de comisión,
+ingreso proyectado del socio
+
+--- Página /socio/rutas (Planificador de visitas) ---
+
+NOTA: Esta sección usa los datos de lat/lng de denue_prospects 
+pero NO muestra coordenadas al socio — solo direcciones y mapa.
+
+Vista de planificación:
+- Selector de fecha para la visita
+- Filtros: sector, prioridad, tamaño
+- Lista de empresas seleccionables (checkboxes) — solo las de su zona
+- "Agregar a ruta del día" → genera lista ordenada
+
+"Mi ruta de hoy":
+- Lista numerada de paradas (1-8 máximo)
+- Cada parada: nombre empresa, dirección, sector, empleados, teléfono
+- Botón "Abrir ruta en Google Maps" 
+  → Genera URL: https://www.google.com/maps/dir/{addr1}/{addr2}/{addr3}/...
+- Botón "Confirmar visita" por cada parada (marca como completada)
+- Notas post-visita: textarea + selector de resultado 
+  (Interesado / Agendar demo / No interesado / No estaba)
+
+--- PARTE 3: NAVEGACIÓN ---
+
+Cuando un usuario con rol "socio" inicia sesión:
+- Redirect a /socio (no a /admin)
+- Sidebar con: Dashboard, Mercado, Mi Pipeline, Comisiones, Planificar Visitas
+- Header con: nombre, zona, tipo de socio, botón cerrar sesión
+
+Usuarios admin/superadmin pueden acceder a /socio para preview pero 
+se mantiene su acceso a /admin.
+
+--- PARTE 4: CÁLCULOS DE COMISIONES (lógica exacta) ---
+
+Implementar estas funciones en un utility file (ej: lib/commission-calculator.ts):
+
+function calcularComisionSocio(params: {
+  plan: 'Impulsa' | 'Transforma' | 'Lidera',
+  numColaboradores: number,
+  numEmpresasActivas: number, // para determinar % de comisión
+  tipoSocio: 'consultor' | 'director',
+  numConsultoresEnZona?: number, // solo para director
+  empresasDeConsultores?: number, // solo para director override
+}) {
+  const UMA = 113.14;
+  const PLAN_UMAS = { Impulsa: 6, Transforma: 10, Lidera: 20 };
+  const PLAN_FEE_PCT = { Impulsa: 0.15, Transforma: 0.08, Lidera: 0.05 };
+  
+  // Aportación mensual de la empresa
+  const aportacionMensual = numColaboradores * PLAN_UMAS[plan] * UMA;
+  
+  // Fee de Ceduverse
+  const feeCeduverse = aportacionMensual * PLAN_FEE_PCT[plan];
+  
+  // % de comisión según cartera
+  let comisionPct;
+  if (numEmpresasActivas <= 3) comisionPct = 0.25;
+  else if (numEmpresasActivas <= 7) comisionPct = 0.30;
+  else comisionPct = 0.35;
+  
+  // Comisión residual mensual
+  const comisionResidual = feeCeduverse * comisionPct;
+  
+  // Comisión de cierre (primer mes)
+  const comisionCierre = feeCeduverse * 0.50;
+  
+  // Certificaciones estimadas anuales
+  const dc3Estimados = Math.floor(numColaboradores * 0.40); // 40% compra DC3
+  const sepEstimados = Math.floor(numColaboradores * 0.05); // 5% compra SEP
+  const ingresoCertsAnual = (dc3Estimados * 60) + (sepEstimados * 200);
+  
+  // Override director
+  let overrideMensual = 0;
+  if (tipoSocio === 'director' && empresasDeConsultores) {
+    // 5% del fee de empresas de los consultores
+    // Estimación: empresas similares al promedio de la zona
+    overrideMensual = feeCeduverse * 0.05 * empresasDeConsultores;
+  }
+  
+  return {
+    aportacionMensual,
+    feeCeduverse,
+    comisionPct,
+    comisionResidual,
+    comisionCierre,
+    dc3Estimados,
+    sepEstimados,
+    ingresoCertsAnual,
+    overrideMensual,
+    ingresoAnualTotal: (comisionResidual * 12) + ingresoCertsAnual + (overrideMensual * 12),
+  };
+}
+
+--- PARTE 5: SEED DATA ---
+
+Asignar el usuario demo socio a la zona "Norte" (que contiene Monterrey):
+UPDATE users SET zone = 'Norte', socio_type = 'consultor' 
+WHERE email = 'demosocio@ceduverse.org';
+
+Crear 5 empresas de ejemplo en su pipeline:
+- 2 en etapa "Cliente" (para que vea comisiones activas)
+- 1 en "Negociación"
+- 1 en "Demo"  
+- 1 en "Contactado"
+
+Usar empresas reales de denue_prospects con score alto.
+
+--- NOTAS FINALES ---
+
+- NUNCA mostrar "DENUE" ni "INEGI" en la interfaz
+- Los datos se presentan como "Inteligencia comercial Ceduverse"
+- Resaltar siempre los números de COMISIÓN del socio (en verde, grande)
+- La experiencia debe motivar al socio a vender — cada número muestra cuánto GANA
+- Mobile-friendly: muchos socios usarán esto desde el teléfono en campo
+- Usar los patrones de código existentes del proyecto (Drizzle, componentes, hooks)
+```

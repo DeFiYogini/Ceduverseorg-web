@@ -1,0 +1,1748 @@
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import DOMPurify from "dompurify";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { useLocation, useParams } from "wouter";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import AudioClassPlayer from "@/components/AudioClassPlayer";
+import TextReader, { useTextReader } from "@/components/TextReader";
+import { useTheme } from "@/components/ThemeProvider";
+import {
+  ArrowLeft,
+  Brain,
+  BookOpen,
+  Map,
+  HelpCircle,
+  Link2,
+  Send,
+  Sparkles,
+  CheckCircle2,
+  Clock,
+  FileCheck,
+  Loader2,
+  MessageCircle,
+  ChevronRight,
+  ChevronDown,
+  X,
+  Award,
+  Volume2,
+  VolumeX,
+  Download,
+  FileText,
+  Scale,
+  ExternalLink,
+  RefreshCw,
+  AlertTriangle,
+  Zap,
+  Moon,
+  Sun,
+  Trophy,
+  Printer,
+  Play,
+  RotateCcw,
+  LogOut,
+  Share2,
+} from "lucide-react";
+import ShareCourseModal from "@/components/ShareCourseModal";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
+interface StudioModule {
+  id: string;
+  courseId: string;
+  moduleIndex: number;
+  title: string;
+  description: string | null;
+  contentHtml: string;
+  videoUrl: string | null;
+  references: string[] | null;
+  durationMinutes: number | null;
+}
+
+interface StudioQuiz {
+  id: string;
+  courseId: string;
+  title: string;
+  passingScore: number;
+  questions: {
+    question: string;
+    options: string[];
+    correctIndex: number;
+    explanation: string;
+  }[];
+}
+
+interface StudioCourse {
+  id: string;
+  slug: string;
+  title: string;
+  description: string | null;
+  category: string;
+  subcategory: string | null;
+  durationMinutes: number | null;
+  level: string | null;
+  tags: string[] | null;
+  dc3Available: boolean | null;
+  icon: string | null;
+  color: string | null;
+  source: string | null;
+}
+
+function getYouTubeEmbedUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname === "youtu.be") {
+      return `https://www.youtube.com/embed${parsed.pathname}`;
+    }
+    if (parsed.hostname.includes("youtube.com")) {
+      if (parsed.pathname.includes("/embed/")) return url;
+      const videoId = parsed.searchParams.get("v");
+      if (videoId) return `https://www.youtube.com/embed/${videoId}`;
+    }
+    return url;
+  } catch {
+    return url;
+  }
+}
+
+interface MindMapBranch {
+  label: string;
+  color?: string;
+  children: ({ label: string; detail?: string } | string)[];
+}
+
+interface GeneratedContent {
+  id?: string;
+  lectureHtml: string;
+  mindMap: { central: string; branches: MindMapBranch[] } | null;
+  reflections: string[] | null;
+  adaptiveQuiz: { question: string; options: string[]; correctIndex: number; explanation: string }[] | null;
+  suggestedSources: { title: string; url: string; type: string }[] | null;
+  classScript?: string | null;
+  isStub?: boolean;
+  generationStatus?: string;
+}
+
+interface ModuleProgress {
+  id: string;
+  enrollmentId: string;
+  moduleIdentifier: string;
+  completed: boolean;
+  completedAt: string | null;
+  quizScore: number | null;
+  timeSpentSeconds: number | null;
+}
+
+type ContentTab = "lectura" | "mapa" | "quiz" | "fuentes" | "certificado";
+
+const LOADING_TIPS = [
+  "El Tutor IA personaliza el contenido a tu puesto e industria",
+  "Puedes hacerle preguntas al Tutor IA en el chat",
+  "Al aprobar recibirás un certificado con validez curricular",
+  "El contenido incluye normatividad mexicana real",
+  "Cada módulo tiene mapa mental, quiz y fuentes de consulta",
+];
+
+function ModulePill({ index, title, active, completed, onClick }: {
+  index: number; title: string; active: boolean; completed: boolean; onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+        active
+          ? "bg-cedu-blue text-white shadow-sm"
+          : completed
+            ? "bg-cedu-green-light dark:bg-cedu-green/10 text-cedu-green border border-cedu-green/20"
+            : "bg-white dark:bg-gray-800 text-cedu-ink-soft dark:text-gray-300 border border-black/[0.06] dark:border-white/[0.08] hover:border-cedu-blue/30"
+      }`}
+      data-testid={`button-module-${index}`}
+    >
+      {completed ? (
+        <CheckCircle2 size={14} />
+      ) : (
+        <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${
+          active ? "bg-white/20 text-white" : "bg-black/[0.04] text-cedu-ink-muted"
+        }`}>{index + 1}</span>
+      )}
+      <span className="hidden sm:inline truncate max-w-[140px]">{title}</span>
+    </button>
+  );
+}
+
+function generateProblem(level: number) {
+  const ops = ["+", "-", "×"];
+  const op = ops[Math.floor(Math.random() * (level > 5 ? 3 : 2))];
+  let a: number, b: number, answer: number;
+  const max = Math.min(10 + level * 3, 50);
+  if (op === "+") {
+    a = Math.floor(Math.random() * max) + 1;
+    b = Math.floor(Math.random() * max) + 1;
+    answer = a + b;
+  } else if (op === "-") {
+    a = Math.floor(Math.random() * max) + 2;
+    b = Math.floor(Math.random() * a) + 1;
+    answer = a - b;
+  } else {
+    a = Math.floor(Math.random() * 12) + 2;
+    b = Math.floor(Math.random() * 12) + 2;
+    answer = a * b;
+  }
+  return { text: `${a} ${op} ${b}`, answer };
+}
+
+function LoadingState({ profile }: { profile?: { jobTitle?: string; industry?: string } }) {
+  const [tipIndex, setTipIndex] = useState(0);
+  const [progress, setProgress] = useState(5);
+  const [gameActive, setGameActive] = useState(false);
+  const [score, setScore] = useState(0);
+  const [streak, setStreak] = useState(0);
+  const [bestStreak, setBestStreak] = useState(0);
+  const [problem, setProblem] = useState(() => generateProblem(1));
+  const [userInput, setUserInput] = useState("");
+  const [feedback, setFeedback] = useState<"correct" | "wrong" | null>(null);
+  const [timeLeft, setTimeLeft] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const tipTimer = setInterval(() => setTipIndex(i => (i + 1) % LOADING_TIPS.length), 5000);
+    const progressTimer = setInterval(() => setProgress(p => {
+      if (p < 60) return p + Math.random() * 6 + 2;
+      if (p < 85) return p + Math.random() * 3 + 0.5;
+      if (p < 95) return p + Math.random() * 1.5 + 0.2;
+      return Math.min(p + Math.random() * 0.3, 99);
+    }), 1200);
+    return () => { clearInterval(tipTimer); clearInterval(progressTimer); };
+  }, []);
+
+  useEffect(() => {
+    if (!gameActive || timeLeft <= 0) return;
+    const t = setTimeout(() => setTimeLeft(tl => tl - 1), 1000);
+    return () => clearTimeout(t);
+  }, [gameActive, timeLeft]);
+
+  useEffect(() => {
+    if (gameActive && timeLeft === 0 && score > 0) {
+      setGameActive(false);
+    }
+  }, [timeLeft, gameActive, score]);
+
+  const startGame = () => {
+    setGameActive(true);
+    setScore(0);
+    setStreak(0);
+    setTimeLeft(30);
+    setProblem(generateProblem(1));
+    setUserInput("");
+    setFeedback(null);
+    setTimeout(() => inputRef.current?.focus(), 50);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const parsed = parseInt(userInput);
+    if (isNaN(parsed)) return;
+    if (parsed === problem.answer) {
+      const newStreak = streak + 1;
+      const bonus = newStreak >= 5 ? 3 : newStreak >= 3 ? 2 : 1;
+      setScore(s => s + bonus);
+      setStreak(newStreak);
+      if (newStreak > bestStreak) setBestStreak(newStreak);
+      setFeedback("correct");
+      setProblem(generateProblem(Math.floor(newStreak / 2) + 1));
+    } else {
+      setStreak(0);
+      setFeedback("wrong");
+      setProblem(generateProblem(1));
+    }
+    setUserInput("");
+    setTimeout(() => setFeedback(null), 400);
+    inputRef.current?.focus();
+  };
+
+  return (
+    <div className="flex items-center justify-center py-12" data-testid="loading-state">
+      <div className="max-w-md w-full text-center space-y-5">
+        <div className="w-14 h-14 bg-gradient-to-br from-cedu-blue to-cedu-violet rounded-2xl flex items-center justify-center mx-auto">
+          <Brain size={28} className="text-white animate-pulse" />
+        </div>
+        <div>
+          <h3 className="font-serif text-lg text-cedu-ink dark:text-white mb-1">Tu Tutor IA está preparando tu contenido...</h3>
+          {profile?.jobTitle && (
+            <p className="text-xs text-cedu-ink-muted dark:text-gray-400 mt-1">
+              Personalizando para: <strong>{profile.jobTitle}</strong> en <strong>{profile.industry || "tu industria"}</strong>
+            </p>
+          )}
+        </div>
+        <div className="px-8">
+          <Progress value={progress} className="h-1.5" />
+          <p className="text-[11px] text-cedu-ink-muted mt-1">{Math.round(progress)}%</p>
+        </div>
+
+        <div className="bg-gradient-to-b from-white to-gray-50 dark:from-gray-900 dark:to-gray-950 border border-black/[0.06] dark:border-white/10 rounded-2xl p-5 mx-4 shadow-sm" data-testid="mini-game">
+          {!gameActive && timeLeft === 0 && score === 0 ? (
+            <div className="space-y-3">
+              <div className="flex items-center justify-center gap-2 text-cedu-orange">
+                <Zap size={18} />
+                <span className="font-semibold text-sm">Reto Numérico</span>
+              </div>
+              <p className="text-xs text-cedu-ink-muted dark:text-gray-400">Resuelve operaciones lo más rápido posible. Rachas = puntos extra.</p>
+              <button
+                onClick={startGame}
+                data-testid="button-start-game"
+                className="px-5 py-2 bg-cedu-orange hover:bg-cedu-orange/90 text-white rounded-xl text-sm font-semibold transition-all hover:scale-105 active:scale-95 shadow-sm"
+              >
+                Jugar mientras esperas
+              </button>
+            </div>
+          ) : !gameActive && timeLeft === 0 ? (
+            <div className="space-y-3">
+              <div className="text-3xl font-bold text-cedu-ink dark:text-white">{score}</div>
+              <p className="text-sm text-cedu-ink-muted dark:text-gray-400">puntos en 30 segundos</p>
+              {bestStreak >= 3 && (
+                <p className="text-xs text-cedu-orange font-medium">Mejor racha: {bestStreak} seguidas</p>
+              )}
+              <button
+                onClick={startGame}
+                data-testid="button-restart-game"
+                className="px-5 py-2 bg-cedu-orange hover:bg-cedu-orange/90 text-white rounded-xl text-sm font-semibold transition-all hover:scale-105 active:scale-95"
+              >
+                Jugar de nuevo
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-cedu-ink dark:text-white text-lg">{score}</span>
+                  <span className="text-cedu-ink-muted dark:text-gray-400">pts</span>
+                </div>
+                {streak >= 3 && (
+                  <span className="px-2 py-0.5 bg-cedu-orange/10 text-cedu-orange rounded-full text-[11px] font-bold animate-pulse">
+                    {streak}x racha
+                  </span>
+                )}
+                <div className="flex items-center gap-1 text-cedu-ink-muted">
+                  <Clock size={12} />
+                  <span className={`font-mono font-bold ${timeLeft <= 5 ? "text-red-500" : ""}`}>{timeLeft}s</span>
+                </div>
+              </div>
+
+              <div className={`text-4xl font-bold font-mono tracking-wider py-3 transition-colors ${
+                feedback === "correct" ? "text-cedu-green" : feedback === "wrong" ? "text-red-500" : "text-cedu-ink dark:text-white"
+              }`}>
+                {problem.text} = ?
+              </div>
+
+              <form onSubmit={handleSubmit} className="flex gap-2 justify-center">
+                <input
+                  ref={inputRef}
+                  type="number"
+                  inputMode="numeric"
+                  value={userInput}
+                  onChange={e => setUserInput(e.target.value)}
+                  placeholder="..."
+                  autoFocus
+                  data-testid="input-game-answer"
+                  className={`w-24 text-center text-xl font-bold py-2 rounded-xl border-2 outline-none transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
+                    feedback === "correct" ? "border-cedu-green bg-cedu-green/5" :
+                    feedback === "wrong" ? "border-red-400 bg-red-50" :
+                    "border-black/10 focus:border-cedu-blue bg-white dark:bg-gray-900"
+                  }`}
+                />
+                <button
+                  type="submit"
+                  data-testid="button-submit-answer"
+                  className="px-4 py-2 bg-cedu-blue hover:bg-cedu-blue/90 text-white rounded-xl font-semibold text-sm transition-all active:scale-95"
+                >
+                  OK
+                </button>
+              </form>
+              <p className="text-[10px] text-cedu-ink-muted">Presiona Enter para responder</p>
+            </div>
+          )}
+        </div>
+
+        <p className="text-xs text-cedu-ink-muted dark:text-gray-500 italic px-4 min-h-[32px]">{LOADING_TIPS[tipIndex]}</p>
+      </div>
+    </div>
+  );
+}
+
+function extractHeadings(html: string): { id: string; text: string }[] {
+  const regex = /<h2[^>]*>(.*?)<\/h2>/gi;
+  const headings: { id: string; text: string }[] = [];
+  let match;
+  while ((match = regex.exec(html)) !== null) {
+    const text = match[1].replace(/<[^>]*>/g, "").trim();
+    const id = `heading-${headings.length}`;
+    headings.push({ id, text });
+  }
+  return headings;
+}
+
+function addIdsToHeadings(html: string): string {
+  let idx = 0;
+  return html.replace(/<h2([^>]*)>/gi, () => {
+    const id = `heading-${idx++}`;
+    return `<h2 id="${id}">`;
+  });
+}
+
+function StubBanner({ onRegenerate, isRegenerating }: { onRegenerate: () => void; isRegenerating: boolean }) {
+  return (
+    <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700/50 rounded-xl p-4 mb-4 flex items-start gap-3" data-testid="banner-stub">
+      <AlertTriangle size={20} className="text-yellow-600 mt-0.5 flex-shrink-0" />
+      <div className="flex-1">
+        <p className="text-sm text-yellow-800 font-medium">Contenido genérico</p>
+        <p className="text-xs text-yellow-700 mt-1">
+          Este contenido no está personalizado a tu perfil. Haz clic en "Regenerar" para obtener contenido adaptado a tu puesto e industria.
+        </p>
+      </div>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={onRegenerate}
+        disabled={isRegenerating}
+        className="text-yellow-700 border-yellow-300 hover:bg-yellow-100 gap-1 shrink-0"
+        data-testid="button-regenerate-stub"
+      >
+        {isRegenerating ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+        Regenerar
+      </Button>
+    </div>
+  );
+}
+
+function LectureView({ html, reflections, isStub, onRegenerate, isRegenerating, courseSlug, moduleIndex, classScript, moduleTitle }: {
+  html: string;
+  reflections?: string[] | null;
+  isStub?: boolean;
+  onRegenerate: () => void;
+  isRegenerating: boolean;
+  courseSlug?: string;
+  moduleIndex?: number;
+  classScript?: string | null;
+  moduleTitle?: string;
+}) {
+  const lectureContentRef = useRef<HTMLDivElement>(null);
+  const [readerActive, setReaderActive] = useState(false);
+  const headings = useMemo(() => extractHeadings(html), [html]);
+  const processedHtml = useMemo(() => addIdsToHeadings(html), [html]);
+  const plainText = useMemo(() => html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim(), [html]);
+  const readingTime = useMemo(() => Math.ceil(plainText.split(/\s+/).length / 200), [plainText]);
+
+  const toggleSpeech = () => {
+    if (readerActive) {
+      speechSynthesis.cancel();
+      setReaderActive(false);
+      const marks = lectureContentRef.current?.querySelectorAll("[data-reader-highlight]");
+      marks?.forEach(m => {
+        const parent = m.parentNode;
+        if (parent) {
+          const text = document.createTextNode(m.textContent || "");
+          parent.replaceChild(text, m);
+          parent.normalize();
+        }
+      });
+    } else {
+      setReaderActive(true);
+    }
+  };
+
+  const handleDownload = async () => {
+    const html2pdf = (await import("html2pdf.js")).default;
+    const DOMPurify = (await import("dompurify")).default;
+    const container = document.createElement("div");
+    const cleanTitle = DOMPurify.sanitize(moduleTitle || "Módulo");
+    const cleanHtml = DOMPurify.sanitize(processedHtml);
+    const cleanReflections = reflections?.map(r => DOMPurify.sanitize(r)) || [];
+    container.innerHTML = `
+      <div style="font-family: 'Plus Jakarta Sans', sans-serif; padding: 40px; color: #1a1a2e;">
+        <div style="text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #1b5adf;">
+          <h1 style="font-family: 'DM Serif Display', serif; font-size: 22px; color: #1b5adf; margin: 0;">Ceduverse · Tutor IA</h1>
+          <p style="color: #666; font-size: 11px; margin-top: 4px;">${cleanTitle}</p>
+        </div>
+        <div style="line-height: 1.8; font-size: 14px;">${cleanHtml}</div>
+        ${cleanReflections.length ? `
+          <div style="margin-top: 30px; padding: 20px; background: #f3f0ff; border-radius: 12px; border-left: 4px solid #7c3aed;">
+            <h4 style="font-family: 'DM Serif Display', serif; color: #7c3aed; margin: 0 0 12px 0;">Preguntas de reflexión</h4>
+            <ol style="margin: 0; padding-left: 20px;">
+              ${cleanReflections.map(r => `<li style="margin-bottom: 6px; color: #444;">${r}</li>`).join("")}
+            </ol>
+          </div>` : ""}
+        <div style="text-align: center; margin-top: 40px; padding-top: 15px; border-top: 1px solid #ddd; color: #999; font-size: 10px;">
+          Generado por Ceduverse Tutor IA · ceduverse.org
+        </div>
+      </div>
+    `;
+    html2pdf().set({
+      margin: [10, 10, 10, 10],
+      filename: `ceduverse-${moduleTitle?.replace(/\s+/g, "-").toLowerCase() || "lectura"}.pdf`,
+      image: { type: "jpeg", quality: 0.95 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: "mm", format: "letter", orientation: "portrait" },
+    }).from(container).save();
+  };
+
+  return (
+    <div className="flex gap-6" data-testid="view-lectura">
+      <div className="flex-1 min-w-0">
+        {isStub && <StubBanner onRegenerate={onRegenerate} isRegenerating={isRegenerating} />}
+
+        {courseSlug !== undefined && moduleIndex !== undefined && !isStub && (
+          <AudioClassPlayer
+            courseSlug={courseSlug}
+            moduleIndex={moduleIndex}
+            classScript={classScript}
+            moduleTitle={moduleTitle}
+          />
+        )}
+
+        <div className="flex items-center gap-3 mb-6 flex-wrap">
+          <span className="text-sm text-cedu-ink-muted flex items-center gap-1">
+            <Clock size={14} /> ~{readingTime} min de lectura
+          </span>
+          <Button variant="outline" size="sm" onClick={toggleSpeech} className="h-8 text-xs gap-1" data-testid="button-listen">
+            {readerActive ? <><VolumeX size={14} /> Detener lectura</> : <><Volume2 size={14} /> Leer en voz alta</>}
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleDownload} className="h-8 text-xs gap-1" data-testid="button-download">
+            <Download size={14} /> Descargar
+          </Button>
+          {!isStub && (
+            <Button variant="ghost" size="sm" onClick={onRegenerate} disabled={isRegenerating} className="h-8 text-xs gap-1 text-cedu-ink-muted" data-testid="button-regenerate">
+              {isRegenerating ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+              Regenerar
+            </Button>
+          )}
+        </div>
+
+        <div
+          ref={lectureContentRef}
+          className="prose prose-base max-w-none prose-headings:font-serif prose-headings:text-cedu-ink dark:prose-headings:text-white prose-p:text-cedu-ink-soft dark:prose-p:text-gray-300 prose-p:leading-[1.8] prose-li:text-cedu-ink-soft dark:prose-li:text-gray-300 prose-li:leading-[1.8] prose-strong:text-cedu-ink dark:prose-strong:text-white prose-blockquote:border-cedu-blue prose-blockquote:bg-cedu-blue-light/30 dark:prose-blockquote:bg-cedu-blue/10 prose-blockquote:rounded-lg prose-blockquote:py-1 prose-blockquote:text-cedu-ink-soft dark:prose-blockquote:text-gray-200 [&_blockquote_em]:text-cedu-ink-soft dark:[&_blockquote_em]:text-gray-300 [&_blockquote_p]:text-cedu-ink-soft dark:[&_blockquote_p]:text-gray-200 [&_blockquote_strong]:text-cedu-ink dark:[&_blockquote_strong]:text-white prose-em:text-cedu-ink-soft dark:prose-em:text-gray-300 prose-table:text-sm [&_td]:border [&_td]:border-black/[0.06] dark:[&_td]:border-white/[0.08] [&_td]:px-3 [&_td]:py-2 [&_td]:text-cedu-ink-soft dark:[&_td]:text-gray-300 [&_th]:border [&_th]:border-black/[0.06] dark:[&_th]:border-white/[0.08] [&_th]:px-3 [&_th]:py-2 [&_th]:bg-gray-50 dark:[&_th]:bg-gray-800 dark:[&_th]:text-white dark:prose-a:text-cedu-blue dark:prose-code:text-gray-200"
+          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(processedHtml) }}
+          data-testid="content-lecture"
+        />
+
+        {readerActive && <TextReader contentRef={lectureContentRef} autoStart />}
+
+        {reflections && reflections.length > 0 && (
+          <div className="mt-8 p-5 bg-cedu-violet-light dark:bg-cedu-violet/10 rounded-xl border border-cedu-violet/10">
+            <h4 className="font-serif text-base text-cedu-ink dark:text-white mb-3 flex items-center gap-2">
+              <HelpCircle size={16} className="text-cedu-violet" /> Preguntas de reflexión
+            </h4>
+            <ul className="space-y-2">
+              {reflections.map((r, i) => (
+                <li key={i} className="text-sm text-cedu-ink-soft dark:text-gray-300 flex items-start gap-2">
+                  <span className="w-5 h-5 rounded-full bg-cedu-violet/10 text-cedu-violet flex items-center justify-center text-xs flex-shrink-0 mt-0.5">
+                    {i + 1}
+                  </span>
+                  {r}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+
+      {headings.length > 2 && (
+        <aside className="hidden xl:block w-56 shrink-0 sticky top-[120px] self-start">
+          <p className="text-xs font-semibold text-cedu-ink-muted uppercase tracking-wide mb-3">Contenido</p>
+          <nav className="space-y-1.5">
+            {headings.map((h) => (
+              <a
+                key={h.id}
+                href={`#${h.id}`}
+                className="block text-xs text-cedu-ink-muted hover:text-cedu-blue transition-colors line-clamp-2"
+              >
+                {h.text}
+              </a>
+            ))}
+          </nav>
+        </aside>
+      )}
+    </div>
+  );
+}
+
+function MindMapView({ data }: { data: { central: string; branches: MindMapBranch[] } }) {
+  const [expandedBranch, setExpandedBranch] = useState<number | null>(null);
+  const BRANCH_COLORS = ["#1b5adf", "#f28023", "#34d399", "#7c3aed", "#ef4444", "#06b6d4"];
+
+  return (
+    <div className="p-6" data-testid="view-mind-map">
+      <div className="text-center mb-8">
+        <div className="inline-block bg-gradient-to-br from-cedu-blue to-cedu-violet text-white px-8 py-4 rounded-2xl font-serif text-lg shadow-md">
+          {data.central}
+        </div>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {data.branches.map((branch, i) => {
+          const color = branch.color || BRANCH_COLORS[i % BRANCH_COLORS.length];
+          const isExpanded = expandedBranch === i;
+          return (
+            <button
+              key={i}
+              onClick={() => setExpandedBranch(isExpanded ? null : i)}
+              className="bg-white dark:bg-gray-800 rounded-xl border border-black/[0.06] dark:border-white/[0.08] p-4 text-left hover:shadow-md transition-all"
+              data-testid={`mindmap-branch-${i}`}
+            >
+              <h4 className="font-semibold text-cedu-ink dark:text-white text-sm mb-3 flex items-center gap-2">
+                <span
+                  className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white"
+                  style={{ backgroundColor: color }}
+                >
+                  {i + 1}
+                </span>
+                {branch.label}
+                <ChevronDown size={14} className={`ml-auto text-cedu-ink-muted transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+              </h4>
+              <ul className="space-y-2">
+                {branch.children.map((child, j) => {
+                  const childLabel = typeof child === "string" ? child : child.label;
+                  const childDetail = typeof child === "string" ? null : child.detail;
+                  return (
+                    <li key={j} className="text-xs flex items-start gap-1.5">
+                      <ChevronRight size={12} className="mt-0.5 flex-shrink-0" style={{ color }} />
+                      <div>
+                        <span className="text-cedu-ink dark:text-gray-200 font-medium">{childLabel}</span>
+                        {isExpanded && childDetail && (
+                          <p className="text-cedu-ink-muted dark:text-gray-500 mt-0.5">{childDetail}</p>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function StepQuizView({ questions, onQuizComplete, courseSlug, moduleIndex, onNextModule, onCompleteModule, isLastModule, isModuleCompleted }: {
+  questions: { question: string; options: string[]; correctIndex: number; explanation: string }[];
+  onQuizComplete?: (score: number, total: number, passed: boolean) => void;
+  courseSlug: string;
+  moduleIndex: number;
+  onNextModule?: () => void;
+  onCompleteModule?: () => void;
+  isLastModule?: boolean;
+  isModuleCompleted?: boolean;
+}) {
+  const [currentQ, setCurrentQ] = useState(0);
+  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
+  const [answered, setAnswered] = useState(false);
+  const [correctCount, setCorrectCount] = useState(0);
+  const [finished, setFinished] = useState(false);
+  const [answers, setAnswers] = useState<number[]>([]);
+
+  const submitQuizMutation = useMutation({
+    mutationFn: async (data: { answers: number[]; score: number }) => {
+      const res = await apiRequest("POST", `/api/studio/courses/${courseSlug}/modules/${moduleIndex}/quiz/submit`, data);
+      return res.json();
+    },
+  });
+
+  const total = questions.length;
+  const q = questions[currentQ];
+  const isCorrect = selectedAnswer === q?.correctIndex;
+  const score = total > 0 ? Math.round((correctCount / total) * 100) : 0;
+  const passed = score >= 70;
+
+  const handleSelect = (idx: number) => {
+    if (answered) return;
+    setSelectedAnswer(idx);
+    setAnswered(true);
+    setAnswers(prev => [...prev, idx]);
+    if (idx === q.correctIndex) setCorrectCount(c => c + 1);
+  };
+
+  const handleNext = () => {
+    if (currentQ < total - 1) {
+      setCurrentQ(c => c + 1);
+      setSelectedAnswer(null);
+      setAnswered(false);
+    } else {
+      setFinished(true);
+      submitQuizMutation.mutate({ answers: [...answers], score: correctCount });
+      onQuizComplete?.(correctCount, total, Math.round((correctCount / total) * 100) >= 70);
+    }
+  };
+
+  const handleRetry = () => {
+    setCurrentQ(0);
+    setSelectedAnswer(null);
+    setAnswered(false);
+    setCorrectCount(0);
+    setFinished(false);
+    setAnswers([]);
+  };
+
+  if (finished) {
+    return (
+      <div className="p-6 text-center" data-testid="quiz-result">
+        <div className={`w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-4 ${passed ? "bg-green-100 dark:bg-green-900/30" : "bg-orange-100 dark:bg-orange-900/30"}`}>
+          {passed ? <CheckCircle2 size={40} className="text-green-600" /> : <BookOpen size={40} className="text-orange-500" />}
+        </div>
+        <h3 className="font-serif text-2xl text-cedu-ink dark:text-white mb-2">
+          {passed ? "¡Aprobaste!" : "Sigue practicando"}
+        </h3>
+        <p className="text-cedu-ink-muted dark:text-gray-400 mb-2">Puntuación: {score}% ({correctCount}/{total} correctas)</p>
+        <p className="text-sm text-cedu-ink-muted dark:text-gray-500 mb-6">
+          {passed
+            ? "¡Felicidades! Has demostrado dominio del tema."
+            : "Te recomendamos repasar el contenido e intentar de nuevo. Necesitas al menos 70% para aprobar."}
+        </p>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+          {passed ? (
+            <>
+              <Button onClick={handleRetry} variant="outline" data-testid="button-retry-quiz" className="gap-1">
+                <RotateCcw size={14} /> Repetir quiz
+              </Button>
+              {!isModuleCompleted && onCompleteModule && (
+                <Button onClick={onCompleteModule} className="bg-cedu-green hover:bg-cedu-green/90 gap-1" data-testid="button-complete-from-quiz">
+                  <CheckCircle2 size={14} /> Completar módulo
+                </Button>
+              )}
+              {!isLastModule && onNextModule && (
+                <Button onClick={onNextModule} className="bg-cedu-blue hover:bg-cedu-blue/90 gap-1" data-testid="button-next-from-quiz">
+                  Siguiente módulo <ChevronRight size={14} />
+                </Button>
+              )}
+              {isLastModule && isModuleCompleted && (
+                <p className="text-sm text-cedu-green font-medium mt-2">🎓 ¡Último módulo completado! Revisa tu certificado.</p>
+              )}
+            </>
+          ) : (
+            <Button onClick={handleRetry} variant="outline" data-testid="button-retry-quiz" className="gap-1">
+              <RotateCcw size={14} /> Intentar de nuevo
+            </Button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-6" data-testid="view-quiz">
+      <div className="flex items-center justify-between mb-6">
+        <span className="text-sm font-medium text-cedu-ink dark:text-white">Pregunta {currentQ + 1} de {total}</span>
+        <span className="text-xs text-cedu-ink-muted dark:text-gray-500">{correctCount} correcta{correctCount !== 1 ? "s" : ""}</span>
+      </div>
+      <Progress value={((currentQ + (answered ? 1 : 0)) / total) * 100} className="h-1.5 mb-6" />
+
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-black/[0.06] dark:border-white/[0.08] p-5" data-testid={`quiz-question-${currentQ}`}>
+        <p className="font-medium text-cedu-ink dark:text-white mb-4">{q.question}</p>
+        <div className="space-y-2">
+          {q.options.map((opt, oi) => {
+            const isSelected = selectedAnswer === oi;
+            const showCorrect = answered && oi === q.correctIndex;
+            const showWrong = answered && isSelected && oi !== q.correctIndex;
+            return (
+              <button
+                key={oi}
+                onClick={() => handleSelect(oi)}
+                disabled={answered}
+                className={`w-full text-left px-4 py-3 rounded-lg text-sm transition-all border ${
+                  showCorrect
+                    ? "bg-green-50 dark:bg-green-900/30 border-green-300 dark:border-green-700 text-green-700 dark:text-green-400"
+                    : showWrong
+                      ? "bg-red-50 dark:bg-red-900/30 border-red-300 dark:border-red-700 text-red-700 dark:text-red-400"
+                      : isSelected
+                        ? "bg-cedu-blue-light dark:bg-cedu-blue/20 border-cedu-blue text-cedu-blue"
+                        : "bg-white dark:bg-gray-900 border-black/[0.06] dark:border-white/[0.08] text-cedu-ink dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+                }`}
+                data-testid={`quiz-option-${currentQ}-${oi}`}
+              >
+                <span className="font-medium mr-2">{String.fromCharCode(65 + oi)}.</span>
+                {opt}
+              </button>
+            );
+          })}
+        </div>
+
+        {answered && (
+          <div className={`mt-4 p-3 rounded-lg text-sm ${isCorrect ? "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400" : "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400"}`}>
+            <p className="font-medium mb-1">{isCorrect ? "¡Correcto!" : `Incorrecto. La respuesta correcta era: ${String.fromCharCode(65 + q.correctIndex)}`}</p>
+            <p className="text-xs opacity-80">{q.explanation}</p>
+          </div>
+        )}
+      </div>
+
+      {answered && (
+        <div className="flex justify-end mt-4">
+          <Button onClick={handleNext} className="bg-cedu-blue hover:bg-cedu-blue/90" data-testid="button-next-question">
+            {currentQ < total - 1 ? "Siguiente pregunta" : "Ver resultados"} <ChevronRight size={14} className="ml-1" />
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const SOURCE_ICONS: Record<string, any> = {
+  NOM: FileText,
+  nom: FileText,
+  LFT: Scale,
+  lft: Scale,
+  guia: BookOpen,
+  "Guía": BookOpen,
+  articulo: ExternalLink,
+};
+
+function SourcesView({ moduleRefs, aiSources }: {
+  moduleRefs?: string[] | null;
+  aiSources?: { title: string; url: string; type: string }[] | null;
+}) {
+  const allSources = [
+    ...(moduleRefs || []).map(r => ({ title: r, url: "", type: "referencia" })),
+    ...(aiSources || []),
+  ];
+
+  if (allSources.length === 0) {
+    return (
+      <div className="text-center py-12" data-testid="view-fuentes">
+        <Link2 size={32} className="mx-auto text-cedu-ink-muted/30 dark:text-gray-600 mb-3" />
+        <p className="text-sm text-cedu-ink-muted dark:text-gray-500">Las fuentes se mostrarán al generar contenido con IA</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4 p-6" data-testid="view-fuentes">
+      <h3 className="font-serif text-lg text-cedu-ink dark:text-white">Fuentes y Referencias</h3>
+      <ul className="space-y-2">
+        {allSources.map((src, i) => {
+          const Icon = SOURCE_ICONS[src.type] || Link2;
+          return (
+            <li key={i} className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-black/[0.06] dark:border-white/[0.08] flex items-start gap-3">
+              <Icon size={16} className="text-cedu-blue mt-0.5 shrink-0" />
+              <div className="flex-1 min-w-0">
+                {src.url ? (
+                  <a href={src.url} target="_blank" rel="noopener noreferrer" className="text-sm text-cedu-blue hover:underline">
+                    {src.title}
+                  </a>
+                ) : (
+                  <span className="text-sm text-cedu-ink-soft dark:text-gray-300">{src.title}</span>
+                )}
+                <span className="text-[10px] text-cedu-ink-muted dark:text-gray-500 uppercase ml-2">{src.type}</span>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+      <p className="text-xs text-cedu-ink-muted dark:text-gray-500 text-center pt-2">
+        Fuentes sugeridas. Verifica en fuentes oficiales.
+      </p>
+    </div>
+  );
+}
+
+function ChatPanel({ courseSlug, moduleIndex, profile }: {
+  courseSlug: string; moduleIndex: number; profile?: { jobTitle?: string; industry?: string };
+}) {
+  const { user } = useAuth();
+  const [message, setMessage] = useState("");
+  const [chatHistory, setChatHistory] = useState<{ role: string; content: string }[]>([]);
+  const [pendingMsg, setPendingMsg] = useState("");
+  const [historyLoaded, setHistoryLoaded] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const { data: chatHistoryData } = useQuery<{ messages: { role: string; content: string }[] }>({
+    queryKey: ["chat-history", courseSlug, moduleIndex],
+    queryFn: async () => {
+      const res = await apiRequest("GET", `/api/studio/courses/${courseSlug}/modules/${moduleIndex}/chat/history`);
+      return res.json();
+    },
+    enabled: !!user,
+  });
+
+  useEffect(() => {
+    if (chatHistoryData?.messages && !historyLoaded) {
+      setChatHistory(chatHistoryData.messages);
+      setHistoryLoaded(true);
+    }
+  }, [chatHistoryData, historyLoaded]);
+
+  useEffect(() => {
+    setHistoryLoaded(false);
+    setChatHistory([]);
+  }, [courseSlug, moduleIndex]);
+
+  const chatMutation = useMutation({
+    mutationFn: async (msg: string) => {
+      const res = await apiRequest("POST", `/api/studio/courses/${courseSlug}/modules/${moduleIndex}/chat`, { message: msg });
+      return res.json();
+    },
+    onMutate: (msg) => {
+      setPendingMsg(msg);
+      setChatHistory(prev => [...prev, { role: "user", content: msg }]);
+      setMessage("");
+    },
+    onSuccess: (data) => {
+      setChatHistory(prev => [...prev, { role: "assistant", content: data.message }]);
+      setPendingMsg("");
+    },
+    onError: () => setPendingMsg(""),
+  });
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatHistory, chatMutation.isPending]);
+
+  const suggestedQuestions = [
+    `¿Cómo aplico esto en mi trabajo${profile?.jobTitle ? ` de ${profile.jobTitle}` : ""}?`,
+    "¿Qué dice la normatividad sobre este tema?",
+    `Dame un ejemplo práctico${profile?.industry ? ` para ${profile.industry}` : ""}`,
+  ];
+
+  const handleSend = (msg?: string) => {
+    const text = (msg || message).trim();
+    if (!text || chatMutation.isPending) return;
+    chatMutation.mutate(text);
+  };
+
+  if (!user) {
+    return (
+      <div className="h-full flex items-center justify-center p-4">
+        <p className="text-sm text-cedu-ink-muted text-center">Inicia sesión para usar el chat con IA</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-full flex flex-col" data-testid="chat-panel">
+      <div className="px-4 py-3 border-b border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-gray-900">
+        <div className="flex items-center gap-2">
+          <Brain size={16} className="text-cedu-violet" />
+          <h4 className="font-semibold text-sm text-cedu-ink dark:text-white">Chat con Tutor IA</h4>
+        </div>
+        <p className="text-[10px] text-cedu-ink-muted dark:text-gray-500 mt-0.5">Pregunta sobre el contenido del módulo</p>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        {chatHistory.length === 0 && (
+          <div className="text-center py-8">
+            <MessageCircle size={32} className="mx-auto text-cedu-ink-muted/30 dark:text-gray-600 mb-3" />
+            <p className="text-xs text-cedu-ink-muted dark:text-gray-500 mb-4">Pregunta lo que necesites sobre este módulo</p>
+            <div className="space-y-2">
+              {suggestedQuestions.map((q, i) => (
+                <button
+                  key={i}
+                  onClick={() => handleSend(q)}
+                  className="w-full text-left px-3 py-2 rounded-lg text-xs text-cedu-ink-soft dark:text-gray-300 bg-white dark:bg-gray-800 border border-black/[0.06] dark:border-white/[0.08] hover:bg-cedu-blue-light dark:hover:bg-cedu-blue/20 hover:text-cedu-blue transition-colors"
+                  data-testid={`button-suggested-q-${i}`}
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {chatHistory.map((msg, i) => (
+          <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+            <div
+              className={`max-w-[85%] px-3 py-2 rounded-xl text-sm ${
+                msg.role === "user"
+                  ? "bg-cedu-blue text-white rounded-br-sm"
+                  : "bg-white dark:bg-gray-800 border border-black/[0.06] dark:border-white/[0.08] text-cedu-ink dark:text-gray-200 rounded-bl-sm"
+              }`}
+              dangerouslySetInnerHTML={msg.role === "assistant" ? { __html: DOMPurify.sanitize(msg.content) } : undefined}
+            >
+              {msg.role === "user" ? msg.content : null}
+            </div>
+          </div>
+        ))}
+
+        {chatMutation.isPending && (
+          <div className="flex justify-start">
+            <div className="bg-white dark:bg-gray-800 border border-black/[0.06] dark:border-white/[0.08] px-4 py-2 rounded-xl rounded-bl-sm flex items-center gap-2">
+              <div className="flex gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-cedu-ink-muted dark:bg-gray-500 animate-bounce" style={{ animationDelay: "0ms" }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-cedu-ink-muted dark:bg-gray-500 animate-bounce" style={{ animationDelay: "150ms" }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-cedu-ink-muted dark:bg-gray-500 animate-bounce" style={{ animationDelay: "300ms" }} />
+              </div>
+              <span className="text-xs text-cedu-ink-muted dark:text-gray-500">Escribiendo...</span>
+            </div>
+          </div>
+        )}
+        <div ref={messagesEndRef} />
+      </div>
+
+      <div className="p-3 border-t border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-gray-900">
+        <div className="flex gap-2">
+          <Input
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSend()}
+            placeholder="Escribe tu pregunta..."
+            className="h-9 text-sm"
+            data-testid="input-chat-message"
+          />
+          <Button
+            onClick={() => handleSend()}
+            disabled={!message.trim() || chatMutation.isPending}
+            size="sm"
+            className="bg-cedu-blue hover:bg-cedu-blue/90 h-9 px-3"
+            data-testid="button-send-chat"
+          >
+            <Send size={14} />
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CompletionCertificate({ courseName, userName, completedModules, totalModules }: {
+  courseName: string; userName: string; completedModules: number; totalModules: number;
+}) {
+  const date = new Date().toLocaleDateString("es-MX", { year: "numeric", month: "long", day: "numeric" });
+  return (
+    <div className="text-center py-8 space-y-6" data-testid="completion-certificate">
+      <div className="relative inline-block">
+        <div className="w-20 h-20 bg-gradient-to-br from-cedu-orange to-yellow-400 rounded-full flex items-center justify-center mx-auto shadow-lg">
+          <Trophy size={36} className="text-white" />
+        </div>
+        <div className="absolute -top-1 -right-1 w-7 h-7 bg-cedu-green rounded-full flex items-center justify-center border-2 border-white dark:border-gray-900">
+          <CheckCircle2 size={14} className="text-white" />
+        </div>
+      </div>
+      <div>
+        <h2 className="font-serif text-2xl text-cedu-ink dark:text-white mb-1">¡Curso completado!</h2>
+        <p className="text-sm text-cedu-ink-muted dark:text-gray-400">
+          Completaste los {completedModules}/{totalModules} módulos de este curso
+        </p>
+      </div>
+      <div className="max-w-sm mx-auto bg-gradient-to-br from-cedu-blue/5 to-cedu-violet/5 dark:from-cedu-blue/10 dark:to-cedu-violet/10 border border-cedu-blue/20 dark:border-cedu-blue/30 rounded-2xl p-6 space-y-3">
+        <p className="text-xs text-cedu-ink-muted dark:text-gray-500 uppercase tracking-wide">Certificado de finalización</p>
+        <div className="border-t border-b border-cedu-blue/10 dark:border-cedu-blue/20 py-3 my-2">
+          <p className="text-sm text-cedu-ink-soft dark:text-gray-300">Se certifica que</p>
+          <p className="font-serif text-lg text-cedu-ink dark:text-white font-semibold">{userName}</p>
+          <p className="text-sm text-cedu-ink-soft dark:text-gray-300 mt-1">completó exitosamente</p>
+          <p className="font-serif text-base text-cedu-blue font-semibold">{courseName}</p>
+        </div>
+        <p className="text-xs text-cedu-ink-muted dark:text-gray-500">{date} · Ceduverse Tutor IA</p>
+      </div>
+      <p className="text-xs text-cedu-ink-muted dark:text-gray-500 max-w-xs mx-auto">
+        Tu constancia DC-3 STPS estará disponible próximamente para los cursos elegibles.
+      </p>
+    </div>
+  );
+}
+
+export default function StudioCoursePage() {
+  const params = useParams<{ slug: string }>();
+  const slug = params.slug || "";
+  const [, navigate] = useLocation();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [activeModule, setActiveModule] = useState(0);
+  const [activeTab, setActiveTab] = useState<ContentTab>("lectura");
+  const [showChat, setShowChat] = useState(false);
+  const { theme, toggleTheme } = useTheme();
+  const staticContentReader = useTextReader();
+
+  useEffect(() => {
+    if (staticContentReader.active) {
+      speechSynthesis.cancel();
+      staticContentReader.setActive(false);
+    }
+  }, [activeModule]);
+
+  const { data: courseData, isLoading } = useQuery<{
+    course: StudioCourse;
+    modules: StudioModule[];
+    quiz: StudioQuiz | null;
+  }>({
+    queryKey: ["/api/studio/courses", slug],
+    queryFn: async () => {
+      const res = await fetch(`/api/studio/courses/${slug}`);
+      if (!res.ok) throw new Error("Course not found");
+      return res.json();
+    },
+    enabled: !!slug,
+  });
+
+  const { data: studentProfile } = useQuery<{ jobTitle?: string; industry?: string } | null>({
+    queryKey: ["/api/me/student-profile"],
+    enabled: !!user,
+  });
+
+  const { data: generatedContent, isLoading: isGenerating } = useQuery<GeneratedContent>({
+    queryKey: ["studio-generated", slug, activeModule],
+    queryFn: async () => {
+      const res = await apiRequest("POST", `/api/studio/courses/${slug}/modules/${activeModule}/generate`);
+      return res.json();
+    },
+    enabled: !!user && !!courseData,
+  });
+
+  const [showUnenrollDialog, setShowUnenrollDialog] = useState(false);
+  const [showResetDialog, setShowResetDialog] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [resumeApplied, setResumeApplied] = useState(false);
+  const [showResumeLanding, setShowResumeLanding] = useState(true);
+
+  const enrollMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/studio/enroll", { courseSlug: slug });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/studio/enrollments", slug] });
+    },
+  });
+
+  const unenrollMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("DELETE", `/api/studio/enrollments/${slug}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/studio/enrollments", slug] });
+      queryClient.invalidateQueries({ queryKey: ["module-progress"] });
+      toast({ title: "Has salido del curso", description: "Tu inscripción ha sido eliminada." });
+      navigate("/tutor-ia");
+    },
+    onError: () => {
+      toast({ title: "Error", description: "No se pudo salir del curso.", variant: "destructive" });
+    },
+  });
+
+  const resetProgressMutation = useMutation({
+    mutationFn: async (enrollmentId: string) => {
+      await apiRequest("POST", `/api/studio/enrollments/${enrollmentId}/reset`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/studio/enrollments", slug] });
+      queryClient.invalidateQueries({ queryKey: ["module-progress"] });
+      queryClient.invalidateQueries({ queryKey: ["studio-generated"] });
+      setActiveModule(0);
+      setActiveTab("lectura");
+      setResumeApplied(false);
+      toast({ title: "Curso reiniciado", description: "Tu progreso ha sido reiniciado." });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "No se pudo reiniciar el curso.", variant: "destructive" });
+    },
+  });
+
+  const { data: enrollment } = useQuery<any>({
+    queryKey: ["/api/studio/enrollments", slug],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/studio/enrollments");
+      const enrollments = await res.json();
+      return enrollments.find((e: any) => e.courseIdentifier === slug) || null;
+    },
+    enabled: !!user,
+  });
+
+  const { data: moduleProgressList } = useQuery<ModuleProgress[]>({
+    queryKey: ["module-progress", enrollment?.id],
+    queryFn: async () => {
+      const res = await apiRequest("GET", `/api/studio/enrollments/${enrollment.id}/progress`);
+      return res.json();
+    },
+    enabled: !!enrollment?.id,
+  });
+
+  const regenerateMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", `/api/studio/courses/${slug}/modules/${activeModule}/generate?regenerate=true`);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["studio-generated", slug, activeModule] });
+      toast({ title: "Contenido regenerado", description: "Tu contenido personalizado está listo." });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "No se pudo regenerar el contenido. Intenta de nuevo.", variant: "destructive" });
+    },
+  });
+
+  const completeModuleMutation = useMutation({
+    mutationFn: async (moduleIdentifier: string) => {
+      if (!enrollment?.id) throw new Error("No enrollment");
+      const res = await apiRequest("PUT", `/api/studio/enrollments/${enrollment.id}/modules/${moduleIdentifier}/complete`);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["module-progress", enrollment?.id] });
+      toast({ title: "Módulo completado", description: "Tu progreso se ha guardado." });
+    },
+  });
+
+  const handleRegenerate = useCallback(() => {
+    if (confirm("¿Regenerar el contenido? Esto reemplazará el contenido actual con uno nuevo personalizado a tu perfil.")) {
+      regenerateMutation.mutate();
+    }
+  }, [regenerateMutation]);
+
+  const handleCompleteModule = useCallback(() => {
+    completeModuleMutation.mutate(`module_${activeModule}`);
+  }, [activeModule, completeModuleMutation]);
+
+  const hasEnrollment = enrollment !== null && enrollment !== undefined;
+  const completedModuleCount = moduleProgressList?.filter(p => p.completed).length || 0;
+  const hasProgress = completedModuleCount > 0;
+
+  useEffect(() => {
+    if (hasEnrollment && moduleProgressList && courseData && !resumeApplied) {
+      const totalModules = courseData.modules.length;
+      const completedSet = new Set(
+        moduleProgressList.filter(p => p.completed).map(p => p.moduleIdentifier)
+      );
+      let resumeIdx = 0;
+      for (let i = 0; i < totalModules; i++) {
+        if (!completedSet.has(`module_${i}`)) {
+          resumeIdx = i;
+          break;
+        }
+        if (i === totalModules - 1) resumeIdx = totalModules - 1;
+      }
+      if (resumeIdx > 0) setActiveModule(resumeIdx);
+      setResumeApplied(true);
+    }
+  }, [hasEnrollment, moduleProgressList, courseData, resumeApplied]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-cedu-cream dark:bg-gray-950 flex items-center justify-center">
+        <Loader2 className="animate-spin text-cedu-blue" size={32} />
+      </div>
+    );
+  }
+
+  if (!courseData) {
+    return (
+      <div className="min-h-screen bg-cedu-cream dark:bg-gray-950 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="font-serif text-xl text-cedu-ink dark:text-white mb-2">Curso no encontrado</h2>
+          <Button variant="outline" onClick={() => navigate("/tutor-ia")} data-testid="button-back-studio">
+            Volver al catálogo
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const { course, modules, quiz } = courseData;
+
+  if (user && !hasEnrollment) {
+    return (
+      <div className="min-h-screen bg-cedu-cream dark:bg-gray-950 flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto px-4">
+          <span className="text-5xl mb-4 block">{course.icon || "📘"}</span>
+          <h1 className="font-serif text-2xl text-cedu-ink dark:text-white mb-2" data-testid="text-course-title">{course.title}</h1>
+          <p className="text-sm text-cedu-ink-muted dark:text-gray-400 mb-2">{course.category} · {course.durationMinutes || 60} min</p>
+          {course.description && (
+            <p className="text-sm text-cedu-ink-soft dark:text-gray-300 mb-6">{course.description}</p>
+          )}
+          <Button
+            onClick={() => enrollMutation.mutate()}
+            disabled={enrollMutation.isPending}
+            className="bg-cedu-blue hover:bg-cedu-blue/90 text-white gap-2"
+            data-testid="button-start-course"
+          >
+            {enrollMutation.isPending ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : (
+              <Play size={16} />
+            )}
+            Iniciar curso
+          </Button>
+          <div className="mt-4">
+            <Button variant="outline" onClick={() => navigate("/tutor-ia")} data-testid="button-back-studio">
+              <ArrowLeft size={14} className="mr-2" /> Volver al catálogo
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (user && hasEnrollment && hasProgress && showResumeLanding) {
+    const progressPct = modules.length > 0 ? Math.round((completedModuleCount / modules.length) * 100) : 0;
+    return (
+      <>
+        <div className="min-h-screen bg-cedu-cream dark:bg-gray-950 flex items-center justify-center">
+          <div className="text-center max-w-md mx-auto px-4">
+            <span className="text-5xl mb-4 block">{course.icon || "📘"}</span>
+            <h1 className="font-serif text-2xl text-cedu-ink dark:text-white mb-2" data-testid="text-course-title">{course.title}</h1>
+            <p className="text-sm text-cedu-ink-muted dark:text-gray-400 mb-2">{course.category} · {completedModuleCount} de {modules.length} módulos completados</p>
+            <div className="w-full max-w-xs mx-auto bg-black/[0.06] dark:bg-white/[0.08] rounded-full h-2 mb-6">
+              <div className="bg-cedu-blue h-2 rounded-full transition-all" style={{ width: `${progressPct}%` }} />
+            </div>
+            <div className="flex flex-col gap-3 items-center">
+              <Button
+                onClick={() => setShowResumeLanding(false)}
+                className="bg-cedu-blue hover:bg-cedu-blue/90 text-white gap-2 w-full max-w-xs"
+                data-testid="button-continue-course"
+              >
+                <Play size={16} /> Continuar curso
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => { setShowResumeLanding(false); setShowResetDialog(true); }}
+                className="gap-2 w-full max-w-xs"
+                data-testid="button-restart-course-landing"
+              >
+                <RotateCcw size={14} /> Reiniciar curso
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => { setShowUnenrollDialog(true); }}
+                className="text-cedu-ink-muted dark:text-gray-400 gap-2"
+                data-testid="button-leave-course-landing"
+              >
+                <LogOut size={14} /> Salir del curso
+              </Button>
+            </div>
+          </div>
+        </div>
+        <Dialog open={showUnenrollDialog} onOpenChange={setShowUnenrollDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>¿Salir del curso?</DialogTitle>
+              <DialogDescription>
+                Se eliminará tu inscripción y todo tu progreso en este curso. Esta acción no se puede deshacer.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowUnenrollDialog(false)} data-testid="button-cancel-unenroll-landing">
+                Cancelar
+              </Button>
+              <Button
+                onClick={() => { setShowUnenrollDialog(false); unenrollMutation.mutate(); }}
+                className="bg-red-500 hover:bg-red-600 text-white"
+                disabled={unenrollMutation.isPending}
+                data-testid="button-confirm-unenroll-landing"
+              >
+                {unenrollMutation.isPending ? <Loader2 size={14} className="animate-spin mr-2" /> : <LogOut size={14} className="mr-2" />}
+                Salir del curso
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        <Dialog open={showResetDialog} onOpenChange={setShowResetDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>¿Reiniciar curso?</DialogTitle>
+              <DialogDescription>
+                Se borrará todo tu progreso y comenzarás el curso desde el principio. Esta acción no se puede deshacer.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowResetDialog(false)} data-testid="button-cancel-reset-landing">
+                Cancelar
+              </Button>
+              <Button
+                onClick={() => { setShowResetDialog(false); if (enrollment?.id) resetProgressMutation.mutate(enrollment.id); }}
+                className="bg-cedu-orange hover:bg-cedu-orange/90 text-white"
+                disabled={resetProgressMutation.isPending}
+                data-testid="button-confirm-reset-landing"
+              >
+                {resetProgressMutation.isPending ? <Loader2 size={14} className="animate-spin mr-2" /> : <RotateCcw size={14} className="mr-2" />}
+                Reiniciar curso
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </>
+    );
+  }
+
+  const currentModule = modules[activeModule];
+
+  const isModuleCompleted = (idx: number) => {
+    if (!moduleProgressList) return false;
+    const mp = moduleProgressList.find(p => p.moduleIdentifier === `module_${idx}`);
+    return mp?.completed || false;
+  };
+
+  const allModulesCompleted = modules.length > 0 && modules.every((_, i) => isModuleCompleted(i));
+
+  const quizQuestions = generatedContent?.adaptiveQuiz?.length
+    ? generatedContent.adaptiveQuiz
+    : quiz?.questions || [];
+
+  const contentTabs: { key: ContentTab; label: string; icon: any }[] = [
+    { key: "lectura", label: "Lectura", icon: BookOpen },
+    { key: "mapa", label: "Mapa Mental", icon: Map },
+    { key: "quiz", label: "Quiz", icon: HelpCircle },
+    { key: "fuentes", label: "Fuentes", icon: Link2 },
+    ...(allModulesCompleted ? [{ key: "certificado" as ContentTab, label: "Certificado", icon: Trophy }] : []),
+  ];
+
+  return (
+    <div className="min-h-screen bg-cedu-cream dark:bg-gray-950 transition-colors">
+      <header className="bg-white dark:bg-gray-900 border-b border-black/[0.06] dark:border-white/[0.08] sticky top-0 z-30">
+        <div className="max-w-[1600px] mx-auto px-4 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate("/tutor-ia")}
+              className="text-cedu-ink-muted dark:text-gray-400 hover:text-cedu-ink dark:hover:text-white transition-colors"
+              data-testid="button-back-catalog"
+            >
+              <ArrowLeft size={18} />
+            </button>
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">{course.icon || "📘"}</span>
+              <div>
+                <h1 className="font-semibold text-cedu-ink dark:text-white text-sm leading-none line-clamp-1" data-testid="text-course-title">
+                  {course.title}
+                </h1>
+                <p className="text-[10px] text-cedu-ink-muted dark:text-gray-500">{course.category} · {course.durationMinutes || 60} min</p>
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {course.dc3Available && (
+              <Badge variant="outline" className="text-green-600 border-green-300 dark:text-green-400 dark:border-green-700 text-[10px] gap-1">
+                <FileCheck size={10} /> DC3 STPS
+              </Badge>
+            )}
+            {hasProgress && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowResetDialog(true)}
+                className="text-cedu-orange border-cedu-orange/30 hover:bg-cedu-orange-light gap-1 text-xs"
+                data-testid="button-restart-course"
+              >
+                <RotateCcw size={12} /> Reiniciar
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate("/dashboard")}
+              className="gap-1 text-xs text-cedu-ink-muted border-black/10 dark:border-white/10 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+              data-testid="button-continue-later"
+            >
+              <Clock size={12} /> Continuar después
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowShareModal(true)}
+              className="gap-1 text-xs text-cedu-blue border-cedu-blue/20 hover:bg-cedu-blue-light dark:hover:bg-cedu-blue/10"
+              data-testid="button-share-course"
+            >
+              <Share2 size={12} /> Invitar
+            </Button>
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-lg text-cedu-ink-muted dark:text-gray-400 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+              data-testid="button-toggle-theme"
+              title={theme === "dark" ? "Modo claro" : "Modo oscuro"}
+            >
+              {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+            </button>
+            <button
+              onClick={() => setShowChat(!showChat)}
+              className={`p-2 rounded-lg transition-colors ${showChat ? "bg-cedu-violet text-white" : "bg-cedu-violet-light dark:bg-cedu-violet/20 text-cedu-violet hover:bg-cedu-violet hover:text-white"}`}
+              data-testid="button-toggle-chat"
+            >
+              {showChat ? <X size={16} /> : <MessageCircle size={16} />}
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <div className="bg-white dark:bg-gray-900 border-b border-black/[0.06] dark:border-white/[0.08] overflow-x-auto">
+        <div className="max-w-[1600px] mx-auto px-4 py-2 flex gap-2">
+          {modules.map((mod, i) => (
+            <ModulePill
+              key={mod.id}
+              index={i}
+              title={mod.title}
+              active={activeModule === i}
+              completed={isModuleCompleted(i)}
+              onClick={() => { setActiveModule(i); setActiveTab("lectura"); }}
+            />
+          ))}
+        </div>
+      </div>
+
+      <div className="max-w-[1600px] mx-auto flex">
+        <div className={`flex-1 transition-all ${showChat ? "pr-0 lg:pr-[360px]" : ""}`}>
+          <div className="bg-white dark:bg-gray-900 border-b border-black/[0.06] dark:border-white/[0.08]">
+            <div className="max-w-4xl mx-auto px-4 sm:px-8 flex gap-1 pt-4">
+              {contentTabs.map((tab) => {
+                const Icon = tab.icon;
+                return (
+                  <button
+                    key={tab.key}
+                    onClick={() => setActiveTab(tab.key)}
+                    className={`flex items-center gap-1.5 px-4 py-2.5 rounded-t-lg text-sm font-medium transition-colors ${
+                      activeTab === tab.key
+                        ? "bg-cedu-cream dark:bg-gray-950 text-cedu-blue border border-b-0 border-black/[0.06] dark:border-white/[0.08]"
+                        : "text-cedu-ink-muted dark:text-gray-500 hover:text-cedu-ink dark:hover:text-gray-300"
+                    }`}
+                    data-testid={`tab-${tab.key}`}
+                  >
+                    <Icon size={14} /> {tab.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="max-w-4xl mx-auto px-4 sm:px-8 py-6">
+            {isGenerating && !generatedContent ? (
+              <LoadingState profile={studentProfile || undefined} />
+            ) : (
+              <>
+                {activeTab === "lectura" && (
+                  <>
+                    {generatedContent?.lectureHtml ? (
+                      <LectureView
+                        html={generatedContent.lectureHtml}
+                        reflections={generatedContent.reflections}
+                        isStub={generatedContent.isStub}
+                        onRegenerate={handleRegenerate}
+                        isRegenerating={regenerateMutation.isPending}
+                        courseSlug={slug}
+                        moduleIndex={activeModule}
+                        classScript={generatedContent.classScript}
+                        moduleTitle={currentModule?.title}
+                      />
+                    ) : currentModule?.contentHtml ? (
+                      <div data-testid="view-lectura">
+                        <div className="flex items-center gap-3 mb-6 flex-wrap">
+                          <span className="text-sm text-cedu-ink-muted dark:text-gray-400 flex items-center gap-1">
+                            <Clock size={14} /> ~{Math.ceil((currentModule.contentHtml.replace(/<[^>]*>/g, " ").split(/\s+/).length) / 200)} min de lectura
+                          </span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={staticContentReader.toggle}
+                            className="h-8 text-xs gap-1"
+                            data-testid="button-static-listen"
+                          >
+                            {staticContentReader.active ? <><VolumeX size={14} /> Detener lectura</> : <><Volume2 size={14} /> Leer en voz alta</>}
+                          </Button>
+                        </div>
+                        <div
+                          ref={staticContentReader.contentRef}
+                          className="prose prose-base max-w-none prose-headings:font-serif prose-headings:text-cedu-ink dark:prose-headings:text-white prose-p:text-cedu-ink-soft dark:prose-p:text-gray-300 prose-p:leading-[1.8] prose-li:text-cedu-ink-soft dark:prose-li:text-gray-300 prose-strong:text-cedu-ink dark:prose-strong:text-white"
+                          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(currentModule.contentHtml) }}
+                          data-testid="content-lecture"
+                        />
+                        {staticContentReader.active && <TextReader contentRef={staticContentReader.contentRef} autoStart />}
+                      </div>
+                    ) : (
+                      <LoadingState profile={studentProfile || undefined} />
+                    )}
+
+                    <div className="flex justify-between mt-8 pt-4 border-t border-black/[0.06] dark:border-white/[0.08]">
+                      <Button
+                        variant="outline"
+                        disabled={activeModule <= 0}
+                        onClick={() => { setActiveModule(activeModule - 1); setActiveTab("lectura"); window.scrollTo(0, 0); }}
+                        data-testid="button-prev-module"
+                      >
+                        <ArrowLeft size={14} className="mr-2" /> Anterior
+                      </Button>
+                      <div className="flex gap-2">
+                        {!isModuleCompleted(activeModule) && generatedContent?.lectureHtml && (
+                          <Button
+                            variant="outline"
+                            onClick={handleCompleteModule}
+                            disabled={completeModuleMutation.isPending}
+                            className="text-cedu-green border-cedu-green/30 hover:bg-cedu-green-light gap-1"
+                            data-testid="button-complete-module"
+                          >
+                            {completeModuleMutation.isPending ? (
+                              <Loader2 size={14} className="animate-spin" />
+                            ) : (
+                              <CheckCircle2 size={14} />
+                            )}
+                            Completar módulo
+                          </Button>
+                        )}
+                        {activeModule < modules.length - 1 ? (
+                          <Button
+                            onClick={() => { setActiveModule(activeModule + 1); setActiveTab("lectura"); window.scrollTo(0, 0); }}
+                            className="bg-cedu-blue hover:bg-cedu-blue/90"
+                            data-testid="button-next-module"
+                          >
+                            Siguiente <ChevronRight size={14} className="ml-1" />
+                          </Button>
+                        ) : (
+                          <Button
+                            onClick={() => setActiveTab("quiz")}
+                            className="bg-cedu-green hover:bg-cedu-green/90"
+                            data-testid="button-go-quiz"
+                          >
+                            <Award size={14} className="mr-2" /> Ir al Quiz
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {activeTab === "mapa" && (
+                  generatedContent?.mindMap ? (
+                    <MindMapView data={generatedContent.mindMap} />
+                  ) : (
+                    <div className="text-center py-12">
+                      <Map size={40} className="mx-auto text-cedu-ink-muted/30 dark:text-gray-600 mb-4" />
+                      <h3 className="font-serif text-lg text-cedu-ink dark:text-white mb-2">Mapa Mental</h3>
+                      <p className="text-sm text-cedu-ink-muted dark:text-gray-500">
+                        {user ? "El mapa mental se generará con el contenido del módulo." : "Inicia sesión para generar contenido personalizado."}
+                      </p>
+                    </div>
+                  )
+                )}
+
+                {activeTab === "quiz" && (
+                  quizQuestions.length > 0 ? (
+                    <StepQuizView
+                      questions={quizQuestions}
+                      courseSlug={slug}
+                      moduleIndex={activeModule}
+                      isLastModule={activeModule >= modules.length - 1}
+                      isModuleCompleted={isModuleCompleted(activeModule)}
+                      onCompleteModule={handleCompleteModule}
+                      onNextModule={() => { setActiveModule(activeModule + 1); setActiveTab("lectura"); window.scrollTo(0, 0); }}
+                      onQuizComplete={(score, total, passed) => {
+                        if (passed) {
+                          toast({ title: "¡Quiz aprobado!", description: `Obtuviste ${Math.round((score / total) * 100)}%` });
+                        }
+                      }}
+                    />
+                  ) : (
+                    <div className="text-center py-12">
+                      <HelpCircle size={40} className="mx-auto text-cedu-ink-muted/30 dark:text-gray-600 mb-4" />
+                      <h3 className="font-serif text-lg text-cedu-ink dark:text-white mb-2">Quiz</h3>
+                      <p className="text-sm text-cedu-ink-muted dark:text-gray-500">
+                        {user ? "El quiz se generará con el contenido del módulo." : "Inicia sesión para acceder al quiz."}
+                      </p>
+                    </div>
+                  )
+                )}
+
+                {activeTab === "fuentes" && (
+                  <SourcesView
+                    moduleRefs={currentModule?.references}
+                    aiSources={generatedContent?.suggestedSources}
+                  />
+                )}
+
+                {activeTab === "certificado" && allModulesCompleted && (
+                  <CompletionCertificate
+                    courseName={course.title}
+                    userName={user?.fullName || user?.email || "Estudiante"}
+                    completedModules={modules.length}
+                    totalModules={modules.length}
+                  />
+                )}
+              </>
+            )}
+          </div>
+        </div>
+
+        {showChat && (
+          <div className="fixed right-0 top-[105px] bottom-0 w-[360px] bg-cedu-cream dark:bg-gray-950 border-l border-black/[0.06] dark:border-white/[0.08] z-20 hidden lg:block">
+            <ChatPanel courseSlug={slug} moduleIndex={activeModule} profile={studentProfile || undefined} />
+          </div>
+        )}
+      </div>
+
+      {showChat && (
+        <div className="fixed inset-0 z-40 lg:hidden">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setShowChat(false)} />
+          <div className="absolute right-0 top-0 bottom-0 w-[320px] bg-cedu-cream dark:bg-gray-950">
+            <div className="flex items-center justify-between p-3 border-b border-black/[0.06] dark:border-white/[0.08]">
+              <span className="font-semibold text-sm text-cedu-ink dark:text-white">Chat con Tutor IA</span>
+              <button onClick={() => setShowChat(false)} className="text-cedu-ink-muted dark:text-gray-400" data-testid="button-close-chat-mobile">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="h-[calc(100%-49px)]">
+              <ChatPanel courseSlug={slug} moduleIndex={activeModule} profile={studentProfile || undefined} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      <Dialog open={showUnenrollDialog} onOpenChange={setShowUnenrollDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>¿Salir del curso?</DialogTitle>
+            <DialogDescription>
+              Se eliminará tu inscripción y todo tu progreso en este curso. Esta acción no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowUnenrollDialog(false)} data-testid="button-cancel-unenroll">
+              Cancelar
+            </Button>
+            <Button
+              onClick={() => { setShowUnenrollDialog(false); unenrollMutation.mutate(); }}
+              className="bg-red-500 hover:bg-red-600 text-white"
+              disabled={unenrollMutation.isPending}
+              data-testid="button-confirm-unenroll"
+            >
+              {unenrollMutation.isPending ? <Loader2 size={14} className="animate-spin mr-2" /> : <LogOut size={14} className="mr-2" />}
+              Salir del curso
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showResetDialog} onOpenChange={setShowResetDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>¿Reiniciar curso?</DialogTitle>
+            <DialogDescription>
+              Se borrará todo tu progreso y comenzarás el curso desde el principio. Esta acción no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowResetDialog(false)} data-testid="button-cancel-reset">
+              Cancelar
+            </Button>
+            <Button
+              onClick={() => { setShowResetDialog(false); if (enrollment?.id) resetProgressMutation.mutate(enrollment.id); }}
+              className="bg-cedu-orange hover:bg-cedu-orange/90 text-white"
+              disabled={resetProgressMutation.isPending}
+              data-testid="button-confirm-reset"
+            >
+              {resetProgressMutation.isPending ? <Loader2 size={14} className="animate-spin mr-2" /> : <RotateCcw size={14} className="mr-2" />}
+              Reiniciar curso
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <ShareCourseModal
+        open={showShareModal}
+        onOpenChange={setShowShareModal}
+        courseTitle={courseData?.title || ""}
+        courseSlug={slug}
+        courseType="tutor-ia"
+      />
+    </div>
+  );
+}

@@ -1,0 +1,138 @@
+NECESITO UN DIAGNÓSTICO COMPLETO DEL PROYECTO. No cambies nada, solo 
+reporta TODO lo que encuentres. Sé exhaustivo.
+
+=== 1. STACK Y ESTRUCTURA ===
+
+a) ¿Qué framework usa este proyecto?
+   - ¿Es Next.js? ¿Qué versión? (ver package.json)
+   - ¿Usa App Router o Pages Router?
+   - ¿TypeScript o JavaScript?
+
+b) Lista el árbol de directorios (2 niveles):
+   ls -la en la raíz
+
+c) Lista TODAS las páginas/rutas que existen:
+   find app -name "page.tsx" -o -name "page.jsx" -o -name "page.ts" -o -name "page.js" 2>/dev/null
+
+d) Lista TODAS las API routes:
+   find app/api -name "route.tsx" -o -name "route.ts" -o -name "route.js" 2>/dev/null
+
+=== 2. BASE DE DATOS (SUPABASE) ===
+
+a) ¿Qué variables de entorno de Supabase están configuradas?
+   env | grep -i supabase | cut -d= -f1
+
+b) Buscar TODAS las referencias a tablas de Supabase en el código:
+   grep -r "\.from\(" --include="*.ts" --include="*.tsx" --include="*.js" -h | sort -u
+
+c) ¿Hay archivos SQL de migración o schema?
+   find . -name "*.sql" -type f 2>/dev/null
+
+d) ¿Hay un archivo de tipos/schema de Supabase?
+   find . -name "*supabase*" -name "*.ts" 2>/dev/null
+   find . -name "*database*" -name "*.ts" 2>/dev/null
+
+=== 3. EL RADAR (/radar) ===
+
+a) Muéstrame el contenido COMPLETO del componente del Radar:
+   - ¿Qué archivo es? (app/radar/page.tsx o similar)
+   - ¿Usa Google Maps? ¿Qué librería? (@react-google-maps/api, @vis.gl/react-google-maps, otra?)
+   - ¿De dónde saca los datos de las empresas que muestra como pins?
+   - ¿Tiene bottom sheet al tocar un pin?
+   - ¿Tiene clustering?
+   - ¿Tiene barra de búsqueda funcional?
+
+b) ¿Hay datos de empresas hardcodeados en el código?
+   grep -r "empresas\|establecimientos\|companies" --include="*.ts" --include="*.tsx" -l
+
+c) ¿Hay alguna tabla en Supabase con empresas?
+   grep -r "empresas\|companies\|negocios\|establecimientos" --include="*.ts" --include="*.tsx" -h | grep "\.from\("
+
+d) ¿Cuántas empresas hay actualmente en la base de datos?
+   Si encuentras la tabla, hacer COUNT(*)
+
+e) ¿El Radar llama a alguna API externa para obtener empresas?
+   grep -r "fetch\|axios\|api" app/radar/ --include="*.ts" --include="*.tsx" -h
+
+=== 4. COMPONENTES DEL MAPA ===
+
+a) ¿Qué tipos de pins/marcadores muestra el mapa?
+   Buscar: markers, pins, marcadores, MarkerF, AdvancedMarker
+
+b) ¿Hay un componente de "ficha de empresa" o "bottom sheet"?
+   find . -name "*empresa*" -o -name "*company*" -o -name "*ficha*" -o -name "*bottom*" -o -name "*sheet*" 2>/dev/null | grep -E "\.tsx$|\.ts$|\.jsx$"
+
+c) ¿Hay un componente de opiniones/reviews?
+   find . -name "*opinion*" -o -name "*review*" -o -name "*rating*" -o -name "*calific*" 2>/dev/null | grep -E "\.tsx$|\.ts$|\.jsx$"
+
+=== 5. FUNCIONALIDADES EXISTENTES ===
+
+a) ¿Hay sistema de autenticación? ¿Qué método?
+   - ¿Email/password?
+   - ¿Google OAuth?
+   - ¿WhatsApp/Phone?
+   - ¿Login anónimo/guest?
+
+b) ¿Existe Lía (asistente IA)?
+   grep -r "lia\|Lía\|asistente\|chatbot\|xai\|grok\|openai\|anthropic" --include="*.ts" --include="*.tsx" -l
+
+c) ¿Hay calculadora de liquidación?
+   find . -name "*calculadora*" -o -name "*liquidacion*" -o -name "*calculator*" 2>/dev/null
+
+d) ¿Hay sistema de casos laborales?
+   find . -name "*caso*" -o -name "*case*" -o -name "*demanda*" 2>/dev/null | grep -E "\.tsx$|\.ts$"
+
+e) ¿Hay sistema de abogados?
+   find . -name "*abogado*" -o -name "*lawyer*" -o -name "*legal*" 2>/dev/null | grep -E "\.tsx$|\.ts$"
+
+f) ¿Hay feed/comunidad?
+   find . -name "*feed*" -o -name "*comunidad*" -o -name "*community*" -o -name "*historia*" 2>/dev/null | grep -E "\.tsx$|\.ts$"
+
+g) ¿Hay rankings?
+   find . -name "*ranking*" -o -name "*rank*" 2>/dev/null | grep -E "\.tsx$|\.ts$"
+
+=== 6. NAVBAR Y NAVEGACIÓN ===
+
+a) ¿Qué items tiene la navbar/bottom navigation?
+   (Del screenshot veo: Radar, Comunidad, Herramientas IA, Mis Casos, Perfil)
+   Confirmar buscando el componente de navegación
+
+b) ¿Qué rutas están activas vs placeholder?
+
+=== 7. VARIABLES DE ENTORNO ===
+
+Lista TODOS los nombres (NO valores):
+   env | grep -E "^[A-Z_]" | cut -d= -f1 | sort
+
+¿Hay alguna variable que referencie Ceduverse, API externa, o DENUE?
+
+=== 8. DEPENDENCIAS ===
+
+Del package.json, lista:
+- Framework y versión (next, react)
+- Google Maps library y versión
+- Supabase client y versión
+- IA libraries (xai, openai, anthropic)
+- UI libraries (tailwind, framer-motion, zustand, etc.)
+- Cualquier otra dependencia relevante
+
+=== 9. DEPLOYMENT ===
+
+a) ¿Cómo está deployado?
+   - ¿Replit deployment?
+   - ¿Custom domain mecorrieron.mx configurado?
+   - ¿HTTPS?
+
+b) ¿Hay archivo de configuración de deployment?
+   find . -name ".replit" -o -name "replit.nix" -o -name "vercel.json" -o -name "next.config.*" 2>/dev/null
+
+=== FORMATO DE RESPUESTA ===
+
+Responde ORGANIZADO con headers claros.
+Para cada sección, indica claramente:
+- ✅ EXISTE y funciona
+- ⚠️ EXISTE pero incompleto/parcial
+- ❌ NO EXISTE
+
+Si un archivo no existe, dilo. No inventes.
+Muestra paths reales y código real cuando sea relevante.

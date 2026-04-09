@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ceduverse — Diagnostic Report</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f8f9fa;color:#1a1a2e;line-height:1.6;padding:2rem 1rem}
+.container{max-width:900px;margin:0 auto}
+h1{font-size:1.75rem;margin-bottom:.25rem}
+.subtitle{color:#6c757d;margin-bottom:2rem;font-size:.95rem}
+.section{background:#fff;border:1px solid #e9ecef;border-radius:12px;padding:1.5rem;margin-bottom:1.5rem}
+.section h2{font-size:1.15rem;margin-bottom:1rem;padding-bottom:.5rem;border-bottom:1px solid #e9ecef}
+.badge{display:inline-block;padding:2px 10px;border-radius:6px;font-size:.8rem;font-weight:600}
+.badge-ok{background:#d4edda;color:#155724}
+.badge-warn{background:#fff3cd;color:#856404}
+.badge-err{background:#f8d7da;color:#721c24}
+table{width:100%;border-collapse:collapse;margin-top:.75rem}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:.9rem}
+th{color:#6c757d;font-weight:600;font-size:.8rem;text-transform:uppercase}
+.mono{font-family:'Fira Code',monospace;font-size:.82rem;background:#f1f3f5;padding:2px 6px;border-radius:4px}
+ul{list-style:none;padding:0}
+ul li{padding:4px 0;font-size:.85rem}
+.action-item{background:#fff8e1;border-left:4px solid #ffc107;padding:.75rem 1rem;border-radius:0 8px 8px 0;margin-bottom:.75rem;font-size:.9rem}
+.action-item.critical{background:#fce4ec;border-left-color:#e53935}
+.action-item.success{background:#e8f5e9;border-left-color:#43a047}
+pre{background:#f8f9fa;border:1px solid #e9ecef;padding:1rem;border-radius:8px;font-size:.8rem;overflow-x:auto;max-height:300px;margin-top:.75rem}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>Ceduverse Deployment Diagnostic</h1>
+<p class="subtitle">Generated: 2026-04-07T18:02:47.688Z — Evidence-based analysis from runtime data collection.</p>
+
+<div class="section">
+<h2>1. Environment Variables</h2>
+<table>
+<tr><th>Variable</th><th>Status</th><th>Details</th></tr>
+<tr><td><span class="mono">DATABASE_URL</span></td><td><span class="badge badge-ok">SET</span></td><td>62 chars</td></tr>
+<tr><td><span class="mono">SUPABASE_URL</span></td><td><span class="badge badge-ok">SET</span></td><td>40 chars</td></tr>
+<tr><td><span class="mono">SUPABASE_ANON_KEY</span></td><td><span class="badge badge-ok">SET</span></td><td>208 chars</td></tr>
+<tr><td><span class="mono">VITE_SUPABASE_URL</span></td><td><span class="badge badge-ok">SET</span></td><td>40 chars</td></tr>
+<tr><td><span class="mono">VITE_SUPABASE_ANON_KEY</span></td><td><span class="badge badge-ok">SET</span></td><td>208 chars</td></tr>
+<tr><td><span class="mono">ACADEMY_SECRET</span></td><td><span class="badge badge-ok">SET</span></td><td>247 chars</td></tr>
+<tr><td><span class="mono">SESSION_SECRET</span></td><td><span class="badge badge-ok">SET</span></td><td>88 chars</td></tr>
+</table>
+</div>
+
+<div class="section">
+<h2>2. JWT Token Analysis</h2>
+<p style="font-size:.85rem;color:#6c757d;margin-bottom:.5rem">Decoded locally — secrets are not exposed. Only safe metadata fields (iss, aud, exp, iat, role) are shown.</p>
+<table>
+<tr><th>Token</th><th>Expiration</th><th>Claims</th></tr>
+<tr><td><span class="mono">ACADEMY_SECRET</span></td><td><span class="badge badge-ok">Valid (29d remaining)</span></td><td>iss: https://www.ceducap.academy<br>exp: 2026-05-06T20:50:23.000Z<br>iat: 2026-04-06T20:50:23.000Z</td></tr>
+<tr><td><span class="mono">SUPABASE_ANON_KEY</span></td><td><span class="badge badge-ok">Valid (3624d remaining)</span></td><td>iss: supabase<br>role: anon<br>exp: 2036-03-09T11:07:34.000Z<br>iat: 2026-03-09T23:07:34.000Z</td></tr>
+</table>
+</div>
+
+<div class="section">
+<h2>3. Git State vs Build Artifacts</h2>
+<p><strong>Branch:</strong> <span class="mono">main</span></p>
+<p><strong>dist/index.cjs age:</strong> 3m ago</p>
+<p><strong>Build vs commit:</strong> <span class="badge badge-warn">Build is older than last commit (by 32s) — rebuild recommended</span></p>
+<details style="margin-top:.75rem">
+<summary style="cursor:pointer;font-weight:600;font-size:.9rem">Last 10 commits</summary>
+<ul style="margin-top:.5rem"><li>d9ec5eb 2026-04-07 17:59:56 +0000 Fix deployment pipeline and generate diagnostic report (Task #53)</li>
+<li>bd1902b 2026-04-07 17:56:41 +0000 Fix deployment pipeline and generate diagnostic report (Task #53)</li>
+<li>94f2d6c 2026-04-07 15:23:43 +0000 Add error handling to prevent blank pages during app loading</li>
+<li>4f7328b 2026-04-07 15:09:51 +0000 Add loading indicator and redirect message on authentication page</li>
+<li>a8ade24 2026-04-07 14:23:50 +0000 Display loading indicator instead of blank page during user authentication transition</li>
+<li>062a422 2026-04-07 14:06:34 +0000 Improve security by refining SQL query construction patterns</li>
+<li>fae7b16 2026-04-07 14:02:41 +0000 Update database seeding to follow coding standards</li>
+<li>f27b716 2026-04-07 07:05:43 +0000 Create functional design document for the platform</li>
+<li>5804dab 2026-04-07 06:42:30 +0000 Improve server startup, database robustness, and code compatibility</li>
+<li>90e3b44 2026-04-07 05:44:51 +0000 Add a minimal test server to debug deployment issues</li></ul>
+</details>
+</div>
+
+<div class="section">
+<h2>4. esbuild Configuration</h2>
+<p><strong>External modules:</strong> <span class="mono">pg, pg-native, pdfkit, adm-zip, sharp, canvas, bcryptjs, cpu-features, ssh2, better-sqlite3</span></p>
+<div class="action-item success">
+Native Node.js modules are declared as external to prevent bundling errors for binary/native packages.
+</div>
+</div>
+
+<div class="section">
+<h2>5. Build Result</h2>
+<p><strong>Status:</strong> <span class="badge badge-ok">SUCCESS</span></p>
+<p><strong>Warnings:</strong></p>
+<ul><li>▲ [WARNING] &quot;import.meta&quot; is not available with the &quot;cjs&quot; output format and will be empty [empty-import-meta]</li></ul>
+<table>
+<tr><th>Artifact</th><th>Size</th><th>Status</th></tr>
+<tr><td><span class="mono">dist/index.cjs</span></td><td>5627.7 KB</td><td><span class="badge badge-ok">OK</span></td></tr>
+<tr><td><span class="mono">dist/public/index.html</span></td><td>2.0 KB</td><td><span class="badge badge-ok">OK</span></td></tr>
+<tr><td><span class="mono">dist/public/assets/html2pdf-B7VAUsqm.js</span></td><td>952.9 KB</td><td><span class="badge badge-ok">OK</span></td></tr>
+<tr><td><span class="mono">dist/public/assets/index-DX8-e23U.css</span></td><td>240.5 KB</td><td><span class="badge badge-ok">OK</span></td></tr>
+<tr><td><span class="mono">dist/public/assets/index-lD8ujUm9.js</span></td><td>2468.5 KB</td><td><span class="badge badge-ok">OK</span></td></tr>
+<tr><td><span class="mono">dist/public/assets/leaflet-src-Cyxcmfvv.js</span></td><td>146.4 KB</td><td><span class="badge badge-ok">OK</span></td></tr>
+<tr><td><span class="mono">dist/public/assets/purify.es-CovBOfck.js</span></td><td>22.1 KB</td><td><span class="badge badge-ok">OK</span></td></tr>
+</table>
+<details style="margin-top:.75rem">
+<summary style="cursor:pointer;font-weight:600;font-size:.9rem">Full build output</summary>
+<pre>
+&gt; rest-express@1.0.0 build
+&gt; tsx script/build.ts
+
+building client...
+vite v7.3.2 building client environment for production...
+transforming...
+Browserslist: browsers data (caniuse-lite) is 6 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+
+A PostCSS plugin did not pass the `from` option to `postcss.parse`. This may cause imported assets to be incorrectly transformed. If you've recently added a PostCSS plugin that raised this warning, please contact the package author to fix the issue.
+✓ 3024 modules transformed.
+rendering chunks...
+computing gzip size...
+../dist/public/index.html                          2.08 kB │ gzip:   0.78 kB
+../dist/public/assets/index-DX8-e23U.css         246.24 kB │ gzip:  39.89 kB
+../dist/public/assets/purify.es-CovBOfck.js       22.58 kB │ gzip:   8.63 kB
+../dist/public/assets/leaflet-src-Cyxcmfvv.js    149.90 kB │ gzip:  43.41 kB
+../dist/public/assets/html2pdf-B7VAUsqm.js       975.75 kB │ gzip: 278.57 kB
+../dist/public/assets/index-lD8ujUm9.js        2,527.78 kB │ gzip: 667.25 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 20.25s
+building server...
+▲ [WARNING] &quot;import.meta&quot; is not available with the &quot;cjs&quot; output format and will be empty [empty-import-meta]
+
+    server/import-prospectos-csv.ts:7:95:
+      7 │ ...efined&quot; ? __dirname : path.dirname(fileURLToPath(import.meta.url));
+        ╵                                                     ~~~~~~~~~~~
+
+  You need to set the output format to &quot;esm&quot; for &quot;import.meta&quot; to work correctly.
+
+1 warning
+
+  dist/index.cjs  5.5mb ⚠️
+
+⚡ Done in 1338ms
+</pre>
+</details>
+</div>
+
+<div class="section">
+<h2>6. Deployment Configuration</h2>
+<table>
+<tr><th>Setting</th><th>Value</th><th>Status</th></tr>
+<tr><td>deploymentTarget</td><td><span class="mono">autoscale</span></td><td><span class="badge badge-ok">OK</span></td></tr>
+</table>
+</div>
+
+<div class="section">
+<h2>7. Health Check (Production Mode)</h2>
+<p><strong>GET /__health:</strong> <span class="badge badge-ok">RESPONDING</span></p>
+<pre>[production mode, port 9876] {&quot;status&quot;:&quot;ok&quot;,&quot;uptime&quot;:1.478934864}</pre>
+
+</div>
+
+<div class="section">
+<h2>8. Auth Flow Components</h2>
+<table>
+<tr><th>Component</th><th>Status</th></tr>
+<tr><td>AuthErrorBoundary (auth.tsx)</td><td><span class="badge badge-ok">Present</span></td></tr>
+<tr><td>AppErrorBoundary (App.tsx)</td><td><span class="badge badge-ok">Present</span></td></tr>
+<tr><td>Supabase client configured</td><td><span class="badge badge-ok">Yes</span></td></tr>
+</table>
+</div>
+
+<div class="section">
+<h2>9. Recommended Actions</h2>
+<div class="action-item critical">
+<strong>ACTION REQUIRED:</strong> The Replit deployment itself may fail due to project-level permissions or billing settings. The project owner must verify the deployment target (Autoscale) is available on their plan.
+</div>
+
+<div class="action-item">
+<strong>RECOMMENDATION:</strong> Consider code-splitting the frontend bundle using dynamic import() for heavy pages to improve initial load time.
+</div>
+</div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,32 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "jHttO5X_bV3xm_Mrkv_0W"
+uri = "file://attached_assets/prompt-tutor-ia-upgrade.md"
+type = "text"
+title = "Prompt completo — Rediseño Tutor IA Ceduverse"
+
+[[outputs]]
+id = "dVnpoFiGaHS8EZbMRPugP"
+uri = "file://CEDUVERSE-SCHEMA-COMPLETO.md"
+type = "text"
+title = "Ceduverse — Esquema Completo de Plataforma"
+
+[[outputs]]
+id = "HIv0fED_f6iuh84XkCQEI"
+uri = "file://ceduverse-backup.tar.gz"
+type = "unspecified"
+title = "Ceduverse - Respaldo completo del código"
+
+[[outputs]]
+id = "iOSEJAOt_ousj0rkhSKTm"
+uri = "file://.local/ceduverse-prompt.md"
+type = "text"
+title = "Prompt completo — Ceduverse /ceduverse page"
+
+[[outputs]]
+id = "sL1k7qR3K8AEd_BpxRBpB"
+uri = "file://docs/FUNCTIONAL_DESIGN_DOCUMENT.md"
+type = "text"
+title = "Ceduverse — Functional Design Document"

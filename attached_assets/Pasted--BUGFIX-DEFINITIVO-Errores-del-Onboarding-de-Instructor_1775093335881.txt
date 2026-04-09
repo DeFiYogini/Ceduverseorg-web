@@ -1,0 +1,240 @@
+# BUGFIX DEFINITIVO: Errores del Onboarding de Instructor (basado en screenshots)
+
+## Contexto
+El onboarding de instructor tiene múltiples bugs detectados en testing real. Este prompt los lista TODOS con fixes específicos. La URL de dev es el Replit deployment.
+
+---
+
+## Bug 1 — VIDEO DE CÁMARA SE VE NEGRO (SIGUE SIN FUNCIONAR)
+
+**Evidencia:** Screenshot 6 — El recuadro del video está completamente negro durante la grabación.
+
+**El fix del `muted` NO se aplicó o no funcionó.** Verificar en `DigitalTwinRecorder.tsx`:
+
+1. Buscar TODOS los `<video>` elements en el componente
+2. Cada `<video>` que muestre el preview de la cámara DEBE tener exactamente estos atributos:
+
+```tsx
+<video
+  ref={videoRef}
+  autoPlay={true}
+  playsInline={true}
+  muted={true}
+  style={{ transform: 'scaleX(-1)', background: '#000' }}
+/>
+```
+
+**IMPORTANTE:** `muted` debe ser `muted={true}` como prop de React, NO como atributo HTML string. Verificar que no esté escrito como `muted="true"` (string) ni que esté dentro de un condicional que lo omita.
+
+3. En la función `startCamera()`, FORZAR la reproducción:
+
+```typescript
+const startCamera = async () => {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
+      audio: true,
+    });
+    streamRef.current = stream;
+    
+    if (videoRef.current) {
+      videoRef.current.srcObject = stream;
+      videoRef.current.muted = true;  // FORZAR muted via JS también
+      
+      // Esperar a que el metadata cargue y luego forzar play
+      videoRef.current.onloadedmetadata = async () => {
+        try {
+          await videoRef.current?.play();
+          console.log('[Camera] Preview playing successfully');
+        } catch (playError) {
+          console.error('[Camera] Play failed:', playError);
+        }
+      };
+    }
+  } catch (err) {
+    console.error('[Camera] getUserMedia failed:', err);
+  }
+};
+```
+
+4. **Test:** Después de aplicar el fix, verificar que al hacer clic en "Empezar grabación" → "Iniciar grabación", se vea la cara del instructor en el recuadro del video.
+
+---
+
+## Bug 2 — ONBOARDING DEBE SER SOLO INFORMATIVO (no de acción)
+
+**Evidencia:** Screenshot 2 — Slide 2 tiene un formulario "Crea tu Primer Curso" con campos de nombre y descripción.
+
+**Problema:** El onboarding no debe incluir acciones como crear cursos. Debe ser solo informativo/explicativo. La creación de cursos ya existe en el Panel de Instructor.
+
+**Fix — Cambiar el contenido de los 5 slides a SOLO INFORMATIVO:**
+
+### Slide 1: "¡Felicidades!" (ya está bien)
+- Certificado de instructor
+- Folio de socio (FIX: usar el existente, ver Bug 3)
+- Texto: "Vamos a configurar tu espacio en unos pasos rápidos. Puedes omitir cualquier paso."
+
+### Slide 2: CAMBIAR a "¿Qué puedes hacer como instructor?"
+- **Eliminar el formulario de crear curso**
+- Reemplazar con una infografía/explicación de las 4 cosas que puede hacer:
+  1. 📚 **Crear cursos** — "Desde tu panel puedes crear cursos con módulos, evaluaciones y certificados"
+  2. 🤖 **Digital Twin** — "Graba un video de 2 min y tu clon digital presentará tus cursos"
+  3. 🎥 **Sesiones en vivo** — "Ofrece clases privadas y grupales a tus alumnos"
+  4. 💰 **Ganar comisiones** — "Recibe el 50% de cada sesión privada y comisiones por DC-3"
+- Solo texto e íconos informativos, SIN botones de acción, SIN formularios
+
+### Slide 3: Digital Twin (Opcional)
+- **Mantener** el componente de grabación de Digital Twin (es el único paso de acción permitido)
+- Pero asegurar que el botón "Omitir" funcione correctamente y no bloquee nada
+
+### Slide 4: "Tu Firma Digital"
+- **Mantener** informativo
+- FIX: El link "Ver mi Firma y vCard" debe apuntar a una ruta que exista (ver Bug 5)
+
+### Slide 5: "¡Todo Listo!"
+- **Mantener** los 4 shortcuts (Crear cursos, Digital Twin, Mis alumnos, Mis ingresos)
+- FIX: El botón "Ir a mi Panel" debe funcionar sin error (ver Bug 4)
+
+---
+
+## Bug 3 — FOLIO DUPLICADO (SIGUE GENERANDO INS-INT-xxx)
+
+**Evidencia:** Screenshot 1 — Muestra "Tu folio de socio: **INS-INT-MNGQIRCF**" y el certificado dice "No. de Socio: INS-INT-MNGQIRCF"
+
+**Este folio NO es el folio de socio original.** Es un folio NUEVO generado por la acreditación de instructor.
+
+**Fix:**
+1. Buscar en el código backend dónde se genera el patrón `INS-INT-{random}` al acreditar un instructor
+2. **Eliminar esa lógica de generación.** No crear ningún folio nuevo.
+3. Obtener el folio de socio cooperativo que el usuario ya tiene (el que se asignó al registrarse como socio, que tiene el formato del Certificado de Asociación Cooperativa)
+4. En la pantalla "¡Felicidades!", mostrar el folio de socio ORIGINAL
+5. En el certificado de instructor, mostrar el mismo folio de socio ORIGINAL
+6. Si el campo del folio de socio se llama diferente al campo del folio de instructor, verificar cuál es el correcto y usar ese
+
+---
+
+## Bug 4 — "ERROR AL COMPLETAR" al hacer clic en "Ir a mi Panel"
+
+**Evidencia:** Screenshot 8 — Toast rojo en esquina inferior derecha: "Error al completar. Intenta de nuevo"
+
+**Problema:** El endpoint que marca el onboarding como completado está fallando. Esto bloquea al instructor de acceder a su panel.
+
+**Fix:**
+1. Verificar el endpoint `PATCH /api/instructor/onboarding` (o como se llame) que actualiza el `instructorOnboardingStep`
+2. Agregar logging para ver el error exacto:
+
+```typescript
+// En el handler del botón "Ir a mi Panel":
+const handleFinish = async () => {
+  try {
+    const res = await fetch('/api/instructor/onboarding', {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ step: 'completed' }),
+    });
+    
+    const data = await res.json();
+    console.log('[Onboarding] Complete response:', res.status, data);
+    
+    if (!res.ok) {
+      throw new Error(data.error || data.message || `HTTP ${res.status}`);
+    }
+    
+    // Navegar al panel
+    navigate('/instructor');
+  } catch (err) {
+    console.error('[Onboarding] Error completing:', err);
+    // Mostrar error detallado, no solo "Error al completar"
+    toast.error(`Error: ${err.message}`);
+  }
+};
+```
+
+3. **Fallback crítico:** Si el endpoint falla, **DEJAR PASAR AL INSTRUCTOR DE TODOS MODOS.** No bloquear el acceso al panel por un error de onboarding. El onboarding es informativo, no un gate.
+
+```typescript
+// SIEMPRE navegar al panel, independientemente del error:
+const handleFinish = async () => {
+  try {
+    await fetch('/api/instructor/onboarding', {
+      method: 'PATCH',
+      headers: { ... },
+      body: JSON.stringify({ step: 'completed' }),
+    });
+  } catch (err) {
+    console.warn('[Onboarding] Could not mark as complete, but proceeding anyway:', err);
+  }
+  // SIEMPRE navegar
+  navigate('/instructor');
+};
+```
+
+4. Si el Panel de Instructor verifica que el onboarding esté completado para dejar entrar, **eliminar esa verificación.** El panel debe ser accesible siempre que `is_instructor = true`.
+
+---
+
+## Bug 5 — RUTA /vcard DA 404
+
+**Evidencia:** Screenshot 7 — `b8630436-...picard.replit.dev/vcard` muestra "404 Page Not Found. Did you forget to add the page to the router?"
+
+**Problema:** El link "Ver mi Firma y vCard" en Slide 4 apunta a `/vcard` que no existe.
+
+**Fix:**
+Opción A (rápida): Cambiar el link para que apunte a una ruta que SÍ exista, o deshabilitarlo temporalmente con texto "Próximamente"
+
+Opción B (correcta): Implementar la ruta. La firma digital y vCard se implementará en Sprint 3. Por ahora:
+1. En Slide 4, cambiar el link a un botón disabled con texto "Próximamente — Se habilitará cuando completes tu perfil"
+2. O mejor: eliminar el link y solo mostrar texto informativo de que la firma se genera automáticamente y estará disponible en su perfil
+
+---
+
+## Bug 6 — CÁMARA NO SE APAGA
+
+**Evidencia:** El LED de la cámara sigue encendido después de grabar.
+
+**Fix:** En `DigitalTwinRecorder.tsx`, asegurar que `stopCamera()` detenga TODOS los tracks:
+
+```typescript
+const stopCamera = () => {
+  // Detener todos los tracks del stream
+  if (streamRef.current) {
+    const tracks = streamRef.current.getTracks();
+    tracks.forEach(track => {
+      track.stop();
+      console.log(`[Camera] Stopped track: ${track.kind}`);
+    });
+    streamRef.current = null;
+  }
+  
+  // Limpiar el elemento video
+  if (videoRef.current) {
+    videoRef.current.srcObject = null;
+    videoRef.current.load(); // Forzar liberación del stream
+  }
+};
+```
+
+Llamar `stopCamera()` en:
+- Al terminar de grabar (en el `onstop` del MediaRecorder)
+- Al pasar de review a processing
+- Al hacer clic en "Omitir" en cualquier paso
+- Al hacer clic en "Siguiente" si se omite el Digital Twin
+- En el `useEffect` cleanup: `return () => { stopCamera(); }`
+
+---
+
+## RESUMEN — ORDEN DE IMPLEMENTACIÓN
+
+| # | Bug | Impacto | Fix |
+|---|-----|---------|-----|
+| 1 | Video negro | Bloquea Digital Twin | `muted={true}` + force play |
+| 2 | Onboarding con acciones | UX confuso | Slide 2 → solo informativo, eliminar formulario |
+| 3 | Folio duplicado | Data incorrecta | Eliminar generación INS-INT-xxx |
+| 4 | Error al completar | **BLOQUEA acceso al panel** | Fallback: navegar siempre, no bloquear |
+| 5 | /vcard 404 | Link roto | Deshabilitar link o texto "Próximamente" |
+| 6 | Cámara no se apaga | Privacy issue | stopCamera() en todos los exit points |
+
+**Prioridad:** Bug 4 primero (bloquea el panel), luego Bug 1 (bloquea Digital Twin), luego el resto.

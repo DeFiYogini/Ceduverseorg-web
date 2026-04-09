@@ -1,0 +1,870 @@
+# 🚀 CEDUVERSE AI STUDIO — Plan Maestro v2 (Actualizado)
+## Integrado con la arquitectura real de Replit
+## Express + React + WordPress MCP + PostgreSQL + Claude API
+
+---
+
+## Arquitectura REAL del Sistema
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│                        FRONTEND (React)                         │
+│  client/src/                                                    │
+│  ├── pages/academy.tsx          ← Catálogo Academy (ya existe) │
+│  ├── pages/academy-course.tsx   ← Visor Academy (ya existe)    │
+│  ├── pages/studio.tsx           ← Catálogo Studio (NUEVO)      │
+│  ├── pages/studio-course.tsx    ← AI Course Studio (NUEVO)     │
+│  └── pages/home.tsx             ← Dashboard unificado          │
+│                                                                 │
+│  TanStack Query para cache y fetching                          │
+├────────────────────────────────────────────────────────────────┤
+│                     EXPRESS BACKEND (server/)                    │
+│  server/                                                        │
+│  ├── routes.ts                  ← Rutas existentes + nuevas    │
+│  ├── academy.ts                 ← AcademyClient MCP (ya existe)│
+│  ├── ai-engine.ts               ← Motor IA Claude (NUEVO)      │
+│  └── storage.ts                 ← PostgreSQL queries            │
+│                                                                 │
+│  RUTAS EXISTENTES (Academy):                                    │
+│  GET  /api/academy/courses                                      │
+│  GET  /api/academy/courses/:id                                  │
+│  GET  /api/academy/courses/:id/curriculum                       │
+│  GET  /api/academy/courses/:id/quiz                             │
+│  POST /api/academy/courses/:id/quiz/submit                      │
+│                                                                 │
+│  RUTAS NUEVAS (Studio):                                         │
+│  GET  /api/studio/courses                                       │
+│  GET  /api/studio/courses/:slug                                 │
+│  GET  /api/studio/courses/:slug/modules/:index                  │
+│  POST /api/studio/courses/:slug/modules/:index/generate         │
+│  POST /api/studio/courses/:slug/modules/:index/chat             │
+│  POST /api/studio/courses/:slug/quiz/submit                     │
+│  GET  /api/studio/sources/:slug/:index                          │
+│                                                                 │
+│  RUTAS NUEVAS (Perfil):                                         │
+│  GET  /api/profile                                              │
+│  PUT  /api/profile                                              │
+│                                                                 │
+│  RUTAS NUEVAS (Certificación):                                  │
+│  POST /api/certificates/nft                                     │
+│  POST /api/certificates/dc3/request                             │
+│  GET  /api/certificates/mine                                    │
+│                                                                 │
+├────────────────────────────────────────────────────────────────┤
+│                     FUENTES DE DATOS                            │
+│                                                                 │
+│  ┌──────────────┐  ┌──────────────┐  ┌───────────────────┐    │
+│  │  WordPress    │  │  PostgreSQL  │  │   Claude API      │    │
+│  │  ceducap.     │  │  (local)     │  │   (Sonnet 4)      │    │
+│  │  academy      │  │              │  │                   │    │
+│  │              │  │  • studio_   │  │  • Genera texto   │    │
+│  │  • Cursos    │  │    courses   │  │    extenso        │    │
+│  │    curados   │  │  • studio_   │  │  • Chat           │    │
+│  │  • Videos    │  │    modules   │  │    contextual     │    │
+│  │  • Unidades  │  │  • quizzes   │  │  • Quiz           │    │
+│  │  • Productos │  │  • profiles  │  │    adaptativo     │    │
+│  │              │  │  • generated │  │  • Web search     │    │
+│  │  via MCP     │  │    _content  │  │    fuentes        │    │
+│  │  JSON-RPC    │  │  • certs     │  │  • Podcast        │    │
+│  │              │  │  • enrolls   │  │    script         │    │
+│  └──────┬───────┘  └──────┬───────┘  └────────┬──────────┘    │
+│         │                 │                    │               │
+│         └────────────┬────┘────────────────────┘               │
+│                      │                                          │
+│              Todo se sirve via Express                          │
+│              al Frontend React                                  │
+└────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Modelo de Datos PostgreSQL (Nuevas tablas)
+
+```sql
+-- ═══════════════════════════════════════════
+-- TABLAS NUEVAS PARA STUDIO
+-- Se agregan a la base PostgreSQL existente
+-- ═══════════════════════════════════════════
+
+-- Cursos del Studio (los 50 cursos estáticos)
+CREATE TABLE studio_courses (
+  id SERIAL PRIMARY KEY,
+  slug TEXT UNIQUE NOT NULL,
+  title TEXT NOT NULL,
+  description TEXT,
+  category TEXT NOT NULL,
+  subcategory TEXT,
+  duration_minutes INTEGER DEFAULT 60,
+  level TEXT CHECK (level IN ('basico', 'intermedio', 'avanzado')) DEFAULT 'basico',
+  tags TEXT[] DEFAULT '{}',
+  
+  -- Certificación
+  dc3_available BOOLEAN DEFAULT false,
+  dc3_price_range TEXT,              -- "$150-$500 MXN"
+  nft_certificate BOOLEAN DEFAULT true,
+  
+  -- Metadata
+  icon TEXT,                          -- Emoji o icono
+  color TEXT,                         -- Color accent del curso
+  source TEXT DEFAULT 'studio',       -- 'studio' | 'procadist' | 'stps'
+  
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Módulos de cada curso Studio
+CREATE TABLE studio_modules (
+  id SERIAL PRIMARY KEY,
+  course_id INTEGER REFERENCES studio_courses(id) ON DELETE CASCADE,
+  module_index INTEGER NOT NULL,      -- 0, 1, 2, 3
+  title TEXT NOT NULL,
+  description TEXT,
+  content_html TEXT NOT NULL,          -- Contenido base (esqueleto)
+  references TEXT[] DEFAULT '{}',
+  duration_minutes INTEGER DEFAULT 15,
+  
+  UNIQUE(course_id, module_index)
+);
+
+-- Quizzes del Studio (estáticos, base)
+CREATE TABLE studio_quizzes (
+  id SERIAL PRIMARY KEY,
+  course_id INTEGER REFERENCES studio_courses(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  passing_score INTEGER DEFAULT 70,
+  questions JSONB NOT NULL,           -- Array de {question, options, correctIndex, explanation}
+  
+  UNIQUE(course_id)
+);
+
+-- Perfil extendido del estudiante
+-- (se agrega a la tabla de users existente o se crea separada)
+CREATE TABLE student_profiles (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  job_title TEXT,
+  industry TEXT,
+  company_size TEXT CHECK (company_size IN ('1-10', '11-50', '51-100', '101-300', '300+')),
+  experience_level TEXT CHECK (experience_level IN ('junior', 'mid', 'senior', 'director')),
+  learning_goals TEXT[] DEFAULT '{}',
+  preferred_style TEXT CHECK (preferred_style IN ('visual', 'reading', 'audio', 'hands-on')) DEFAULT 'reading',
+  
+  UNIQUE(user_id)
+);
+
+-- Contenido generado por IA (cache)
+CREATE TABLE generated_content (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  course_slug TEXT NOT NULL,
+  module_index INTEGER NOT NULL,
+  
+  lecture_html TEXT,                   -- Texto extenso generado
+  mind_map JSONB,                     -- JSON del mapa mental
+  reflections TEXT[],                 -- Preguntas de reflexión
+  adaptive_quiz JSONB,               -- Quiz generado por IA
+  suggested_sources JSONB,           -- Fuentes encontradas
+  podcast_script TEXT,               -- Script del podcast (Fase 3)
+  slides JSONB,                      -- Datos de slides (Fase 3)
+  
+  personalized_for JSONB,            -- Snapshot del perfil usado
+  generated_at TIMESTAMPTZ DEFAULT NOW(),
+  
+  -- Cachear por usuario + curso + módulo
+  UNIQUE(user_id, course_slug, module_index)
+);
+
+-- Inscripciones y progreso (unificado Academy + Studio)
+CREATE TABLE enrollments (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  
+  -- Puede ser curso Academy O Studio
+  source TEXT CHECK (source IN ('academy', 'studio')) NOT NULL,
+  course_identifier TEXT NOT NULL,    -- academy: course_id | studio: slug
+  
+  enrolled_at TIMESTAMPTZ DEFAULT NOW(),
+  status TEXT DEFAULT 'active' CHECK (status IN ('active', 'completed', 'paused')),
+  progress_percent INTEGER DEFAULT 0,
+  last_accessed_at TIMESTAMPTZ,
+  
+  UNIQUE(user_id, source, course_identifier)
+);
+
+-- Progreso por módulo/unidad
+CREATE TABLE module_progress (
+  id SERIAL PRIMARY KEY,
+  enrollment_id INTEGER REFERENCES enrollments(id) ON DELETE CASCADE,
+  module_identifier TEXT NOT NULL,    -- academy: unit_id | studio: module_index
+  completed BOOLEAN DEFAULT false,
+  completed_at TIMESTAMPTZ,
+  quiz_score INTEGER,
+  time_spent_seconds INTEGER DEFAULT 0,
+  
+  UNIQUE(enrollment_id, module_identifier)
+);
+
+-- Certificados emitidos
+CREATE TABLE certificates (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  enrollment_id INTEGER REFERENCES enrollments(id),
+  
+  type TEXT CHECK (type IN ('nft', 'dc3')) NOT NULL,
+  course_title TEXT NOT NULL,
+  course_slug TEXT NOT NULL,
+  
+  -- NFT
+  nft_token_id TEXT,
+  nft_tx_hash TEXT,
+  
+  -- DC3
+  dc3_status TEXT CHECK (dc3_status IN ('pending', 'processing', 'issued', 'delivered')),
+  dc3_file_url TEXT,
+  dc3_payment_id TEXT,
+  dc3_amount INTEGER,                -- Centavos MXN
+  
+  issued_at TIMESTAMPTZ DEFAULT NOW(),
+  quiz_score INTEGER,
+  
+  UNIQUE(user_id, enrollment_id, type)
+);
+
+-- Historial de chat por sesión
+CREATE TABLE chat_sessions (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  course_slug TEXT NOT NULL,
+  module_index INTEGER NOT NULL,
+  messages JSONB DEFAULT '[]',        -- Array de {role, content, timestamp}
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+---
+
+## Nuevos archivos en server/
+
+### server/ai-engine.ts — Motor de IA
+
+```typescript
+// Interfaz del motor IA que llama a Claude API
+
+interface GenerateModuleRequest {
+  courseSlug: string;
+  moduleIndex: number;
+  studentProfile: StudentProfile;
+}
+
+interface GenerateModuleResponse {
+  lecture: string;           // HTML extenso (2000-4000 palabras)
+  mindMap: MindMapData;      // JSON para visualización
+  reflections: string[];     // 3 preguntas personalizadas
+  adaptiveQuiz: QuizQuestion[]; // 5 preguntas basadas en contenido generado
+  suggestedSources: Source[];   // URLs reales
+  personalizedFor: string;   // Resumen del perfil
+}
+
+interface ChatRequest {
+  courseSlug: string;
+  moduleIndex: number;
+  generatedContent: string;  // El lecture que ya se generó
+  studentProfile: StudentProfile;
+  messages: ChatMessage[];   // Historial
+  newMessage: string;
+}
+
+// Funciones principales:
+export async function generateModuleContent(req: GenerateModuleRequest): Promise<GenerateModuleResponse>
+export async function chatWithModule(req: ChatRequest): Promise<string>
+export async function generatePodcastScript(req: GenerateModuleRequest): Promise<string>  // Fase 3
+export async function generateSlides(req: GenerateModuleRequest): Promise<SlideData[]>    // Fase 3
+```
+
+### Prompt de sistema completo (para ai-engine.ts)
+
+```
+SYSTEM PROMPT — CEDUVERSE AI COURSE GENERATOR v2
+
+Eres el motor de aprendizaje de Ceduverse, una plataforma EdTech 
+mexicana que genera capacitación laboral personalizada con IA.
+
+REGLAS FUNDAMENTALES:
+1. Todo contenido en ESPAÑOL LATINOAMERICANO (México)
+2. Referencia normatividad REAL mexicana (NOMs, LFT, artículos específicos)
+3. Ejemplos y casos adaptados al puesto e industria del estudiante
+4. Datos estadísticos reales cuando sea posible
+5. Tono: mentor experto — profesional pero accesible, tutea al estudiante
+6. Contenido extenso y profundo, NO superficial
+
+DATOS DEL MÓDULO (esqueleto base):
+- Curso: {{course.title}}
+- Módulo: {{module.title}}
+- Descripción: {{module.description}}
+- Contenido base: {{module.contentHtml}}
+- Referencias: {{module.references}}
+
+PERFIL DEL ESTUDIANTE:
+- Nombre: {{profile.name}}
+- Puesto: {{profile.job_title}}
+- Industria: {{profile.industry}}
+- Empresa: {{profile.company_size}} empleados
+- Experiencia: {{profile.experience_level}}
+- Objetivos: {{profile.learning_goals}}
+
+GENERA EN JSON (sin markdown, sin backticks):
+
+{
+  "lecture": "HTML extenso de 2000-4000 palabras. Usa <h2>, <h3>, <p>, <ul>, <li>, <ol>, <strong>, <em>, <table>, <blockquote>. Expande cada punto del contenido base con: explicación profunda, datos reales, ejemplos del puesto/industria del estudiante, tablas comparativas, frameworks prácticos, y una sección 'Aplicación en tu caso' personalizada al final de cada tema principal. NO seas superficial — este es el contenido principal del curso.",
+  
+  "mindMap": {
+    "central": "Tema principal del módulo",
+    "branches": [
+      {
+        "label": "Subtema 1",
+        "color": "#1b5adf",
+        "children": [
+          {"label": "Punto clave", "detail": "Explicación breve"},
+          {"label": "Punto clave 2", "detail": "Explicación breve"}
+        ]
+      }
+    ]
+  },
+  
+  "reflections": [
+    "Pregunta personalizada al puesto del estudiante #1",
+    "Pregunta personalizada #2",
+    "Pregunta personalizada #3"
+  ],
+  
+  "adaptiveQuiz": [
+    {
+      "question": "Pregunta basada en el contenido extenso generado",
+      "options": ["A", "B", "C", "D"],
+      "correctIndex": 0,
+      "explanation": "Explicación detallada de por qué es correcta"
+    }
+  ],
+  
+  "suggestedSources": [
+    {"title": "Nombre de la fuente", "url": "URL real", "type": "NOM|articulo|video|paper"}
+  ]
+}
+```
+
+---
+
+## Nuevas rutas en server/routes.ts
+
+```typescript
+// ═══ STUDIO ROUTES (agregar a routes.ts existente) ═══
+
+// Catálogo de cursos Studio
+app.get('/api/studio/courses', async (req, res) => {
+  const { category, search, page = 1, limit = 12 } = req.query;
+  const courses = await storage.getStudioCourses({ category, search, page, limit });
+  res.json(courses);
+});
+
+// Detalle de un curso Studio
+app.get('/api/studio/courses/:slug', async (req, res) => {
+  const course = await storage.getStudioCourse(req.params.slug);
+  if (!course) return res.status(404).json({ error: 'Course not found' });
+  
+  // Incluir módulos y quiz estático
+  const modules = await storage.getStudioModules(course.id);
+  const quiz = await storage.getStudioQuiz(course.id);
+  
+  res.json({ ...course, modules, quiz });
+});
+
+// Obtener módulo estático (sin IA)
+app.get('/api/studio/courses/:slug/modules/:index', async (req, res) => {
+  const module = await storage.getStudioModule(req.params.slug, parseInt(req.params.index));
+  res.json(module);
+});
+
+// ★ GENERAR contenido IA para un módulo
+app.post('/api/studio/courses/:slug/modules/:index/generate', async (req, res) => {
+  const { slug, index } = req.params;
+  const moduleIndex = parseInt(index);
+  const userId = req.user.id; // del middleware auth
+  
+  // 1. Verificar si ya hay contenido cacheado
+  const cached = await storage.getGeneratedContent(userId, slug, moduleIndex);
+  if (cached) return res.json(cached);
+  
+  // 2. Obtener datos necesarios
+  const course = await storage.getStudioCourse(slug);
+  const module = await storage.getStudioModule(slug, moduleIndex);
+  const profile = await storage.getStudentProfile(userId);
+  
+  // 3. Generar con IA
+  const generated = await aiEngine.generateModuleContent({
+    courseSlug: slug,
+    moduleIndex,
+    studentProfile: profile,
+    courseTitle: course.title,
+    moduleData: module
+  });
+  
+  // 4. Cachear en PostgreSQL
+  await storage.saveGeneratedContent(userId, slug, moduleIndex, generated);
+  
+  // 5. Retornar
+  res.json(generated);
+});
+
+// ★ CHAT contextual con el módulo
+app.post('/api/studio/courses/:slug/modules/:index/chat', async (req, res) => {
+  const { slug, index } = req.params;
+  const { message } = req.body;
+  const userId = req.user.id;
+  
+  // Obtener contexto
+  const generated = await storage.getGeneratedContent(userId, slug, parseInt(index));
+  const profile = await storage.getStudentProfile(userId);
+  const chatSession = await storage.getChatSession(userId, slug, parseInt(index));
+  
+  // Llamar a IA con contexto
+  const reply = await aiEngine.chatWithModule({
+    courseSlug: slug,
+    moduleIndex: parseInt(index),
+    generatedContent: generated?.lecture_html || '',
+    studentProfile: profile,
+    messages: chatSession?.messages || [],
+    newMessage: message
+  });
+  
+  // Guardar mensaje en historial
+  await storage.appendChatMessage(userId, slug, parseInt(index), [
+    { role: 'user', content: message, timestamp: new Date() },
+    { role: 'assistant', content: reply, timestamp: new Date() }
+  ]);
+  
+  res.json({ reply });
+});
+
+// Enviar quiz
+app.post('/api/studio/courses/:slug/quiz/submit', async (req, res) => {
+  const { answers, quizType } = req.body; // quizType: 'static' | 'adaptive'
+  const userId = req.user.id;
+  
+  // Evaluar respuestas contra quiz estático O adaptativo
+  const quiz = quizType === 'adaptive' 
+    ? (await storage.getGeneratedContent(userId, req.params.slug, 0))?.adaptive_quiz
+    : (await storage.getStudioQuiz(req.params.slug))?.questions;
+  
+  const score = evaluateQuiz(answers, quiz);
+  
+  // Guardar progreso
+  await storage.updateEnrollmentProgress(userId, 'studio', req.params.slug, score);
+  
+  // Si aprueba (≥70%), marcar como completado
+  if (score >= 70) {
+    await storage.completeEnrollment(userId, 'studio', req.params.slug, score);
+  }
+  
+  res.json({ score, passed: score >= 70, total: quiz.length });
+});
+
+// ═══ PROFILE ROUTES ═══
+
+app.get('/api/profile', async (req, res) => {
+  const profile = await storage.getStudentProfile(req.user.id);
+  res.json(profile || {});
+});
+
+app.put('/api/profile', async (req, res) => {
+  const profile = await storage.upsertStudentProfile(req.user.id, req.body);
+  res.json(profile);
+});
+
+// ═══ CERTIFICATE ROUTES ═══
+
+app.get('/api/certificates/mine', async (req, res) => {
+  const certs = await storage.getUserCertificates(req.user.id);
+  res.json(certs);
+});
+
+app.post('/api/certificates/nft', async (req, res) => {
+  const { enrollmentId } = req.body;
+  // Verificar que el enrollment está completado
+  // Generar NFT (o registrar intención)
+  const cert = await storage.issueCertificate(req.user.id, enrollmentId, 'nft');
+  res.json(cert);
+});
+
+app.post('/api/certificates/dc3/request', async (req, res) => {
+  const { enrollmentId } = req.body;
+  // Verificar dc3_available del curso
+  // Crear solicitud de DC3 pendiente de pago
+  const cert = await storage.requestDC3(req.user.id, enrollmentId);
+  res.json(cert);
+});
+
+// ═══ UNIFIED DASHBOARD ═══
+
+app.get('/api/dashboard', async (req, res) => {
+  const userId = req.user.id;
+  
+  // Combinar datos de Academy + Studio
+  const academyEnrollments = await storage.getEnrollments(userId, 'academy');
+  const studioEnrollments = await storage.getEnrollments(userId, 'studio');
+  const certificates = await storage.getUserCertificates(userId);
+  const profile = await storage.getStudentProfile(userId);
+  
+  res.json({
+    profile,
+    enrollments: {
+      academy: academyEnrollments,
+      studio: studioEnrollments,
+      total: academyEnrollments.length + studioEnrollments.length
+    },
+    certificates,
+    stats: {
+      coursesCompleted: certificates.length,
+      totalHoursLearned: calculateTotalHours(academyEnrollments, studioEnrollments),
+      currentStreak: calculateStreak(userId)
+    }
+  });
+});
+```
+
+---
+
+## Nuevas páginas React en client/src/pages/
+
+### studio.tsx — Catálogo del Studio
+
+```
+Ruta: /studio
+
+Funcionalidad:
+  - Grid de los 50 cursos con cards
+  - Filtro por categoría (tabs o chips):
+    • Desarrollo Humano
+    • Seguridad Industrial
+    • Normatividad (NOMs)
+    • Formación Empresarial
+    • Productividad
+    • IA y Tecnología
+  - Búsqueda por texto
+  - Paginación (12 por página)
+  
+  Cada card muestra:
+    - Icono/emoji del curso
+    - Título
+    - Duración (ej: "1 hora")
+    - Nivel (básico/intermedio/avanzado)
+    - Badges:
+      ✅ "Gratuito"
+      🏆 "NFT al aprobar"
+      📜 "DC3 disponible" (si dc3_available)
+    - [Comenzar] button
+
+Query: useQuery(['studio-courses', category, search, page], 
+  () => fetch('/api/studio/courses?...'))
+```
+
+### studio-course.tsx — AI Course Studio (la experiencia principal)
+
+```
+Ruta: /studio/:slug
+
+Layout:
+  ┌──────────────────────────────────────────────────┐
+  │  ← Catálogo    Título del Curso                  │
+  │  Personalizado para: [nombre] | [puesto]         │
+  ├──────────────────────────────────────────────────┤
+  │  MÓDULOS: [1 ●] [2 ○] [3 ○] [4 ○]  Progreso    │
+  ├─────────────────────────┬────────────────────────┤
+  │  CONTENIDO (70%)        │  CHAT (30%)            │
+  │                         │                        │
+  │  Tabs:                  │  💬 Pregúntame sobre   │
+  │  📖 Lectura             │  este módulo...        │
+  │  🧠 Mapa Mental         │                        │
+  │  📝 Quiz                │  Sugerencias:          │
+  │  📚 Fuentes             │  • "¿Cómo aplico..."  │
+  │  🎙️ Podcast (Fase 3)   │  • "Dame un ejemplo"  │
+  │                         │  • "Explica más..."    │
+  │  [Contenido del tab]    │                        │
+  │                         │  [Input de mensaje]    │
+  │                         │                        │
+  │  ▶️ Audio | ⬇️ PDF     │                        │
+  ├─────────────────────────┴────────────────────────┤
+  │  ✅ NFT Ceduverse al aprobar                     │
+  │  📜 DC3 STPS disponible — Desde $150     │
+  │  [← Anterior]              [Siguiente →]         │
+  └──────────────────────────────────────────────────┘
+
+Flujo:
+  1. Al montar: fetch curso estático (/api/studio/courses/:slug)
+  2. Verificar si tiene perfil completo → si no, mostrar modal
+  3. Al seleccionar módulo: POST /api/studio/courses/:slug/modules/:index/generate
+  4. Mostrar skeleton mientras genera (~10-15 seg)
+  5. Renderizar contenido en tabs
+  6. Chat disponible en panel derecho siempre
+  7. Al completar todos los módulos → habilitar quiz final
+  8. Al aprobar quiz → emitir NFT + mostrar opción DC3
+
+Estado (React):
+  - course: StudioCourse
+  - activeModule: number
+  - generatedContent: GeneratedContent | null
+  - isGenerating: boolean
+  - activeTab: 'lecture' | 'mindmap' | 'quiz' | 'sources' | 'podcast'
+  - chatMessages: ChatMessage[]
+  - quizAnswers: number[]
+  - quizSubmitted: boolean
+  - quizScore: number | null
+
+Queries (TanStack):
+  - useQuery(['studio-course', slug])
+  - useMutation(['generate-module'])
+  - useMutation(['chat-module'])
+  - useMutation(['submit-quiz'])
+```
+
+### Actualizar home.tsx — Dashboard unificado
+
+```
+Ruta: /
+
+Secciones:
+  1. PERFIL
+     Nombre, puesto, industria, cursos completados, certificados
+     [Editar perfil]
+
+  2. MIS CURSOS EN PROGRESO
+     Cards de enrollments activos (Academy + Studio mezclados)
+     Cada card: título, progreso %, fuente (Academy/Studio), [Continuar]
+
+  3. CATÁLOGOS
+     [Academy — Cursos con instructor]  [Studio — Cursos con IA]
+     
+  4. MIS CERTIFICADOS
+     Grid de NFTs y DC3s obtenidos
+     
+  5. ESTADÍSTICAS
+     Cursos completados, horas de aprendizaje, racha actual
+
+Query: useQuery(['dashboard'], () => fetch('/api/dashboard'))
+```
+
+---
+
+## Cómo se relacionan Academy y Studio
+
+```
+┌──────────────────────┐     ┌──────────────────────┐
+│   ACADEMY            │     │   STUDIO              │
+│   /academy           │     │   /studio             │
+│                      │     │                       │
+│ • Cursos curados     │     │ • 50 cursos estáticos │
+│ • Video real         │     │ • IA genera todo      │
+│ • Material PDF       │     │ • Personalizado       │
+│ • Instructor real    │     │ • Chat contextual     │
+│ • WordPress MCP      │     │ • PostgreSQL local    │
+│                      │     │                       │
+│ Quiz: auto-generado  │     │ Quiz: estático +      │
+│ y guardado en PG     │     │ adaptativo por IA     │
+│                      │     │                       │
+│ Certificado:         │     │ Certificado:          │
+│ NFT + DC3 (si ACE)   │     │ NFT + DC3 (si ACE)   │
+└──────────┬───────────┘     └──────────┬────────────┘
+           │                            │
+           └────────────┬───────────────┘
+                        │
+              DASHBOARD UNIFICADO
+              /home
+              
+              • Mis cursos (ambas fuentes)
+              • Mi progreso (unificado)
+              • Mis certificados (todos)
+              • Mi perfil (compartido)
+```
+
+### Diferencias clave
+
+| Aspecto | Academy | Studio |
+|---------|---------|--------|
+| Fuente de datos | WordPress externo (MCP) | PostgreSQL local |
+| Contenido | Curado por instructor | Generado por IA |
+| Personalización | No | Sí (puesto, industria) |
+| Video | Sí (grabado) | No (audio TTS) |
+| Chat IA | No (aún) | Sí |
+| Quiz | Auto-generado de títulos | Estático + adaptativo IA |
+| Costo infraestructura | WordPress hosting | Claude API tokens |
+| Escalabilidad | Limitada por instructor | Ilimitada |
+
+### Fase futura: IA también en Academy
+
+```
+En Fase 3+, el AI Studio puede complementar los cursos de Academy:
+  - Chat contextual sobre el contenido del instructor
+  - Resumen IA del video/unidad
+  - Quiz adaptativo adicional
+  - Fuentes complementarias
+  
+  Esto se logra pasando el contenido de Academy 
+  (via getCourseCurriculum) como contexto al motor IA.
+  Misma API, diferente fuente de datos.
+```
+
+---
+
+## Seed Script: Cargar los 50 cursos en PostgreSQL
+
+```typescript
+// server/seed-studio-courses.ts
+// Ejecutar una vez para popular studio_courses, studio_modules, studio_quizzes
+
+import { yuridiaModules } from './data/yuridia-modules';
+import { yuridiaQuizzes } from './data/yuridia-quizzes';
+import { medinaModules } from './data/medina-modules';
+import { medinaQuizzes } from './data/medina-quizzes';
+import { procadistModules } from './data/procadist-modules-part1';
+import { procadistQuizzes } from './data/procadist-quizzes';
+import { procadistModulesPart2, procadistQuizzesPart2 } from './data/procadist-part2';
+
+// Metadata de cada curso (lo que va en studio_courses)
+const coursesMeta = [
+  // Yuridia Iturriaga (10)
+  { slug: "nom-035-stps-riesgo-psicosocial", title: "NOM-035-STPS-2018: Factores de Riesgo Psicosocial", category: "Normatividad", level: "basico", duration: 60, dc3Available: true, source: "stps" },
+  { slug: "diagnostico-prevencion-bullying", title: "Diagnóstico, Prevención e Intervención del Bullying", category: "Desarrollo Humano", level: "basico", duration: 60, dc3Available: true, source: "stps" },
+  { slug: "camino-autodependencia", title: "Camino a la Autodependencia", category: "Desarrollo Humano", level: "basico", duration: 60, dc3Available: true, source: "stps" },
+  { slug: "valores-humanos-organizacion", title: "Valores Humanos en la Organización", category: "Desarrollo Humano", level: "basico", duration: 60, dc3Available: true, source: "stps" },
+  { slug: "como-es-mi-comunicacion", title: "Cómo Es Mi Comunicación", category: "Desarrollo Humano", level: "basico", duration: 60, dc3Available: true, source: "stps" },
+  { slug: "relaciones-humanas", title: "Relaciones Humanas", category: "Desarrollo Humano", level: "basico", duration: 60, dc3Available: true, source: "stps" },
+  { slug: "autoestima", title: "Autoestima", category: "Desarrollo Humano", level: "basico", duration: 60, dc3Available: true, source: "stps" },
+  { slug: "manejo-conflictos-toma-decisiones", title: "Manejo de Conflictos y Toma de Decisiones", category: "Desarrollo Humano", level: "intermedio", duration: 60, dc3Available: true, source: "stps" },
+  { slug: "integracion-grupos-equipo", title: "Integración de Grupos y el Equipo", category: "Desarrollo Humano", level: "basico", duration: 60, dc3Available: true, source: "stps" },
+  { slug: "planeacion-vida-trabajo", title: "Planeación de Vida y Trabajo", category: "Desarrollo Humano", level: "basico", duration: 60, dc3Available: true, source: "stps" },
+  
+  // Medina Castillo (16) — todos dc3Available: true
+  { slug: "capacidad-analitica-resolucion-problemas", title: "Capacidad Analítica y Resolución de Problemas", category: "Dirección y Gestión", level: "intermedio", duration: 60, dc3Available: true, source: "stps" },
+  { slug: "prevencion-riesgos-laborales", title: "Prevención de Riesgos Laborales", category: "Seguridad Industrial", level: "basico", duration: 60, dc3Available: true, source: "stps" },
+  { slug: "equipo-proteccion-personal", title: "Equipo de Protección Personal", category: "Seguridad Industrial", level: "basico", duration: 60, dc3Available: true, source: "stps" },
+  { slug: "operario-limpieza", title: "Operario de Limpieza", category: "Seguridad Industrial", level: "basico", duration: 60, dc3Available: true, source: "stps" },
+  { slug: "seguridad-energia-electrica", title: "Seguridad en Trabajos con Energía Eléctrica", category: "Seguridad Industrial", level: "intermedio", duration: 60, dc3Available: true, source: "stps" },
+  { slug: "brigada-contra-incendios", title: "Brigada Contra Incendios", category: "Seguridad Industrial", level: "intermedio", duration: 60, dc3Available: true, source: "stps" },
+  { slug: "brigada-primeros-auxilios", title: "Brigada de Primeros Auxilios", category: "Seguridad Industrial", level: "intermedio", duration: 60, dc3Available: true, source: "stps" },
+  { slug: "sistema-globalmente-armonizado-sga", title: "Sistema Globalmente Armonizado (SGA)", category: "Seguridad Industrial", level: "intermedio", duration: 60, dc3Available: true, source: "stps" },
+  { slug: "nom-035-stps-medina", title: "NOM-035 (Perspectiva Seguridad Industrial)", category: "Normatividad", level: "basico", duration: 60, dc3Available: true, source: "stps" },
+  { slug: "formacion-instructores", title: "Formación de Instructores", category: "Formación", level: "avanzado", duration: 60, dc3Available: true, source: "stps" },
+  { slug: "bloqueo-etiquetado-loto", title: "Bloqueo y Etiquetado (LOTO)", category: "Seguridad Industrial", level: "intermedio", duration: 60, dc3Available: true, source: "stps" },
+  { slug: "nom-026-colores-senales-seguridad", title: "NOM-026: Colores y Señales de Seguridad", category: "Normatividad", level: "basico", duration: 60, dc3Available: true, source: "stps" },
+  { slug: "herramientas-manuales-poder", title: "Herramientas Manuales y de Poder", category: "Seguridad Industrial", level: "basico", duration: 60, dc3Available: true, source: "stps" },
+  { slug: "ergonomia-trastornos-musculoesqueleticos", title: "Ergonomía: Prevención de TME", category: "Seguridad Industrial", level: "basico", duration: 60, dc3Available: true, source: "stps" },
+  { slug: "soldadura-corte-seguridad", title: "Soldadura y Corte: Seguridad", category: "Seguridad Industrial", level: "intermedio", duration: 60, dc3Available: true, source: "stps" },
+  { slug: "operacion-segura-montacargas", title: "Operación Segura de Montacargas", category: "Seguridad Industrial", level: "intermedio", duration: 60, dc3Available: true, source: "stps" },
+  { slug: "actualizacion-montacargas", title: "Actualización de Montacargas", category: "Seguridad Industrial", level: "intermedio", duration: 60, dc3Available: true, source: "stps" },
+  { slug: "nom-019-comisiones-seguridad-higiene", title: "NOM-019: Comisiones de Seguridad e Higiene", category: "Normatividad", level: "intermedio", duration: 60, dc3Available: true, source: "stps" },
+  
+  // PROCADIST-inspired (23) — dc3Available: false (aún)
+  { slug: "comunicacion-efectiva-trabajo", title: "Comunicación Efectiva en el Trabajo", category: "Competencias Socioemocionales", level: "basico", duration: 60, dc3Available: false, source: "procadist" },
+  { slug: "trabajo-en-equipo-procadist", title: "Trabajo en Equipo", category: "Competencias Socioemocionales", level: "basico", duration: 60, dc3Available: false, source: "procadist" },
+  { slug: "ia-vida-trabajo", title: "Inteligencia Artificial para la Vida y el Trabajo", category: "IA y Tecnología", level: "basico", duration: 60, dc3Available: false, source: "procadist" },
+  { slug: "derechos-laborales-reforma", title: "Derechos Laborales y Reforma Laboral", category: "Reforma Laboral", level: "basico", duration: 60, dc3Available: false, source: "procadist" },
+  { slug: "habilidades-directivas", title: "Desarrollo de Habilidades Directivas", category: "Formación Empresarial", level: "intermedio", duration: 60, dc3Available: false, source: "procadist" },
+  { slug: "administracion-capacitacion-rh-1", title: "Administración de la Capacitación y RH (Parte I)", category: "Productividad", level: "intermedio", duration: 60, dc3Available: false, source: "procadist" },
+  { slug: "nom-002-prevencion-incendios", title: "NOM-002: Prevención de Incendios", category: "Normatividad", level: "basico", duration: 60, dc3Available: false, source: "procadist" },
+  { slug: "nom-006-manejo-almacenamiento", title: "NOM-006: Manejo y Almacenamiento", category: "Seguridad Industrial", level: "basico", duration: 60, dc3Available: false, source: "procadist" },
+  { slug: "nom-009-trabajos-altura", title: "NOM-009: Trabajos en Altura", category: "Seguridad Industrial", level: "intermedio", duration: 60, dc3Available: false, source: "procadist" },
+  { slug: "nom-025-iluminacion", title: "NOM-025: Condiciones de Iluminación", category: "Normatividad", level: "basico", duration: 60, dc3Available: false, source: "procadist" },
+  { slug: "nom-030-servicios-preventivos", title: "NOM-030: Servicios Preventivos de SST", category: "Normatividad", level: "intermedio", duration: 60, dc3Available: false, source: "procadist" },
+  { slug: "desarrollo-cursos-linea", title: "Desarrollo de Cursos de Formación en Línea", category: "Formación", level: "intermedio", duration: 60, dc3Available: false, source: "procadist" },
+  { slug: "nom-020-recipientes-presion", title: "NOM-020: Recipientes a Presión", category: "Seguridad Industrial", level: "avanzado", duration: 60, dc3Available: false, source: "procadist" },
+  { slug: "habitos-saludables-trabajo", title: "Hábitos y Estilos de Vida Saludable en el Trabajo", category: "Desarrollo Humano", level: "basico", duration: 60, dc3Available: false, source: "procadist" },
+  { slug: "control-sanitario-alimentos", title: "Control Sanitario de Frutas y Hortalizas", category: "Seguridad Industrial", level: "basico", duration: 60, dc3Available: false, source: "procadist" },
+  { slug: "nom-031-construccion", title: "NOM-031: Seguridad en Construcción", category: "Seguridad Industrial", level: "intermedio", duration: 60, dc3Available: false, source: "procadist" },
+  { slug: "nom-017-epp-procadist", title: "NOM-017: Equipo de Protección Personal", category: "Normatividad", level: "basico", duration: 60, dc3Available: false, source: "procadist" },
+  { slug: "nom-019-comisiones-procadist", title: "NOM-019: Comisiones de Seguridad e Higiene", category: "Normatividad", level: "intermedio", duration: 60, dc3Available: false, source: "procadist" },
+  { slug: "trabajo-infantil-derechos-nna", title: "Trabajo Infantil y Derechos de NNA", category: "Reforma Laboral", level: "basico", duration: 60, dc3Available: false, source: "procadist" },
+  { slug: "atencion-comensales", title: "Atención a Comensales", category: "Competencias Laborales", level: "basico", duration: 60, dc3Available: false, source: "procadist" },
+  { slug: "comisiones-mixtas-capacitacion", title: "Comisiones Mixtas de Capacitación", category: "Productividad", level: "intermedio", duration: 60, dc3Available: false, source: "procadist" },
+  { slug: "administracion-capacitacion-rh-2", title: "Administración de la Capacitación (Parte II)", category: "Productividad", level: "intermedio", duration: 60, dc3Available: false, source: "procadist" },
+  { slug: "orientacion-asesoria-juridica-laboral", title: "Orientación y Asesoría Jurídica Laboral", category: "Reforma Laboral", level: "intermedio", duration: 60, dc3Available: false, source: "procadist" },
+];
+
+// El seed script:
+// 1. Inserta cada curso en studio_courses
+// 2. Para cada curso, busca sus módulos en el archivo TS correspondiente e inserta en studio_modules
+// 3. Para cada curso, busca su quiz en el archivo TS correspondiente e inserta en studio_quizzes
+```
+
+---
+
+## Resumen de archivos para Replit
+
+### Ya creados (subir tal cual):
+1. `yuridia-modules.ts` — 10 cursos, módulos
+2. `yuridia-quizzes.ts` — 10 cursos, quizzes
+3. `medina-modules.ts` — 16 cursos, módulos
+4. `medina-quizzes.ts` — 16 cursos, quizzes
+5. `procadist-modules-part1.ts` — 15 cursos, módulos
+6. `procadist-quizzes.ts` — 15 cursos, quizzes
+7. `procadist-part2.ts` — 8 cursos, módulos + quizzes
+
+### Este documento (guía de implementación):
+8. `ceduverse-ai-studio-plan-v2.md` — ESTE ARCHIVO
+
+### De sesiones anteriores (contexto):
+9. `ceduverse-replit-brief.md` — Contexto técnico general
+10. `ceduverse-catalogo-master-stps.md` — Catálogo STPS con DC3
+
+---
+
+## Prompt para Replit Agent (Fase 1 — copy/paste)
+
+```
+Necesito implementar "Ceduverse AI Studio" — la capa de cursos con IA 
+que complementa el catálogo de Academy que ya tenemos.
+
+LEE el archivo ceduverse-ai-studio-plan-v2.md para la arquitectura completa.
+
+RESUMEN DE LO QUE NECESITO EN FASE 1:
+
+1. TABLAS PostgreSQL (ejecutar SQL del plan):
+   - studio_courses, studio_modules, studio_quizzes
+   - student_profiles, generated_content, enrollments
+   - module_progress, certificates, chat_sessions
+
+2. SEED SCRIPT que lea los 7 archivos TypeScript de datos 
+   y pueble studio_courses + studio_modules + studio_quizzes
+   con los 50 cursos
+
+3. RUTAS EXPRESS en server/routes.ts:
+   - GET /api/studio/courses (catálogo con filtros)
+   - GET /api/studio/courses/:slug (detalle)
+   - POST /api/studio/courses/:slug/modules/:index/generate (★ IA)
+   - POST /api/studio/courses/:slug/modules/:index/chat (★ IA)
+   - POST /api/studio/courses/:slug/quiz/submit
+   - GET/PUT /api/profile
+   - GET /api/dashboard (unificado Academy + Studio)
+
+4. AI ENGINE (server/ai-engine.ts):
+   - generateModuleContent() — llama a Claude API Sonnet
+   - chatWithModule() — chat contextual
+   - Usa el prompt de sistema del plan
+
+5. PÁGINAS REACT:
+   - /studio — Catálogo grid con filtros por categoría
+   - /studio/:slug — CourseStudio (split layout, tabs, chat)
+   - Actualizar /home con dashboard unificado
+
+6. VARIABLES DE ENTORNO necesarias:
+   - ANTHROPIC_API_KEY (para Claude API)
+   - Las de Supabase y Academy que ya existen
+
+El CourseStudio debe tener dark theme (#0a0e1a), 
+split view (contenido 70% + chat 30%), tabs con iconos,
+y skeleton loading mientras la IA genera.
+
+Los cursos de Academy siguen funcionando exactamente igual.
+El Studio es un NUEVO catálogo paralelo que coexiste.
+
+Empecemos por las tablas SQL + seed script + las primeras rutas.
+```

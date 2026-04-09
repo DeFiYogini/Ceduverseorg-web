@@ -1,0 +1,10 @@
+audio-cache/camino-autodependencia_ted_talk.mp3 filter=lfs diff=lfs merge=lfs -text
+audio-cache/diagnostico-prevencion-bullying_ted_talk.mp3 filter=lfs diff=lfs merge=lfs -text
+audio-cache/nom-035-stps-riesgo-psicosocial_ted_talk.mp3 filter=lfs diff=lfs merge=lfs -text
+audio-cache/valores-humanos-organizacion_ted_talk.mp3 filter=lfs diff=lfs merge=lfs -text
+attached_assets/denue_00_31-33_csv_1774801532105.zip filter=lfs diff=lfs merge=lfs -text
+attached_assets/denue_00_46111_csv_1774801532107.zip filter=lfs diff=lfs merge=lfs -text
+attached_assets/denue_00_46112-46311_csv_1774801898940.zip filter=lfs diff=lfs merge=lfs -text
+attached_assets/denue_00_46321-46531_csv_1774801898939.zip filter=lfs diff=lfs merge=lfs -text
+attached_assets/denue_00_46591-46911_csv_1774801898933.zip filter=lfs diff=lfs merge=lfs -text
+server/data/prospectos_perfilados.csv.gz filter=lfs diff=lfs merge=lfs -text

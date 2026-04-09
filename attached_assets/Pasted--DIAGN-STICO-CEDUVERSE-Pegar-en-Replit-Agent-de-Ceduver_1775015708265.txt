@@ -1,0 +1,132 @@
+# DIAGNÓSTICO CEDUVERSE — Pegar en Replit Agent de Ceduverse
+
+```
+NECESITO UN DIAGNÓSTICO COMPLETO DEL PROYECTO. No cambies nada, solo 
+reporta TODO lo que encuentres. Sé exhaustivo.
+
+=== 1. BASE DE DATOS ===
+
+Ejecuta y muéstrame el resultado de CADA uno de estos queries:
+
+-- Listar TODAS las tablas con conteo de registros
+SELECT schemaname, tablename, n_live_tup as row_count
+FROM pg_stat_user_tables 
+ORDER BY n_live_tup DESC;
+
+-- Tamaño total de la base de datos
+SELECT pg_size_pretty(pg_database_size(current_database())) as db_size;
+
+-- Tamaño de CADA tabla (datos + índices)
+SELECT 
+  tablename,
+  pg_size_pretty(pg_total_relation_size(quote_ident(tablename))) as total_size,
+  pg_size_pretty(pg_relation_size(quote_ident(tablename))) as data_size,
+  pg_size_pretty(pg_indexes_size(quote_ident(tablename))) as index_size,
+  n_live_tup as rows
+FROM pg_stat_user_tables 
+JOIN pg_tables USING (tablename)
+WHERE schemaname = 'public'
+ORDER BY pg_total_relation_size(quote_ident(tablename)) DESC;
+
+-- Listar TODOS los índices
+SELECT indexname, tablename, indexdef 
+FROM pg_indexes WHERE schemaname = 'public'
+ORDER BY tablename;
+
+-- ¿Existe PostGIS?
+SELECT PostGIS_Version();
+
+-- Tabla de prospectos/empresas — mostrar schema completo
+SELECT column_name, data_type, is_nullable, column_default
+FROM information_schema.columns 
+WHERE table_name = 'denue_prospects'
+ORDER BY ordinal_position;
+
+-- Muestra de datos
+SELECT * FROM denue_prospects LIMIT 3;
+
+-- ¿Solo NL o hay más estados?
+SELECT DISTINCT entidad FROM denue_prospects;
+
+-- Distribución por municipio (top 20)
+SELECT municipio, COUNT(*) FROM denue_prospects GROUP BY municipio ORDER BY COUNT(*) DESC LIMIT 20;
+
+-- ¿Hay tabla de API keys?
+SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'api_keys' ORDER BY ordinal_position;
+SELECT COUNT(*) FROM api_keys;
+
+-- ¿Hay tabla de API request logs?
+SELECT COUNT(*) FROM api_request_logs;
+
+-- ¿Hay tablas de blog?
+SELECT COUNT(*) FROM blog_posts;
+SELECT column_name FROM information_schema.columns WHERE table_name = 'blog_posts';
+
+-- ¿Hay tablas de newsletter?
+SELECT COUNT(*) FROM newsletter_subscribers;
+
+-- ¿Hay tablas de outreach/campaigns/groups/filters?
+SELECT tablename FROM pg_tables WHERE schemaname='public' 
+AND (tablename LIKE '%outreach%' OR tablename LIKE '%campaign%' 
+OR tablename LIKE '%group%' OR tablename LIKE '%filter%'
+OR tablename LIKE '%interaction%');
+
+=== 2. API ROUTES ===
+
+Abre el archivo principal de rutas (routes.ts o similar) y lista 
+TODAS las rutas registradas:
+- Método (GET/POST/PATCH/DELETE)
+- Path completo (/api/...)
+
+Específicamente confirma si existen:
+- Rutas /api/v1/external/* (API para MeCorrieron)
+- Rutas /api/admin/apis/* (gestión de API keys)
+- Rutas /api/admin/denue/* o /api/admin/prospects/*
+- Rutas /api/admin/blog/*
+- Rutas /api/socio/*
+- Rutas /api/newsletter/*
+
+=== 3. FRONTEND PAGES ===
+
+Lista TODAS las rutas del frontend desde el router (App.tsx o similar):
+- Path → Componente
+- ¿Requiere auth?
+
+Confirma si existen estas páginas:
+- /admin/apis (gestión API keys)
+- /admin/blog (gestión blog)
+- /admin/financiero (modelo financiero)
+- /socio/* (dashboard socios)
+- /blog (público)
+- /blog/:slug (artículo)
+- /empresas (landing B2B)
+- /socios (landing socios)
+
+=== 4. ARCHIVOS ===
+
+-- CSVs en el proyecto
+find . -name "*.csv" -type f 2>/dev/null
+
+-- Scripts de importación
+find . -name "*import*" -o -name "*seed*" -o -name "*migrate*" 2>/dev/null | head -20
+
+-- Estructura de directorios (raíz, 2 niveles)
+ls -la
+
+=== 5. VARIABLES DE ENTORNO ===
+
+Lista SOLO los nombres (NO valores):
+env | grep -E "^[A-Z]" | cut -d= -f1 | sort
+
+=== 6. DEPENDENCIAS RELEVANTES ===
+
+Del package.json muestra versiones de:
+drizzle-orm, @neondatabase/serverless, resend, @anthropic-ai/sdk, 
+openai, papaparse, csv-parse, bcrypt, jsonwebtoken
+
+=== FORMATO ===
+
+Headers claros. Si un query da error, muestra el error.
+Si una tabla no existe, di "NO EXISTE".
+No cambies nada, solo reporta.
+```

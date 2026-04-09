@@ -1,0 +1,48 @@
+3 FIXES URGENTES para el Aula Virtual STPS:
+
+FIX 1 — "Plática TED" sigue apareciendo en los TÍTULOS de los módulos del Aula Virtual. El fix anterior solo cambió el contenido (body) pero NO los títulos. El módulo "Camino a la Autodependencia" tiene como subtítulo "Camino a la Autodependencia — Plática TED" y el badge dice "Conferencia STPS". Necesito:
+a) Buscar en TODAS las tablas donde se guarde el título/nombre de los módulos del Aula Virtual (probablemente course_modules.title o similar) y reemplazar:
+   - "Plática TED" → "Sesión de Capacitación"
+   - "Conferencia STPS" → "Capacitación STPS"  (el badge naranja está bien, solo cambiar el texto si dice "Conferencia")
+   - Cualquier referencia a "TED" en títulos de módulos
+b) Buscar en el componente frontend que renderiza el módulo y asegurar que NO haya texto "TED" hardcodeado
+c) Verificar los 29 cursos del Aula Virtual — NINGUNO debe mencionar "TED" en título, subtítulo, o badge
+
+FIX 2 — Agregar ONBOARDING al Aula Virtual. Cuando un usuario entra por primera vez a un curso del Aula Virtual, debe ver una pantalla introductoria ANTES del contenido del módulo. Esta pantalla explica:
+- "Bienvenido al Aula Virtual STPS" (título grande, font-heading)
+- "Así funciona tu capacitación:" (subtítulo)
+- Paso 1: icono PlayCircle → "Escucha la sesión completa" / "Cada módulo tiene una sesión de audio que puedes escuchar como podcast mientras trabajas."
+- Paso 2: icono FileText → "Lee el material de apoyo" / "Debajo del audio encontrarás el contenido escrito con los puntos clave de la sesión."
+- Paso 3: icono CheckCircle → "Marca como completado" / "Al terminar cada módulo, haz click en Completar para registrar tu avance."
+- Paso 4: icono Award → "Obtén tu certificado" / "Al completar todos los módulos puedes solicitar tu Diploma NFT (gratis), DC-3 STPS ($499) o Certificado SEP ($1,999)."
+- Botón: "Entendido, comenzar →" que cierra el onboarding y muestra el curso
+- Guardar en localStorage que el usuario ya vio el onboarding (key: "aula_virtual_onboarding_seen")
+- Diseño: modal o fullscreen overlay con fondo cream, cards blancas para cada paso, iconos en círculos azules
+
+FIX 3 — Al FINAL de cada curso del Aula Virtual (después del último módulo), agregar una sección "Siguiente paso" con:
+- Card grande con gradiente violeta/azul
+- Título: "¡Felicidades! Completaste [nombre del curso]" (font-heading)
+- Subtítulo: "Ahora puedes obtener tu certificación oficial"
+- 3 opciones en cards horizontales:
+  1. Icono Award verde → "Diploma NFT" / "Gratis — Se emite automáticamente" / badge "Incluido"
+  2. Icono FileCheck ámbar → "Constancia DC-3 STPS" / "$499 MXN — Validez oficial ante STPS" / botón "Solicitar DC-3"
+  3. Icono GraduationCap azul → "Certificado SEP" / "$1,999 MXN — Validez federal vía INEC" / botón "Solicitar SEP"
+- Debajo: "¿Quieres profundizar? Toma este curso con el Tutor IA →" con link a /tutor-ia/[slug-equivalente] para el mismo tema
+- Los botones de DC-3 y SEP navegan a la sección de Certificados del dashboard (/dashboard → tab Certificados) con el curso preseleccionado
+
+FIX 4 — Los links del FOOTER no llevan a ningún lado. Todos los links del footer global de Ceduverse (Catálogo, Para Empresas, Instructores, Diplomas, Ayuda, Blog, Comunidad, API, Términos, Privacidad, Cookies, Contacto) están rotos o apuntan a "#". Fix:
+- "Catálogo" → /aula-virtual
+- "Para Empresas" → /empresas
+- "Instructores" → /socios (o una sección de instructores si existe)
+- "Diplomas" → /dashboard → tab Certificados (si está logueado) o /auth si no
+- "Ayuda" → /mensajes (chat de soporte) o mailto:soporte@ceduverse.org
+- "Blog" → # (dejarlo deshabilitado con texto gris y tooltip "Próximamente")
+- "Comunidad" → # (mismo, "Próximamente")
+- "API" → # (mismo, "Próximamente")
+- "Términos" → crear página /terminos con texto legal básico placeholder
+- "Privacidad" → crear página /privacidad con aviso de privacidad placeholder
+- "Cookies" → crear página /cookies o un banner de cookies
+- "Contacto" → mailto:contacto@ceduverse.org o crear /contacto con formulario
+- Los iconos de redes sociales (X, in, YT, FB) → deben apuntar a las redes reales de Ceduverse. Si no existen aún, apuntar a "#" con tooltip "Próximamente"
+
+Haz los 4 fixes en orden. Primero el SQL para los títulos TED, luego el onboarding, luego la sección final de certificaciones, luego los links del footer.

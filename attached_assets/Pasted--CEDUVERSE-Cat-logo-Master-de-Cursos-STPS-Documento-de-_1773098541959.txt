@@ -1,0 +1,918 @@
+# 📚 CEDUVERSE — Catálogo Master de Cursos STPS
+## Documento de Referencia para Implementación en Replit
+
+---
+
+## Resumen Ejecutivo
+
+Ceduverse ofrece **29 cursos registrados ante la STPS** a través de 2 capacitadores externos certificados. Los cursos son **gratuitos** en la plataforma, con **upsell del certificado DC3** como modelo de monetización.
+
+### Modelo de Negocio
+
+```
+┌─────────────────────────────────┐     ┌──────────────────────────────────┐
+│  GRATUITO (Atracción)           │     │  PREMIUM (Monetización)          │
+│                                 │     │                                  │
+│  ✅ Curso completo 24/7         │ ──► │  💰 Certificado DC3 STPS         │
+│  ✅ Videos/Texto                │     │     $150-$500 MXN por persona    │
+│  ✅ Quizzes y ejercicios        │     │  💰 Certificado NFT Ceduverse    │
+│  ✅ Acceso por 1 año            │     │  💰 Modalidad en vivo digital    │
+│  ✅ Certificado Ceduverse (NFT) │     │     $5,000 MXN por evento        │
+│                                 │     │  💰 Modalidad presencial         │
+│  Objetivo: captar usuarios,    │     │     $15,000 MXN por evento       │
+│  demostrar valor, generar base  │     │                                  │
+└─────────────────────────────────┘     └──────────────────────────────────┘
+```
+
+### Precios DC3 (escala por volumen)
+| Beneficiados | Costo por DC3 |
+|-------------|---------------|
+| 1-10        | $500 MXN      |
+| 11-50       | $350 MXN      |
+| 51-100      | $250 MXN      |
+| 101-300     | $200 MXN      |
+| 301-500     | $150 MXN      |
+
+*Nota: No causa IVA al facturarse como Aportación a la Asociación (cooperativa)*
+
+---
+
+## Capacitadores Registrados ante STPS
+
+### Capacitador 1: Psic. Yuridia Iturriaga
+- **Cédula Profesional:** 7476024
+- **Universidad:** Universidad del Valle de México
+- **Especialidad:** Psicología organizacional, desarrollo humano, factores psicosociales
+- **Área temática:** Desarrollo humano, salud mental, soft skills, NOM-035
+- **Cursos registrados:** 10
+
+### Capacitador 2: Ing. Jorge Armando Medina Castillo
+- **Registro STPS:** Agente capacitador verificado
+- **Especialidad:** Seguridad industrial, higiene laboral, normatividad técnica
+- **Área temática:** Seguridad, higiene industrial, prevención de riesgos, NOMs técnicas
+- **Cursos registrados:** 19
+- **Verificable en:** https://agentes.stps.gob.mx/Buscador/BuscadorAgente.aspx
+
+---
+
+## CATÁLOGO COMPLETO: 29 CURSOS
+
+### ═══ ÁREA: DESARROLLO HUMANO Y SALUD PSICOSOCIAL ═══
+### Instructora: Psic. Yuridia Iturriaga
+
+```json
+[
+  {
+    "id": "YI-01",
+    "titulo": "NOM-035-STPS-2018: Factores de Riesgo Psicosocial en el Trabajo",
+    "slug": "nom-035-stps-riesgo-psicosocial",
+    "instructor": "Psic. Yuridia Iturriaga",
+    "instructor_id": "YI",
+    "duracion_presencial_hrs": 10,
+    "duracion_virtual_hrs": 5,
+    "area_tematica": "Normatividad Laboral",
+    "categoria": ["Salud Ocupacional", "Normatividad", "NOM-035"],
+    "nivel": "Todos los niveles",
+    "precio_curso": 0,
+    "dc3_disponible": true,
+    "temas": [
+      "1.1 Objetivo de la NOM-035",
+      "1.2 Campo de aplicación",
+      "1.3 Referencias normativas",
+      "1.4 Definiciones clave",
+      "1.5 Obligaciones del patrón",
+      "1.6 Obligaciones de los trabajadores",
+      "1.7 Identificación y análisis de factores de riesgo psicosocial y evaluación del entorno organizacional",
+      "1.8 Medidas de prevención y acciones de control; violencia laboral y entorno organizacional favorable"
+    ],
+    "descripcion": "Curso obligatorio para todos los centros de trabajo en México. Aprende a identificar, analizar y prevenir factores de riesgo psicosocial conforme a la NOM-035-STPS-2018.",
+    "objetivo": "Conocer los elementos fundamentales de la NOM-035, identificar factores de riesgo psicosocial y aplicar medidas de prevención y control.",
+    "publico": ["Recursos Humanos", "Seguridad e Higiene", "Líderes", "Trabajadores en general"]
+  },
+  {
+    "id": "YI-02",
+    "titulo": "Diagnóstico, Prevención e Intervención del Bullying",
+    "slug": "diagnostico-prevencion-bullying",
+    "instructor": "Psic. Yuridia Iturriaga",
+    "instructor_id": "YI",
+    "duracion_presencial_hrs": 9,
+    "duracion_virtual_hrs": 4,
+    "area_tematica": "Desarrollo Humano",
+    "categoria": ["Salud Mental", "Convivencia Laboral"],
+    "nivel": "Todos los niveles",
+    "precio_curso": 0,
+    "dc3_disponible": true,
+    "temas": [
+      "2.1 Conceptualización del Bullying",
+      "2.2 Factores y características del Bullying",
+      "2.3 Repercusiones psicológicas derivadas del bullying",
+      "2.4 Apoyo y manejo del Bullying"
+    ],
+    "descripcion": "Identifica, previene e interviene ante situaciones de bullying y mobbing en el entorno laboral y organizacional.",
+    "objetivo": "Desarrollar competencias para diagnosticar dinámicas de bullying, comprender sus repercusiones y aplicar estrategias de intervención.",
+    "publico": ["Líderes de equipo", "RH", "Trabajadores", "Comités de convivencia"]
+  },
+  {
+    "id": "YI-03",
+    "titulo": "Camino a la Autodependencia",
+    "slug": "camino-autodependencia",
+    "instructor": "Psic. Yuridia Iturriaga",
+    "instructor_id": "YI",
+    "duracion_presencial_hrs": 9,
+    "duracion_virtual_hrs": 4,
+    "area_tematica": "Desarrollo Humano",
+    "categoria": ["Desarrollo Personal", "Inteligencia Emocional"],
+    "nivel": "Todos los niveles",
+    "precio_curso": 0,
+    "dc3_disponible": true,
+    "temas": [
+      "3.1 Encuentro con uno mismo",
+      "3.2 Encuentro con el otro",
+      "3.3 Pérdidas y duelos",
+      "3.4 Completitud y búsqueda del sentido"
+    ],
+    "descripcion": "Un viaje de autoconocimiento para construir relaciones más sanas, procesar pérdidas y encontrar propósito personal y profesional.",
+    "objetivo": "Desarrollar la capacidad de autodependencia emocional como base para relaciones laborales y personales saludables.",
+    "publico": ["Todos los trabajadores", "Personas en transición laboral"]
+  },
+  {
+    "id": "YI-04",
+    "titulo": "Valores Humanos en la Organización",
+    "slug": "valores-humanos-organizacion",
+    "instructor": "Psic. Yuridia Iturriaga",
+    "instructor_id": "YI",
+    "duracion_presencial_hrs": 6,
+    "duracion_virtual_hrs": 3,
+    "area_tematica": "Desarrollo Humano",
+    "categoria": ["Cultura Organizacional", "Ética"],
+    "nivel": "Todos los niveles",
+    "precio_curso": 0,
+    "dc3_disponible": true,
+    "temas": [
+      "4.1 Los valores: ¿Qué son? ¿Cómo los identifico?",
+      "4.2 Clarificación de valores",
+      "4.3 Mis prioridades, mis valores y mi comportamiento",
+      "4.4 El valor del trabajo y la trascendencia a través de él"
+    ],
+    "descripcion": "Identifica tus valores personales, alinéalos con los de tu organización, y descubre cómo el trabajo puede ser un vehículo de trascendencia.",
+    "objetivo": "Identificar y clarificar valores personales y organizacionales para fortalecer la cultura de trabajo.",
+    "publico": ["Todos los colaboradores", "Líderes", "Equipos nuevos"]
+  },
+  {
+    "id": "YI-05",
+    "titulo": "Cómo Es Mi Comunicación",
+    "slug": "como-es-mi-comunicacion",
+    "instructor": "Psic. Yuridia Iturriaga",
+    "instructor_id": "YI",
+    "duracion_presencial_hrs": 10,
+    "duracion_virtual_hrs": 5,
+    "area_tematica": "Desarrollo Humano",
+    "categoria": ["Comunicación", "Habilidades Blandas"],
+    "nivel": "Todos los niveles",
+    "precio_curso": 0,
+    "dc3_disponible": true,
+    "temas": [
+      "5.1 Estrategias de comunicación efectiva",
+      "5.2 La comunicación interior y los vínculos en los que te relacionas",
+      "5.3 El lenguaje interior y los estados de ánimo",
+      "5.4 Comunicación y calidad de vida"
+    ],
+    "descripcion": "Mejora tu comunicación desde adentro hacia afuera: comprende tu diálogo interior, transforma tus vínculos y eleva tu calidad de vida.",
+    "objetivo": "Desarrollar estrategias de comunicación efectiva intrapersonal e interpersonal para mejorar relaciones y calidad de vida.",
+    "publico": ["Todos los colaboradores", "Líderes", "Servicio al cliente"]
+  },
+  {
+    "id": "YI-06",
+    "titulo": "Relaciones Humanas",
+    "slug": "relaciones-humanas",
+    "instructor": "Psic. Yuridia Iturriaga",
+    "instructor_id": "YI",
+    "duracion_presencial_hrs": 6,
+    "duracion_virtual_hrs": 3,
+    "area_tematica": "Desarrollo Humano",
+    "categoria": ["Relaciones Interpersonales", "Trabajo en Equipo"],
+    "nivel": "Todos los niveles",
+    "precio_curso": 0,
+    "dc3_disponible": true,
+    "temas": [
+      "6.1 El hombre: un ser social",
+      "6.2 La personalidad en las relaciones humanas",
+      "6.3 Apertura de sí mismo y proceso de comunicación"
+    ],
+    "descripcion": "Comprende la naturaleza social del ser humano, cómo la personalidad influye en las relaciones y cómo abrirte a una comunicación más auténtica.",
+    "objetivo": "Comprender los fundamentos de las relaciones humanas y desarrollar habilidades para construir vínculos laborales saludables.",
+    "publico": ["Todos los colaboradores"]
+  },
+  {
+    "id": "YI-07",
+    "titulo": "Autoestima",
+    "slug": "autoestima",
+    "instructor": "Psic. Yuridia Iturriaga",
+    "instructor_id": "YI",
+    "duracion_presencial_hrs": 6,
+    "duracion_virtual_hrs": 3,
+    "area_tematica": "Desarrollo Humano",
+    "categoria": ["Desarrollo Personal", "Salud Mental"],
+    "nivel": "Todos los niveles",
+    "precio_curso": 0,
+    "dc3_disponible": true,
+    "temas": [
+      "7.1 Autoestima como marco de referencia desde el cual el hombre se proyecta",
+      "7.2 Autoestima alta y baja",
+      "7.3 Concepto de sí mismo"
+    ],
+    "descripcion": "Comprende cómo la autoestima influye en tu desempeño laboral, tus relaciones y tu bienestar. Aprende a construir un autoconcepto saludable.",
+    "objetivo": "Fortalecer la autoestima como herramienta para el desarrollo personal y profesional.",
+    "publico": ["Todos los colaboradores"]
+  },
+  {
+    "id": "YI-08",
+    "titulo": "Manejo de Conflictos y Toma de Decisiones",
+    "slug": "manejo-conflictos-toma-decisiones",
+    "instructor": "Psic. Yuridia Iturriaga",
+    "instructor_id": "YI",
+    "duracion_presencial_hrs": 10,
+    "duracion_virtual_hrs": 5,
+    "area_tematica": "Dirección y Gestión",
+    "categoria": ["Liderazgo", "Resolución de Conflictos"],
+    "nivel": "Intermedio",
+    "precio_curso": 0,
+    "dc3_disponible": true,
+    "temas": [
+      "8.1 Trascendencia de las decisiones",
+      "8.2 El proceso decisional: sus fases y etapas",
+      "8.3 Las decisiones en el contexto institucional"
+    ],
+    "descripcion": "Domina el arte de resolver conflictos y tomar decisiones efectivas en el contexto organizacional con herramientas prácticas.",
+    "objetivo": "Desarrollar habilidades para manejar conflictos constructivamente y aplicar un proceso decisional estructurado.",
+    "publico": ["Líderes", "Supervisores", "Mandos medios", "Gerentes"]
+  },
+  {
+    "id": "YI-09",
+    "titulo": "Integración de Grupos y el Equipo",
+    "slug": "integracion-grupos-equipo",
+    "instructor": "Psic. Yuridia Iturriaga",
+    "instructor_id": "YI",
+    "duracion_presencial_hrs": 10,
+    "duracion_virtual_hrs": 5,
+    "area_tematica": "Dirección y Gestión",
+    "categoria": ["Trabajo en Equipo", "Liderazgo"],
+    "nivel": "Todos los niveles",
+    "precio_curso": 0,
+    "dc3_disponible": true,
+    "temas": [
+      "9.1 Tipos de grupos y el equipo",
+      "9.2 Dinámica grupal",
+      "9.3 Manejo de grupos"
+    ],
+    "descripcion": "Aprende a construir equipos de alto rendimiento: entiende la dinámica grupal, los tipos de equipos y cómo facilitar su integración.",
+    "objetivo": "Desarrollar competencias para integrar y manejar grupos de trabajo efectivos.",
+    "publico": ["Líderes de equipo", "Supervisores", "Coordinadores", "RH"]
+  },
+  {
+    "id": "YI-10",
+    "titulo": "Planeación de Vida y Trabajo",
+    "slug": "planeacion-vida-trabajo",
+    "instructor": "Psic. Yuridia Iturriaga",
+    "instructor_id": "YI",
+    "duracion_presencial_hrs": 9,
+    "duracion_virtual_hrs": 4,
+    "area_tematica": "Desarrollo Humano",
+    "categoria": ["Desarrollo Personal", "Planeación"],
+    "nivel": "Todos los niveles",
+    "precio_curso": 0,
+    "dc3_disponible": true,
+    "temas": [
+      "10.1 Necesidad de una planeación significativa de vida y trabajo",
+      "10.2 Fortalezas y debilidades",
+      "10.3 Discriminación de necesidades y valores"
+    ],
+    "descripcion": "Diseña un plan integral de vida y carrera: identifica tus fortalezas, aclara tus necesidades y construye un camino con propósito.",
+    "objetivo": "Desarrollar un plan de vida y trabajo significativo alineando fortalezas personales con metas profesionales.",
+    "publico": ["Todos los colaboradores", "Personas en transición laboral"]
+  }
+]
+```
+
+### ═══ ÁREA: SEGURIDAD INDUSTRIAL E HIGIENE LABORAL ═══
+### Instructor: Ing. Jorge Armando Medina Castillo
+
+```json
+[
+  {
+    "id": "MC-01",
+    "titulo": "Capacidad Analítica y Resolución de Problemas en el Ámbito Laboral",
+    "slug": "capacidad-analitica-resolucion-problemas",
+    "instructor": "Ing. Jorge Armando Medina Castillo",
+    "instructor_id": "MC",
+    "duracion_hrs": 4,
+    "fecha_registro_stps": "2022-11-15",
+    "area_tematica": "Dirección y Gestión",
+    "categoria": ["Gestión", "Resolución de Problemas", "Pensamiento Analítico"],
+    "nivel": "Intermedio",
+    "precio_curso": 0,
+    "dc3_disponible": true,
+    "temas_sugeridos": [
+      "Pensamiento analítico y crítico",
+      "Metodologías de resolución de problemas (Ishikawa, 5 Porqués, 8D)",
+      "Análisis de causa raíz",
+      "Toma de decisiones basada en datos",
+      "Casos prácticos del ámbito laboral"
+    ],
+    "descripcion": "Desarrolla tu capacidad para analizar problemas laborales de manera estructurada y encontrar soluciones efectivas con metodologías probadas."
+  },
+  {
+    "id": "MC-02",
+    "titulo": "Liderazgo y Trabajo Colaborativo",
+    "slug": "liderazgo-trabajo-colaborativo",
+    "instructor": "Ing. Jorge Armando Medina Castillo",
+    "instructor_id": "MC",
+    "duracion_hrs": 4,
+    "fecha_registro_stps": "2022-11-15",
+    "area_tematica": "Dirección y Gestión",
+    "categoria": ["Liderazgo", "Trabajo en Equipo"],
+    "nivel": "Todos los niveles",
+    "precio_curso": 0,
+    "dc3_disponible": true,
+    "temas_sugeridos": [
+      "Estilos de liderazgo",
+      "Liderazgo situacional",
+      "Principios del trabajo colaborativo",
+      "Comunicación efectiva en equipos",
+      "Gestión de conflictos en equipos"
+    ],
+    "descripcion": "Fortalece tus habilidades de liderazgo y aprende a construir dinámicas de colaboración efectivas en tu equipo de trabajo."
+  },
+  {
+    "id": "MC-03",
+    "titulo": "Prevención de Riesgos Laborales",
+    "slug": "prevencion-riesgos-laborales",
+    "instructor": "Ing. Jorge Armando Medina Castillo",
+    "instructor_id": "MC",
+    "duracion_hrs": 6,
+    "fecha_registro_stps": "2023-12-07",
+    "area_tematica": "Higiene y Seguridad en el Trabajo",
+    "categoria": ["Seguridad Industrial", "Prevención"],
+    "nivel": "Todos los niveles",
+    "precio_curso": 0,
+    "dc3_disponible": true,
+    "temas_sugeridos": [
+      "Marco legal de la seguridad laboral en México",
+      "Identificación de peligros y evaluación de riesgos",
+      "Actos y condiciones inseguras",
+      "Metodologías de análisis de riesgos",
+      "Plan de prevención de riesgos",
+      "Investigación de accidentes e incidentes"
+    ],
+    "descripcion": "Aprende a identificar, evaluar y controlar los riesgos laborales en tu centro de trabajo para prevenir accidentes y enfermedades."
+  },
+  {
+    "id": "MC-04",
+    "titulo": "Equipo de Protección Personal (EPP)",
+    "slug": "equipo-proteccion-personal",
+    "instructor": "Ing. Jorge Armando Medina Castillo",
+    "instructor_id": "MC",
+    "duracion_hrs": 6,
+    "fecha_registro_stps": "2023-12-07",
+    "area_tematica": "Higiene y Seguridad en el Trabajo",
+    "categoria": ["Seguridad Industrial", "EPP"],
+    "nivel": "Básico",
+    "precio_curso": 0,
+    "dc3_disponible": true,
+    "temas_sugeridos": [
+      "Normatividad aplicable (NOM-017-STPS)",
+      "Tipos de EPP: cabeza, ojos, oídos, respiratorio, manos, pies, cuerpo",
+      "Selección adecuada del EPP según el riesgo",
+      "Uso correcto, mantenimiento y reemplazo",
+      "Responsabilidades del patrón y del trabajador",
+      "Inspección y registro de EPP"
+    ],
+    "descripcion": "Conoce los tipos de equipo de protección personal, su selección según el riesgo, uso correcto y normatividad aplicable."
+  },
+  {
+    "id": "MC-05",
+    "titulo": "Operario de Limpieza",
+    "slug": "operario-limpieza",
+    "instructor": "Ing. Jorge Armando Medina Castillo",
+    "instructor_id": "MC",
+    "duracion_hrs": 6,
+    "fecha_registro_stps": "2023-12-07",
+    "area_tematica": "Limpieza Industrial y Doméstica",
+    "categoria": ["Operaciones", "Limpieza"],
+    "nivel": "Básico",
+    "precio_curso": 0,
+    "dc3_disponible": true,
+    "temas_sugeridos": [
+      "Técnicas de limpieza industrial y doméstica",
+      "Manejo seguro de productos químicos de limpieza",
+      "Hojas de seguridad (HDS) de productos",
+      "Equipo de protección para limpieza",
+      "Procedimientos de limpieza en áreas especiales",
+      "Gestión de residuos"
+    ],
+    "descripcion": "Capacitación técnica para operarios de limpieza: técnicas, manejo seguro de químicos, EPP y procedimientos estandarizados."
+  },
+  {
+    "id": "MC-06",
+    "titulo": "Condiciones de Seguridad en Trabajos con Energía Eléctrica",
+    "slug": "seguridad-energia-electrica",
+    "instructor": "Ing. Jorge Armando Medina Castillo",
+    "instructor_id": "MC",
+    "duracion_hrs": 8,
+    "fecha_registro_stps": "2023-12-07",
+    "area_tematica": "Higiene y Seguridad en el Trabajo",
+    "categoria": ["Seguridad Industrial", "Electricidad"],
+    "nivel": "Intermedio",
+    "precio_curso": 0,
+    "dc3_disponible": true,
+    "temas_sugeridos": [
+      "Conceptos básicos de electricidad y sus riesgos",
+      "NOM-029-STPS Mantenimiento de instalaciones eléctricas",
+      "Efectos de la corriente eléctrica en el cuerpo humano",
+      "Procedimientos de trabajo seguro con energía eléctrica",
+      "Bloqueo y etiquetado (LOTO) aplicado a energía eléctrica",
+      "Equipo de protección dieléctrico",
+      "Distancias de seguridad",
+      "Respuesta a emergencias eléctricas"
+    ],
+    "descripcion": "Conoce los riesgos eléctricos, las normas aplicables y los procedimientos de trabajo seguro para prevenir accidentes con energía eléctrica."
+  },
+  {
+    "id": "MC-07",
+    "titulo": "Brigada Contra Incendios",
+    "slug": "brigada-contra-incendios",
+    "instructor": "Ing. Jorge Armando Medina Castillo",
+    "instructor_id": "MC",
+    "duracion_hrs": 8,
+    "fecha_registro_stps": "2023-12-07",
+    "area_tematica": "Seguridad",
+    "categoria": ["Protección Civil", "Brigadas", "Incendios"],
+    "nivel": "Intermedio",
+    "precio_curso": 0,
+    "dc3_disponible": true,
+    "temas_sugeridos": [
+      "Teoría del fuego: triángulo y tetraedro del fuego",
+      "Clasificación de incendios (A, B, C, D, K)",
+      "Tipos de extintores y su uso correcto",
+      "Sistemas fijos contra incendio",
+      "Organización de la brigada contra incendios",
+      "Técnicas de combate de incendios",
+      "Planes de evacuación",
+      "Simulacros y prácticas con fuego real"
+    ],
+    "descripcion": "Forma y capacita a los integrantes de la brigada contra incendios con conocimientos teóricos y prácticos para responder ante emergencias."
+  },
+  {
+    "id": "MC-08",
+    "titulo": "Brigada de Primeros Auxilios",
+    "slug": "brigada-primeros-auxilios",
+    "instructor": "Ing. Jorge Armando Medina Castillo",
+    "instructor_id": "MC",
+    "duracion_hrs": 8,
+    "fecha_registro_stps": "2023-12-07",
+    "area_tematica": "Seguridad",
+    "categoria": ["Protección Civil", "Brigadas", "Primeros Auxilios"],
+    "nivel": "Intermedio",
+    "precio_curso": 0,
+    "dc3_disponible": true,
+    "temas_sugeridos": [
+      "Principios de primeros auxilios (PAS: Proteger, Alertar, Socorrer)",
+      "Evaluación primaria y secundaria de la víctima",
+      "RCP (Reanimación Cardiopulmonar) y uso de DEA",
+      "Control de hemorragias",
+      "Manejo de fracturas, luxaciones y esguinces",
+      "Quemaduras y lesiones por calor/frío",
+      "Botiquín de primeros auxilios",
+      "Traslado de lesionados"
+    ],
+    "descripcion": "Capacitación esencial para brigadistas de primeros auxilios: evaluación de víctimas, RCP, control de hemorragias y manejo de lesiones."
+  },
+  {
+    "id": "MC-09",
+    "titulo": "Comunicación de los Peligros — Sistema Globalmente Armonizado (SGA)",
+    "slug": "sistema-globalmente-armonizado-sga",
+    "instructor": "Ing. Jorge Armando Medina Castillo",
+    "instructor_id": "MC",
+    "duracion_hrs": 4,
+    "fecha_registro_stps": "2023-12-07",
+    "area_tematica": "Higiene y Seguridad en el Trabajo",
+    "categoria": ["Seguridad Industrial", "Químicos", "SGA"],
+    "nivel": "Intermedio",
+    "precio_curso": 0,
+    "dc3_disponible": true,
+    "temas_sugeridos": [
+      "¿Qué es el Sistema Globalmente Armonizado (SGA/GHS)?",
+      "NOM-018-STPS: Comunicación de peligros y riesgos por sustancias químicas",
+      "Clasificación de peligros: salud, físicos, ambientales",
+      "Pictogramas SGA: los 9 símbolos y su significado",
+      "Lectura e interpretación de Hojas de Datos de Seguridad (HDS)",
+      "Etiquetado conforme al SGA",
+      "Palabras de advertencia: Peligro vs. Atención",
+      "Indicaciones de peligro (frases H) y consejos de prudencia (frases P)"
+    ],
+    "descripcion": "Aprende a leer, interpretar y aplicar el sistema de comunicación de peligros químicos (SGA) conforme a la NOM-018-STPS."
+  },
+  {
+    "id": "MC-10",
+    "titulo": "NOM-035-STPS-2018: Identificación, Análisis y Prevención de Riesgos Psicosociales",
+    "slug": "nom-035-stps-medina",
+    "instructor": "Ing. Jorge Armando Medina Castillo",
+    "instructor_id": "MC",
+    "duracion_hrs": 4,
+    "fecha_registro_stps": "2023-12-07",
+    "area_tematica": "Higiene y Seguridad en el Trabajo",
+    "categoria": ["Normatividad", "NOM-035", "Salud Ocupacional"],
+    "nivel": "Todos los niveles",
+    "precio_curso": 0,
+    "dc3_disponible": true,
+    "temas_sugeridos": [
+      "Objetivo y campo de aplicación",
+      "Factores de riesgo psicosocial en el trabajo",
+      "Obligaciones de patrones y trabajadores",
+      "Cuestionarios de identificación (Guías de Referencia)",
+      "Medidas de prevención y control",
+      "Entorno organizacional favorable"
+    ],
+    "descripcion": "Cumple con la NOM-035: identifica factores de riesgo psicosocial, aplica los cuestionarios oficiales e implementa medidas de prevención."
+  },
+  {
+    "id": "MC-11",
+    "titulo": "Formación de Instructores",
+    "slug": "formacion-instructores",
+    "instructor": "Ing. Jorge Armando Medina Castillo",
+    "instructor_id": "MC",
+    "duracion_hrs": 20,
+    "fecha_registro_stps": "2025-06-09",
+    "area_tematica": "Formación y Actualización de Instructores",
+    "categoria": ["Capacitación", "Formación", "Didáctica"],
+    "nivel": "Avanzado",
+    "precio_curso": 0,
+    "dc3_disponible": true,
+    "temas_sugeridos": [
+      "El rol del instructor en la capacitación",
+      "Detección de necesidades de capacitación (DNC)",
+      "Diseño de programas de capacitación",
+      "Técnicas y estrategias didácticas",
+      "Manejo de grupos y dinámicas",
+      "Evaluación del aprendizaje",
+      "Elaboración de materiales didácticos",
+      "Marco legal de la capacitación en México (LFT, STPS)",
+      "Comunicación efectiva para instructores",
+      "Práctica docente supervisada"
+    ],
+    "descripcion": "Curso integral de 20 horas para formar instructores internos capaces de diseñar, impartir y evaluar capacitación conforme a la LFT y STPS."
+  },
+  {
+    "id": "MC-12",
+    "titulo": "Bloqueo y Etiquetado de Energías Peligrosas (LOTO)",
+    "slug": "bloqueo-etiquetado-loto",
+    "instructor": "Ing. Jorge Armando Medina Castillo",
+    "instructor_id": "MC",
+    "duracion_hrs": 8,
+    "fecha_registro_stps": "2025-10-10",
+    "area_tematica": "Seguridad",
+    "categoria": ["Seguridad Industrial", "LOTO", "Energías Peligrosas"],
+    "nivel": "Intermedio",
+    "precio_curso": 0,
+    "dc3_disponible": true,
+    "temas_sugeridos": [
+      "¿Qué es el bloqueo y etiquetado (LOTO)?",
+      "Tipos de energía peligrosa: eléctrica, mecánica, hidráulica, neumática, térmica, química",
+      "Procedimiento de bloqueo/etiquetado paso a paso",
+      "Dispositivos de bloqueo y candados",
+      "Verificación de energía cero",
+      "Responsabilidades: empleado autorizado, afectado, supervisor",
+      "Remoción del bloqueo y reinicio",
+      "Casos de accidentes por falta de LOTO"
+    ],
+    "descripcion": "Protege vidas: aprende el procedimiento de bloqueo y etiquetado (LOTO) para controlar energías peligrosas durante mantenimiento."
+  },
+  {
+    "id": "MC-13",
+    "titulo": "NOM-026-STPS-2008: Colores y Señales de Seguridad e Higiene",
+    "slug": "nom-026-colores-senales-seguridad",
+    "instructor": "Ing. Jorge Armando Medina Castillo",
+    "instructor_id": "MC",
+    "duracion_hrs": 8,
+    "fecha_registro_stps": "2025-10-10",
+    "area_tematica": "Seguridad",
+    "categoria": ["Normatividad", "Señalización", "Seguridad Industrial"],
+    "nivel": "Básico",
+    "precio_curso": 0,
+    "dc3_disponible": true,
+    "temas_sugeridos": [
+      "Objetivo y campo de aplicación de la NOM-026",
+      "Colores de seguridad: rojo, amarillo, verde, azul y sus significados",
+      "Colores contrastantes",
+      "Tipos de señales: prohibición, obligación, precaución, información, condición segura",
+      "Señalización de tuberías",
+      "Señalización de áreas y equipos",
+      "Diseño, ubicación y mantenimiento de señales",
+      "Evaluación de la señalización en centros de trabajo"
+    ],
+    "descripcion": "Domina la NOM-026: aprende el uso correcto de colores y señales de seguridad para prevenir accidentes en el centro de trabajo."
+  },
+  {
+    "id": "MC-14",
+    "titulo": "Uso y Manejo de Herramientas Manuales y de Poder",
+    "slug": "herramientas-manuales-poder",
+    "instructor": "Ing. Jorge Armando Medina Castillo",
+    "instructor_id": "MC",
+    "duracion_hrs": 8,
+    "fecha_registro_stps": "2025-10-10",
+    "area_tematica": "Operación de Máquinas Herramienta",
+    "categoria": ["Seguridad Industrial", "Herramientas", "Operaciones"],
+    "nivel": "Básico",
+    "precio_curso": 0,
+    "dc3_disponible": true,
+    "temas_sugeridos": [
+      "Clasificación de herramientas manuales y de poder",
+      "Inspección previa al uso",
+      "Uso correcto de herramientas manuales (llaves, desarmadores, pinzas, martillos)",
+      "Uso seguro de herramientas de poder (taladros, esmeriladoras, sierras)",
+      "Riesgos comunes y cómo prevenirlos",
+      "EPP requerido según la herramienta",
+      "Almacenamiento y mantenimiento",
+      "Permisos de trabajo y procedimientos seguros"
+    ],
+    "descripcion": "Aprende el uso seguro de herramientas manuales y de poder: inspección, operación correcta, EPP y prevención de accidentes."
+  },
+  {
+    "id": "MC-15",
+    "titulo": "Ergonomía en el Trabajo: Prevención de Trastornos Musculoesqueléticos",
+    "slug": "ergonomia-trastornos-musculoesqueleticos",
+    "instructor": "Ing. Jorge Armando Medina Castillo",
+    "instructor_id": "MC",
+    "duracion_hrs": 8,
+    "fecha_registro_stps": "2025-10-10",
+    "area_tematica": "Higiene y Seguridad en el Trabajo",
+    "categoria": ["Ergonomía", "Salud Ocupacional"],
+    "nivel": "Todos los niveles",
+    "precio_curso": 0,
+    "dc3_disponible": true,
+    "temas_sugeridos": [
+      "Fundamentos de ergonomía laboral",
+      "Trastornos musculoesqueléticos más comunes (TME)",
+      "Factores de riesgo ergonómico: posturas, repetición, fuerza, vibración",
+      "Evaluación de riesgos ergonómicos (método REBA/RULA)",
+      "Ergonomía en oficina: estación de trabajo, pantalla, silla",
+      "Ergonomía en trabajo físico: levantamiento de cargas, posiciones",
+      "Ejercicios de pausa activa",
+      "Diseño ergonómico del puesto de trabajo"
+    ],
+    "descripcion": "Previene lesiones musculoesqueléticas: aprende principios de ergonomía, evalúa tu puesto de trabajo y aplica correcciones efectivas."
+  },
+  {
+    "id": "MC-16",
+    "titulo": "Actividades de Soldadura y Corte: Condiciones de Seguridad e Higiene",
+    "slug": "soldadura-corte-seguridad",
+    "instructor": "Ing. Jorge Armando Medina Castillo",
+    "instructor_id": "MC",
+    "duracion_hrs": 8,
+    "fecha_registro_stps": "2026-01-20",
+    "area_tematica": "Higiene y Seguridad en el Trabajo",
+    "categoria": ["Seguridad Industrial", "Soldadura", "Trabajos en Caliente"],
+    "nivel": "Intermedio",
+    "precio_curso": 0,
+    "dc3_disponible": true,
+    "temas_sugeridos": [
+      "Tipos de soldadura y corte (arco eléctrico, oxiacetileno, MIG/MAG, TIG)",
+      "NOM-027-STPS: Actividades de soldadura y corte",
+      "Riesgos: quemaduras, radiación, humos, incendio, explosión",
+      "Permiso de trabajo en caliente",
+      "EPP para soldadura y corte",
+      "Ventilación y extracción de humos",
+      "Inspección de equipos y cilindros",
+      "Prevención de incendios en trabajos en caliente",
+      "Primeros auxilios para lesiones por soldadura"
+    ],
+    "descripcion": "Condiciones de seguridad e higiene para actividades de soldadura y corte conforme a la NOM-027-STPS."
+  },
+  {
+    "id": "MC-17",
+    "titulo": "Operación Segura de Montacargas",
+    "slug": "operacion-segura-montacargas",
+    "instructor": "Ing. Jorge Armando Medina Castillo",
+    "instructor_id": "MC",
+    "duracion_hrs": 20,
+    "fecha_registro_stps": "2026-01-20",
+    "area_tematica": "Seguridad",
+    "categoria": ["Operaciones", "Montacargas", "Seguridad Industrial"],
+    "nivel": "Intermedio",
+    "precio_curso": 0,
+    "dc3_disponible": true,
+    "temas_sugeridos": [
+      "Tipos de montacargas y sus componentes",
+      "Principios de estabilidad y centro de gravedad",
+      "Tabla de capacidad de carga",
+      "Inspección diaria pre-operación (checklist)",
+      "Técnicas de manejo: avance, retroceso, giros, rampas",
+      "Apilamiento y desapilamiento seguro",
+      "Manejo de cargas largas, pesadas e irregulares",
+      "Circulación en áreas de trabajo: velocidades, distancias, señalización",
+      "Carga de baterías / llenado de combustible",
+      "Reglamento interno de circulación",
+      "Práctica de manejo supervisada",
+      "Evaluación teórica y práctica"
+    ],
+    "descripcion": "Curso completo de 20 horas para la operación segura de montacargas: teoría, técnicas de manejo, inspección y práctica supervisada."
+  },
+  {
+    "id": "MC-18",
+    "titulo": "Actualización en Operación Segura de Montacargas",
+    "slug": "actualizacion-montacargas",
+    "instructor": "Ing. Jorge Armando Medina Castillo",
+    "instructor_id": "MC",
+    "duracion_hrs": 8,
+    "fecha_registro_stps": "2026-01-20",
+    "area_tematica": "Seguridad",
+    "categoria": ["Operaciones", "Montacargas", "Actualización"],
+    "nivel": "Intermedio",
+    "precio_curso": 0,
+    "dc3_disponible": true,
+    "temas_sugeridos": [
+      "Repaso de principios de operación segura",
+      "Actualización normativa",
+      "Análisis de incidentes y lecciones aprendidas",
+      "Reforzamiento de técnicas de manejo",
+      "Evaluación de competencias",
+      "Práctica de manejo (reforzamiento)"
+    ],
+    "descripcion": "Actualización para operadores de montacargas certificados: refuerza conocimientos, actualiza normatividad y recertifica tu competencia."
+  },
+  {
+    "id": "MC-19",
+    "titulo": "NOM-019-STPS-2011: Comisiones de Seguridad e Higiene",
+    "slug": "nom-019-comisiones-seguridad-higiene",
+    "instructor": "Ing. Jorge Armando Medina Castillo",
+    "instructor_id": "MC",
+    "duracion_hrs": 8,
+    "fecha_registro_stps": "2026-02-10",
+    "area_tematica": "Higiene y Seguridad en el Trabajo",
+    "categoria": ["Normatividad", "Comisiones", "NOM-019"],
+    "nivel": "Intermedio",
+    "precio_curso": 0,
+    "dc3_disponible": true,
+    "temas_sugeridos": [
+      "Objetivo y campo de aplicación de la NOM-019",
+      "¿Qué es una Comisión de Seguridad e Higiene?",
+      "Integración de la comisión: representantes del patrón y de los trabajadores",
+      "Funciones y responsabilidades de la comisión",
+      "Recorridos de verificación: cómo realizarlos",
+      "Actas de verificación: formato y contenido",
+      "Identificación de condiciones peligrosas y actos inseguros",
+      "Seguimiento a medidas correctivas",
+      "Programa anual de recorridos",
+      "Relación con otras normas (NOM-030-STPS)"
+    ],
+    "descripcion": "Aprende a integrar y operar la Comisión de Seguridad e Higiene conforme a la NOM-019-STPS: recorridos, actas y seguimiento."
+  }
+]
+```
+
+---
+
+## Resumen del Catálogo
+
+### Por Área Temática
+| Área | Cursos | Horas totales |
+|------|--------|---------------|
+| Desarrollo Humano / Psicosocial (Iturriaga) | 10 | 41 hrs virtual |
+| Seguridad Industrial (Medina) | 13 | ~110 hrs |
+| Dirección y Gestión (ambos) | 4 | ~17 hrs |
+| Normatividad/NOMs (ambos) | 5 | ~32 hrs |
+| Operaciones especializadas (Medina) | 4 | ~42 hrs |
+| **TOTAL** | **29** | **~190 hrs** |
+
+### Por Nivel
+| Nivel | Cursos |
+|-------|--------|
+| Básico | 5 |
+| Todos los niveles | 14 |
+| Intermedio | 9 |
+| Avanzado | 1 |
+
+### Cursos más extensos (anclas del catálogo)
+1. Operación Segura de Montacargas — 20 hrs
+2. Formación de Instructores — 20 hrs
+3. NOM-035 (Iturriaga) — 5 hrs virtual / 10 hrs presencial
+4. Manejo de Conflictos y Toma de Decisiones — 5 hrs virtual
+5. Cómo Es Mi Comunicación — 5 hrs virtual
+
+---
+
+## Funcionalidad: "Agentes Capacitadores Verificados STPS"
+
+### Concepto para la plataforma
+En la landing page y en la app, incluir una sección que valide la credibilidad:
+
+```
+┌─────────────────────────────────────────────────────┐
+│  ✅ CAPACITADORES VERIFICADOS ANTE LA STPS          │
+│                                                      │
+│  Nuestros instructores están registrados como        │
+│  agentes capacitadores externos ante la Secretaría  │
+│  del Trabajo y Previsión Social. Verifica su        │
+│  registro en:                                        │
+│  🔗 agentes.stps.gob.mx                             │
+│                                                      │
+│  [Avatar] Psic. Yuridia Iturriaga                   │
+│  Cédula: 7476024 | UVM | 10 cursos                  │
+│                                                      │
+│  [Avatar] Ing. Jorge A. Medina Castillo             │
+│  Registro STPS verificado | 19 cursos               │
+│                                                      │
+│  Los certificados DC3 emitidos por nuestros         │
+│  capacitadores tienen validez oficial ante la STPS  │
+│  y cumplen con el Art. 153 de la LFT.              │
+└─────────────────────────────────────────────────────┘
+```
+
+### Datos para UI de verificación
+```json
+{
+  "verificacion_url": "https://agentes.stps.gob.mx/Buscador/BuscadorAgente.aspx",
+  "instructores": [
+    {
+      "nombre": "Psic. Yuridia Iturriaga",
+      "cedula": "7476024",
+      "universidad": "Universidad del Valle de México",
+      "especialidad": "Psicología organizacional y desarrollo humano",
+      "cursos_registrados": 10,
+      "tipo": "Capacitador externo"
+    },
+    {
+      "nombre": "Ing. Jorge Armando Medina Castillo",
+      "tipo": "Agente capacitador",
+      "cursos_registrados": 19,
+      "especialidad": "Seguridad industrial e higiene laboral",
+      "verificable_en": "https://agentes.stps.gob.mx/Buscador/BuscadorAgente.aspx"
+    }
+  ],
+  "marco_legal": {
+    "fundamento": "Artículo 153 de la Ley Federal del Trabajo",
+    "norma_dc3": "Formato DC-3 Constancia de competencias o de habilidades laborales",
+    "validez": "Nacional, ante cualquier autoridad laboral"
+  }
+}
+```
+
+---
+
+## Instrucciones para Replit Agent
+
+### Para generar contenido detallado de cada curso:
+
+```
+Prompt sugerido para el agente de Replit:
+
+"Usando el catálogo master de cursos STPS (este documento), genera el contenido 
+completo para el curso [ID del curso]. Incluye:
+
+1. Ficha técnica del curso
+2. Descripción para catálogo (150 palabras)
+3. Objetivo general y objetivos específicos
+4. Público objetivo
+5. Para cada tema listado, desarrolla:
+   - Contenido de la lección (800-1200 palabras)
+   - Conceptos clave con definiciones
+   - Ejemplos prácticos aplicados al contexto laboral mexicano
+   - Ejercicio o reflexión al final
+6. Quiz del curso (8-10 preguntas de opción múltiple con respuesta correcta marcada)
+7. Estructura WordPress: secciones, unidades, tipos
+
+El curso debe ser en español, orientado a cooperativistas y trabajadores en México,
+con tono profesional pero accesible. Referencia las NOMs aplicables cuando corresponda."
+```
+
+### Para agregar la sección de Agentes Verificados al landing:
+```
+"Agrega una sección 'Capacitadores Verificados STPS' al landing page de Ceduverse.
+Debe mostrar los perfiles de los 2 instructores con sus credenciales, un link 
+verificable a agentes.stps.gob.mx, y una explicación breve de qué es el DC3 y 
+por qué tiene validez oficial. Usa el estilo editorial del landing V2."
+```
+
+---
+
+## WordPress Import Cheatsheet
+
+Cada curso se crea como un **Course** en WordPress con esta estructura:
+
+```
+Course: [Nombre del curso]
+├── Section: "Módulo 1: [Primer tema]"
+│   ├── Unit: "Lección: [Tema 1.1]" (type: lesson, content: texto + video)
+│   ├── Unit: "Lección: [Tema 1.2]" (type: lesson)
+│   └── Quiz: "Evaluación del curso" (type: quiz)
+│
+│   Metadata:
+│   ├── duration: [X] horas
+│   ├── level: [básico/intermedio/avanzado]
+│   ├── price: 0 (gratuito)
+│   ├── instructor: [nombre]
+│   ├── dc3_available: true
+│   ├── dc3_price_range: "$150-$500 MXN"
+│   ├── stps_registered: true
+│   └── certificate_type: "DC3 + NFT Ceduverse"
+```

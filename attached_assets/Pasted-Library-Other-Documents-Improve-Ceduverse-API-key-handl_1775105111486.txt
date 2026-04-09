@@ -1,0 +1,141 @@
+Library
+Other
+Documents
+Improve Ceduverse API key handling and mock data
+
+La API de Ceduverse sí está activa en ceduverse.replit.app, pero el API key que tienes guardado no es válido — devuelve "Invalid API key". ¿Puedes generar un nuevo API key desde el panel de Ceduverse y pegármelo aquí? Lo actualizo en los secretos del proyecto.
+
+te pongo los de produccion y de deplopment
+
+Perfecto, te espero. Cuando los tengas, pégalos aquí y los configuro — uno para desarrollo y otro para producción.
+
+cdv_31f312ae044abdb40e3d9ca1bb4f00c4eb6906def329e3abb631202ec0478801 development
+cdv_3da87c12cbd6cc8f7d5b75d2e5b4a94437a46923552477917d0d5b725ce94429
+production
+
+que datos quieres que le ponga?
+
+Veo el formulario de Ceduverse. Necesitas agregar también el dominio de desarrollo de Replit en "Origins permitidos". Agrega estas líneas adicionales:
+
+En Origins permitidos, agrega:
+
+https://mecorrieron.mx
+https://www.mecorrieron.mx
+https://*.replit.dev
+https://*.replit.app
+
+Los de Replit son para que funcione en desarrollo. Sin esos orígenes, la API rechaza las peticiones desde este entorno.
+
+Los demás campos se ven bien:
+
+    Nombre: mecorrieron-development ✅
+    Owner: MeCorrieron.Mx ✅
+    Rate limit/minuto: 120 ✅
+    Rate limit/día: 50000 ✅
+
+Dale "Crear Key" con esos orígenes y pégame la key que te genere. Luego haz lo mismo para producción con nombre mecorrieron-production.
+
+cdv_4a3bdfc1c2ab8d98e3d34d0f3e6996204f752cb36d1c390b71b333faa2c3bd12
+
+La key nueva sigue siendo rechazada. Noté en la captura que dice "You are currently viewing a preview of the main version" en Ceduverse. ¿Ya publicaste/deployaste Ceduverse después de crear la key? Si la key solo existe en el preview pero no en producción, ceduverse.replit.app no la reconocería.
+
+esta es la de depoloyment cdv_64aa963f2511f3e23fa7a9c147a92afe6a936d3559dfc4d8654b6df47601dd23
+
+Hay dos problemas del lado de Ceduverse que necesitas resolver allá:
+
+    Las API keys no son reconocidas — El endpoint /health devuelve "Invalid API key" con las 3 keys que me diste. ¿Necesitas re-deployar Ceduverse después de haber creado las keys?
+
+    Las rutas de la API están siendo capturadas por el frontend — Cuando llamo a /api/v1/external/empresas/viewport, devuelve la página HTML de Ceduverse (el SPA de React) en vez de la respuesta JSON de la API. Esto sugiere que el servidor de Ceduverse no está rutando correctamente las peticiones API.
+
+Cuando resuelvas esos dos puntos en el proyecto de Ceduverse, avísame y pruebo de nuevo desde aquí. Todo lo demás de este lado ya está listo para conectar.
+
+listo
+
+cdv_9e9538922e937fe4049fc3e5db16032bfd7a509a051543f16d344d5ee8260341
+cdv_4a09e9951ebbab35f8bac6fcf96ffb1075941de3330e947eabe51137ed65a7ca
+
+produ y deplo nuevas
+
+Los dos problemas siguen sin resolver en Ceduverse:
+
+    El /health rechaza todas las keys con "Invalid API key" — las keys que creaste probablemente están en la base de datos de desarrollo, pero el deployment usa otra base de datos. Verifica que las API keys existan en la base de datos de producción de Ceduverse.
+
+    La ruta /api/v1/external/empresas/viewport sigue devolviendo la página HTML del frontend en vez de JSON — el servidor de Ceduverse en producción no está rutando las peticiones API al backend. Necesitas re-deployar Ceduverse después de los cambios.
+
+¿Puedes verificar en la base de datos de producción de Ceduverse que las API keys existen, y re-deployar?
+Ya lo hice, prueba de nuevo
+
+Los problemas persisten. Te doy un prompt exacto para que se lo pases al agente de Ceduverse:
+
+PROMPT PARA EL AGENTE DE CEDUVERSE:
+
+Hay dos bugs en producción (ceduverse.replit.app):
+
+    Las rutas /api/v1/external/empresas/ devuelven HTML del SPA en vez de JSON.* Solo /api/v1/external/health responde JSON. Las demás rutas como /empresas/viewport, /empresas/search están siendo capturadas por el frontend React. Necesitas verificar que el servidor Express (o el que uses) registre las rutas de la API ANTES del middleware catch-all que sirve el index.html del SPA.
+
+    Todas las API keys recién creadas devuelven "Invalid API key". Verifica que:
+        Las keys estén hasheadas correctamente en la base de datos de PRODUCCIÓN
+        El endpoint /health esté comparando correctamente el hash
+        La base de datos de producción tenga las mismas keys que la de desarrollo
+
+Para probar: curl -H "Authorization: Bearer <KEY>" https://ceduverse.replit.app/api/v1/external/health
+
+Cuando esté resuelto avísame.
+
+Entendido. Mientras tanto, del lado de MeCorrieron todo está listo para conectar. Cuando los problemas de Ceduverse se resuelvan, solo necesitas avisarme y pruebo la conexión — ya tengo:
+
+    La URL base configurada (ceduverse.replit.app/api/v1/external)
+    Las keys guardadas por entorno (desarrollo y producción)
+    El código del viewport API ya cruza automáticamente los RFCs de Ceduverse contra las 14,232 empresas EFOS del SAT
+    El fallback a datos mock sigue funcionando mientras tanto
+
+¿Hay algo más en lo que pueda avanzar mientras se resuelve lo de Ceduverse?
+
+The Next.js Dev Server artifact crashed with a runtime error, please debug and fix it.
+
+ya cargo mejor pero aun no salen todos los que estan en el 69 b ni todas las empresas de la base de datos mexicana
+
+Publicar — Haz clic en el botón Deploy
+Revisar los logs de producción — Busca la línea [seed-api-key] Raw Key: en los logs del deploy. Esa es la nueva API key de producción
+Compartir la key con MeCorrieron — Ellos la ponen en su variable CEDUVERSE_API_KEY
+Después del deploy exitoso, yo removeré la variable FORCE_RESEED_API_KEY para que no regenere la key en futuros reinicios.
+
+Resumen de cambios:
+
+Todas las rutas /empresas/ ahora funcionan como alias de /companies/ (viewport, search, nearby, stats, filters, :id)
+La API key se regenerará en producción al publicar, con permisos abiertos (*) para funcionar con curl y desde cualquier servidor
+
+Publica ahora. Una vez que se despliegue, la API key de producción será:
+
+cdv_0957ff71da33b431395806d882b9e9b2a6100d75e47256f3437dab1b2edda2f7
+Esa es la key que MeCorrieron necesita poner en su CEDUVERSE_API_KEY.
+
+Después del deploy, la puedes verificar con:
+
+curl -H "Authorization: Bearer cdv_0957ff71da33b431395806d882b9e9b2a6100d75e47256f3437dab1b2edda2f7" https://ceduverse.replit.app/api/v1/external/health
+Y las rutas /empresas/ ya funcionarán:
+
+curl -H "Authorization: Bearer cdv_0957ff71da33b431395806d882b9e9b2a6100d75e47256f3437dab1b2edda2f7" "https://ceduverse.replit.app/api/v1/external/empresas/search?q=walmart"
+Una vez confirmado que funciona, voy a quitar las variables FORCE_RESEED_API_KEY y MECORRIERON_API_KEY_RAW para que no se regenere en futuros reinicios.
+
+ya
+
+Probemos ahora:
+
+Hmm, sigue dando 401. Déjame verificar que la key que tenemos guardada sea correcta:
+
+La key está bien guardada (68 caracteres, empieza con cdv_0957). El problema podría ser que Ceduverse aún está procesando el deploy. Déjame probar directamente con la key hardcodeada para descartar problemas de env:
+
+Mismo resultado con la key directa. Parece que el deploy de Ceduverse aún no activó la nueva key en producción. Déjame probar sin autenticación para ver si el servidor responde:
+
+El servidor de Ceduverse responde (pide autenticación), pero la key no es reconocida. Esto indica que el deploy de Ceduverse probablemente no regeneró la key correctamente, o la key que me compartiste es la que se generará al hacer deploy pero aún no se ha hecho.
+
+El problema es del lado de Ceduverse — la key cdv_0957... no está registrada en su base de datos de producción.
+
+Posibles causas:
+
+    El deploy de Ceduverse no se completó aún
+    La key se generó en desarrollo pero no en producción
+    La variable FORCE_RESEED_API_KEY no estaba configurada al momento del deploy
+
+¿Puedes verificar en los logs de deploy de Ceduverse si aparece la línea [seed-api-key] Raw Key:? Eso confirmaría que la key se regeneró exitosamente durante el deploy

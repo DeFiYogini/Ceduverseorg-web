@@ -1,0 +1,449 @@
+# Prompt para Replit Agent — Rediseño UX del Radar MeCorrieron
+## Feed adictivo + Ficha de empresa con inteligencia judicial + Loop completo
+
+```
+CONTEXTO: MeCorrieron.mx — Next.js 15 + Supabase + Leaflet + xAI/Grok + Tailwind.
+El Radar ya funciona con pins de empresas desde la API de Ceduverse (6.1M empresas).
+Ya existe: /empresa/[id], /buscar, /mapa, /nueva-resena, /rankings.
+
+OBJETIVO: Transformar la experiencia en algo adictivo tipo TikTok para explorar 
+empresas. La ficha de empresa debe impactar con inteligencia judicial real.
+TODO GRATIS para el trabajador.
+
+=============================================
+MEJORA 1: MODO FEED — Scroll vertical de empresas
+=============================================
+
+Crear nueva vista alternativa al mapa: un feed vertical de cards de empresas 
+cercanas, estilo TikTok/Instagram. El usuario puede alternar entre Mapa y Feed.
+
+Ubicación: Agregar toggle en la parte superior del Radar
+- Botón "Mapa" (actual) | Botón "Feed" (nuevo)
+- El Feed es el DEFAULT en mobile (más natural para scroll con pulgar)
+- El Mapa es el DEFAULT en desktop
+
+Ruta: puede ser un componente dentro de /radar o una ruta nueva /feed-empresas
+
+COMPONENTE: FeedEmpresas
+
+Lógica:
+1. Obtener ubicación del usuario (geolocalización)
+2. GET /api/ceduverse/nearby?lat=X&lng=Y&radius_km=5&limit=20
+3. Renderizar como cards verticales scrolleables
+4. Infinite scroll: al llegar al final, cargar más (ampliar radio o paginar)
+5. Pull-to-refresh en mobile
+
+Cada CARD del feed muestra (de arriba a abajo):
+
+a) HEADER de la card:
+   - Ícono/avatar del sector (círculo con iniciales o ícono)
+   - Nombre de la empresa (bold, 16px)
+   - Sector + municipio + distancia ("Manufactura · Monterrey · 1.2 km")
+   - Badge de semáforo esquina superior derecha:
+     "Alto riesgo" (rojo), "Precaución" (amarillo), 
+     "Buen empleador" (verde), "Sin calificar" (azul/gris)
+
+b) RATING + STATS (fila horizontal de 4 mini-cards):
+   - Rating: ★ 2.1/5 (color según nivel)
+   - Riesgo: "ALTO" en rojo / "MEDIO" amarillo / "BAJO" verde
+   - Opiniones: "14" con ícono de chat
+   - Empleados: "75" con ícono de personas
+
+c) BARRAS DE RATING (5 categorías):
+   - 💰 Pagos         ████████░░ 4.0
+   - 📋 Contratos     ████░░░░░░ 2.0
+   - 🤝 Ambiente      ███░░░░░░░ 1.5
+   - 🦺 Seguridad     ██░░░░░░░░ 1.0
+   - ❌ Despidos       ███░░░░░░░ 1.8
+   Colores: >3.5 verde, 2.5-3.5 amarillo, <2.5 rojo
+   Si no tiene opiniones: mostrar "Sin calificaciones aún" en gris
+
+d) NOMs APLICABLES (chips horizontales scrolleables):
+   NOM-004 · NOM-010 · NOM-035
+   Tap en un chip → modal explicando qué es esa NOM en lenguaje sencillo
+
+e) ÚLTIMA OPINIÓN (si tiene):
+   Box con fondo ligeramente diferente:
+   "Pagan bien pero cero equipo de seguridad. Un compa se lastimó 
+   y ni lo llevaron al IMSS..." — Ex-empleado, hace 3 días
+   Si no tiene opiniones: "Sé el primero en opinar sobre esta empresa"
+
+f) 3 BOTONES DE ACCIÓN (fila):
+   [📝 Opinar]  [📤 Compartir]  [⚖️ Me despidieron]
+   - Opinar → abre modal de opinión (ya existe en /nueva-resena)
+   - Compartir → genera share card (Mejora 8)
+   - Me despidieron → abre chat con Lía pre-cargado (Mejora 7)
+
+g) BOTÓN "Ver ficha completa →" (link a /empresa/[id])
+
+ANIMACIONES:
+- Cards entran con fade-in + slide-up al scrollear
+- Pull-to-refresh: rotación de ícono
+- Like animation al marcar "útil" en una opinión
+
+ORDENAMIENTO del feed:
+- Default: por cercanía (más cerca primero)
+- Opciones: "Peor calificadas" | "Más opinadas" | "Mayor riesgo" | "Recientes"
+- Filtros rápidos arriba: chips de sector (Manufactura, Restaurantes, etc.)
+
+
+=============================================
+MEJORA 2: FICHA DE EMPRESA REDISEÑADA
+=============================================
+
+Rediseñar /empresa/[id] (o [slug]) para que impacte:
+
+HEADER:
+- Avatar grande con iniciales o ícono de sector (48px, border-radius 12px)
+- Nombre empresa (20px bold)
+- Razón social en gris debajo
+- Badge de semáforo (pill grande: "🚨 Alto riesgo" / "✅ Buen empleador" / etc.)
+
+4 STAT CARDS (fila horizontal):
+| Rating | Riesgo STPS | Opiniones | Empleados |
+|  2.1   |    ALTO     |    14     |    75     |
+Coloreados según nivel (rojo/amarillo/verde)
+
+RESUMEN DE LÍA (box dorado/ámbar):
+"🤖 Resumen de Lía"
+Texto de 3-4 líneas generado por IA cruzando TODOS los datos:
+- Datos de Ceduverse (sector, tamaño, riesgo)
+- Opiniones de la comunidad
+- Datos judiciales (si los hay)
+- NOMs aplicables
+
+TABS (pills horizontales scrolleables):
+[Resumen] [Opiniones (14)] [Cumplimiento STPS] [Historial judicial] [Info]
+
+TAB RESUMEN (default):
+- 5 barras de rating con números
+- NOMs como chips tocables
+- "¿Recomendarían trabajar aquí?" → pie chart mini (68% sí / 32% no)
+- Últimas 3 opiniones en preview
+- "Me ofrecieron trabajo aquí" → CTA que abre Lía para evaluar
+
+TAB OPINIONES:
+- Feed de opiniones anónimas (ya existe, mejorar UI)
+- Filtros: Más recientes | Mejor calificadas | Peor calificadas
+- Cada opinión: avatar anónimo, relación, periodo, 5 mini-ratings, texto
+- Reacciones: 👍 Útil (X) | 🚩 Reportar
+- Botón sticky abajo: "Escribir mi opinión" (verde, prominente)
+
+TAB CUMPLIMIENTO STPS (datos de Ceduverse):
+- Nivel de riesgo con explicación en lenguaje sencillo:
+  "Esta empresa es de manufactura. Por ley, tiene ALTO riesgo laboral.
+  Eso significa que debe cumplir con más normas de seguridad."
+- Lista de NOMs aplicables con nombre completo:
+  NOM-004-STPS-2024 — Maquinaria y equipo de seguridad
+  NOM-010-STPS-2024 — Agentes químicos en el ambiente
+  NOM-035-STPS-2018 — Factores de riesgo psicosocial
+- Violaciones más comunes del sector (bullets)
+- "¿Tu empresa cumple? Pregúntale a Lía →" (CTA)
+
+TAB HISTORIAL JUDICIAL (NUEVO — el Búho Legal gratuito):
+Ver Mejora 3 completa abajo.
+
+TAB INFO:
+- Dirección completa + botón "Cómo llegar" (Google Maps directions)
+- Teléfono (clickable tel:) + email + web
+- Tamaño: "51-100 empleados (mediana)"
+- Sector detallado + código SCIAN
+- "Empresa registrada desde: [fecha_alta]"
+- Mini mapa embedido (Leaflet, solo un pin)
+
+
+=============================================
+MEJORA 3: HISTORIAL JUDICIAL — El Búho Legal gratuito
+=============================================
+
+Esta es la función killer. Cuando el usuario abre el tab "Historial judicial"
+de cualquier empresa, Lía busca información pública sobre esa empresa en 
+múltiples fuentes judiciales y fiscales.
+
+FUENTES DE DATOS (todas públicas y gratuitas):
+
+1. LISTA NEGRA SAT (Art. 69-B) — ¿Es empresa fantasma?
+   - Consultar: https://69b.mx/ o CSV público del SAT
+   - Buscar por razón social o RFC (si lo tenemos)
+   - Mostrar: "✅ No aparece en lista 69-B" o "🚨 EFOS DEFINITIVO — Factura operaciones simuladas"
+   - Es un CSV descargable del SAT: implementar búsqueda local
+
+2. BÚSQUEDA JUDICIAL POR NOMBRE — ¿Tiene demandas?
+   - Usar web_search de Lía (xAI/Grok) para buscar:
+     "{razón_social} demanda laboral" 
+     "{razón_social} junta conciliación"
+     "{razón_social} tribunal laboral"
+   - Parsear resultados y resumir
+   - Fuentes: boletines judiciales públicos, noticias, DOF
+
+3. REPORTE LABORAL IMSS — ¿Tiene trabajadores registrados?
+   - Si en el futuro se puede consultar: API del IMSS para semanas cotizadas
+   - Por ahora: estimación basada en tamaño del DENUE vs sector
+
+4. CÉDULAS PROFESIONALES SEP — ¿Su equipo legal está certificado?
+   - Si la empresa tiene abogado interno mencionado en demandas
+   - Consultar: https://www.buholegal.com/ (gratis hasta 5 búsquedas)
+   - O: cédula profesional directo del SEP (público)
+
+5. NOTICIAS Y ESCÁNDALOS — ¿Ha salido en medios?
+   - Lía busca: "{nombre_empresa} {municipio} despido demanda laboral escándalo"
+   - Resume los hallazgos
+
+IMPLEMENTACIÓN:
+
+a) Crear endpoint: POST /api/empresa/[id]/judicial-scan
+   - Recibe: nombre, razon_social, municipio, sector
+   - Ejecuta las búsquedas en paralelo
+   - Cachea resultados en Supabase (tabla: empresa_judicial_data)
+   - Cache válido 30 días (los datos judiciales no cambian rápido)
+   - Retorna resultado consolidado
+
+b) Crear tabla en Supabase:
+   empresa_judicial_data:
+   - id UUID
+   - empresa_id BIGINT (ref empresas_radar)
+   - sat_69b_status VARCHAR ('limpio','presunto','definitivo','desvirtuado','no_encontrado')
+   - sat_69b_detail JSONB
+   - demandas_encontradas INTEGER DEFAULT 0
+   - demandas_detail JSONB (array de {fuente, tipo, fecha, resumen})
+   - noticias_encontradas INTEGER DEFAULT 0
+   - noticias_detail JSONB
+   - resumen_ia TEXT (resumen generado por Lía)
+   - score_judicial INTEGER (0-100, calculado)
+   - scanned_at TIMESTAMPTZ
+   - created_at TIMESTAMPTZ DEFAULT NOW()
+
+c) UI del tab "Historial judicial":
+
+   HEADER:
+   "⚖️ Historial judicial de {empresa}"
+   "Información pública consultada por Lía — Gratis"
+   
+   CARD 1: Lista negra SAT (Art. 69-B)
+   Badge grande:
+   - ✅ "Limpio — No aparece en listas del SAT"
+   - ⚠️ "Presunto — En investigación por operaciones simuladas"
+   - 🚨 "DEFINITIVO — Empresa que factura operaciones simuladas (EFOS)"
+   - 🔄 "Desvirtuado — Fue investigado pero demostró operaciones reales"
+   Explicación en lenguaje sencillo debajo
+
+   CARD 2: Demandas laborales encontradas
+   Número grande: "3 demandas encontradas"
+   Lista de cada una:
+   - Tipo: Despido injustificado
+   - Fuente: Boletín Judicial [estado]
+   - Fecha aproximada: 2024
+   - Resumen: "Trabajador demandó por despido sin liquidación..."
+   Si no se encuentran: "No se encontraron demandas laborales públicas"
+
+   CARD 3: Noticias y menciones públicas
+   Lista de noticias relevantes (si las hay):
+   - "Grupo X cerró planta y despidió a 200 trabajadores" — El Norte, 2024
+   - "Trabajadores denuncian falta de equipo de seguridad" — Milenio, 2023
+   Si no hay: "Sin menciones relevantes en medios"
+
+   CARD 4: Score de riesgo judicial (calculado por Lía)
+   Barra grande: 0-100
+   - 0-30: "Bajo riesgo judicial" (verde)
+   - 31-60: "Riesgo moderado" (amarillo)  
+   - 61-100: "Alto riesgo judicial" (rojo)
+   Factores: lista 69-B + demandas + noticias + opiniones negativas
+
+   BOTÓN: "Escanear de nuevo" (reconsulta, respeta cache 30 días)
+
+   NOTA LEGAL:
+   "Esta información proviene de fuentes públicas. MeCorrieron.mx no 
+   garantiza su exactitud. Para una investigación legal formal, consulta 
+   con un abogado."
+
+d) Lía genera el resumen judicial:
+
+   Prompt para xAI/Grok:
+   ```
+   Eres Lía, asistente de derechos laborales de mecorrieron.mx.
+   
+   Busca información pública sobre esta empresa mexicana:
+   Nombre: {nombre}
+   Razón social: {razon_social}
+   Municipio: {municipio}, {estado}
+   Sector: {sector}
+   Empleados: {rango}
+   
+   Busca en fuentes públicas:
+   1. ¿Aparece en la lista 69-B del SAT? (empresas fantasma/EFOS)
+   2. ¿Tiene demandas laborales en tribunales o juntas de conciliación?
+   3. ¿Ha sido mencionada en noticias por despidos, abusos o escándalos?
+   4. ¿Tiene antecedentes de incumplimiento laboral?
+   
+   Responde en JSON:
+   {
+     "sat_69b": "limpio|presunto|definitivo|desvirtuado|no_encontrado",
+     "sat_detalle": "explicación breve",
+     "demandas": [{"tipo":"","fuente":"","resumen":""}],
+     "noticias": [{"titulo":"","fuente":"","fecha":"","resumen":""}],
+     "resumen": "párrafo de 3-4 líneas en español sencillo",
+     "score_judicial": 0-100,
+     "recomendacion": "frase de recomendación para el trabajador"
+   }
+   
+   Si no encuentras información, di honestamente que no se encontró.
+   No inventes datos. Solo reporta lo que encuentres en fuentes reales.
+   ```
+
+e) PRIMER ESCANEO AUTOMÁTICO:
+   Cuando alguien abre el tab "Historial judicial" por primera vez:
+   - Si no hay datos en cache → disparar escaneo automático
+   - Mostrar skeleton/loading: "Lía está investigando esta empresa..."
+   - Animación de búsqueda (lupa moviéndose, barras de progreso)
+   - Al completar → animar la aparición de cada card
+
+f) ESCANEO EN LOTE (futuro, para popular datos):
+   Script que escanea las 100 empresas más opinadas/visitadas
+   Cron nocturno que refresca datos viejos (>30 días)
+
+
+=============================================
+MEJORA 4: "ME DESPIDIERON DE AQUÍ" — Chat con Lía contextual
+=============================================
+
+En cada ficha de empresa Y en cada card del feed:
+Botón rojo prominente: "⚖️ Me despidieron de aquí — Hablar con Lía"
+
+Al tocar:
+1. Abrir el chat de Lía (ya existe como provider global)
+2. Pre-cargar mensaje de contexto (NO visible para el usuario):
+   System: "El usuario está consultando sobre {nombre_empresa}, empresa de 
+   {sector} con {empleados} empleados en {municipio}. Riesgo STPS: {riesgo}.
+   NOMs aplicables: {noms}. Rating comunidad: {rating}/5.
+   Historial judicial: {resumen_judicial}.
+   El usuario fue despedido o tiene un problema laboral con esta empresa."
+3. Primer mensaje visible de Lía:
+   "Veo que tienes un problema con {nombre_empresa}. Es una empresa de 
+   {sector} en {municipio}. ¿Qué pasó? ¿Te despidieron, renunciaste, 
+   o te están tratando mal?"
+4. Lía continúa el flujo normal de asesoría + calculadora
+
+BONUS: Si la empresa tiene historial judicial malo, Lía lo menciona:
+"Por cierto, esta empresa tiene {X} demandas laborales registradas. 
+No estás solo/a — otros trabajadores ya han reclamado sus derechos."
+
+
+=============================================
+MEJORA 5: SHARE CARDS — Compartir en redes
+=============================================
+
+Al tocar "Compartir" en cualquier empresa:
+
+1. Generar imagen OG dinámica (card visual) con:
+   - Fondo oscuro (dark mode de MeCorrieron)
+   - Logo MeCorrieron arriba
+   - Nombre empresa grande
+   - Semáforo badge
+   - Rating stars
+   - Las 5 barras de categoría
+   - "14 opiniones de trabajadores"
+   - "Descubre cómo es trabajar aquí → mecorrieron.mx"
+
+2. Opciones de compartir (share sheet nativo o botones):
+   - WhatsApp (el más importante en México)
+   - Twitter/X
+   - Facebook
+   - LinkedIn
+   - Copiar link
+
+3. El link compartido lleva a /empresa/[slug] con OG meta tags:
+   og:title = "{empresa} — ¿Cómo es trabajar aquí?"
+   og:description = "Rating: {X}/5 · {Y} opiniones · Riesgo STPS: {Z}"
+   og:image = [la card generada]
+
+4. API para generar la imagen:
+   GET /api/og/empresa/[id] → retorna PNG
+   Usar @vercel/og (satori) o canvas server-side
+
+
+=============================================
+MEJORA 6: COMPARAR EMPRESAS
+=============================================
+
+Botón "Comparar" que permite seleccionar 2-3 empresas y ver side by side:
+
+1. En el feed o mapa: long-press o checkbox "Agregar a comparación"
+2. Barra flotante abajo: "2 empresas seleccionadas — Comparar"
+3. Vista de comparación (/comparar):
+   - Columnas lado a lado (2 o 3)
+   - Rating general, cada categoría, riesgo STPS, empleados
+   - Barras superpuestas para fácil comparación visual
+   - "Lía recomienda: {empresa X} tiene mejor ambiente pero {Y} paga más"
+
+Útil para: "Me ofrecieron trabajo en dos empresas, ¿cuál es mejor?"
+
+
+=============================================
+MEJORA 7: NOTIFICACIONES DE ENGAGEMENT
+=============================================
+
+Para generar retención y que vuelvan:
+
+1. "Nueva opinión sobre una empresa que visitaste"
+   - Trackear qué fichas de empresa visitó el usuario
+   - Cuando alguien publica opinión sobre esa empresa → notificar
+
+2. "Una empresa de tu zona recibió calificación baja"
+   - Para empresas dentro de 2km del usuario
+   - Push notification o email semanal
+
+3. "Ranking semanal de tu zona"
+   - Email/push cada lunes: "Las 5 peor calificadas de {municipio} esta semana"
+   - Link a /rankings
+
+Tabla en Supabase:
+empresa_visits:
+- user_id UUID
+- empresa_id BIGINT
+- visited_at TIMESTAMPTZ
+
+Tabla notificaciones ya existe — usarla para estos triggers.
+
+
+=============================================
+MEJORA 8: NOM CHIPS INTERACTIVOS
+=============================================
+
+Cada NOM que aparece como chip en las cards y fichas debe ser TOCABLE.
+
+Al tocar una NOM → modal/drawer con:
+- Código: NOM-035-STPS-2018
+- Nombre completo: "Factores de riesgo psicosocial en el trabajo"
+- Explicación sencilla (2-3 líneas): 
+  "Esta norma obliga a tu empresa a cuidar tu salud mental en el trabajo.
+  Incluye prevenir el estrés laboral, acoso y violencia en el trabajo."
+- "¿Tu empresa cumple?" → opciones Sí/No/No sé
+  Si responde No → "Habla con Lía sobre esto" (CTA a chat contextual)
+- "Multa por incumplimiento: $53,000 - $535,000 MXN"
+
+Datos de NOMs: crear archivo lib/constants/noms-stps.ts con las ~20 NOMs 
+más relevantes, cada una con: código, nombre, explicación, multa.
+
+
+=============================================
+ORDEN DE IMPLEMENTACIÓN
+=============================================
+
+Fase A (impacto inmediato — 1 semana):
+1. Mejora 2: Rediseñar ficha /empresa/[id] (tabs + stats + resumen Lía)
+2. Mejora 8: NOM chips interactivos
+3. Mejora 4: "Me despidieron" con Lía contextual
+
+Fase B (adicción — semana 2):
+4. Mejora 1: Modo Feed de empresas
+5. Mejora 5: Share cards + OG images
+6. Mejora 3: Historial judicial (búho legal gratuito)
+
+Fase C (retención — semana 3):
+7. Mejora 7: Notificaciones de engagement
+8. Mejora 6: Comparar empresas
+
+Empezar por Fase A — la ficha rediseñada es lo que el usuario ve cuando 
+llega desde el mapa o desde un link compartido. Si la ficha impacta, 
+todo lo demás funciona.
+```

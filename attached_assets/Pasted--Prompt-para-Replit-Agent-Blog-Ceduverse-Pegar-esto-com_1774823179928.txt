@@ -1,0 +1,382 @@
+# Prompt para Replit Agent — Blog Ceduverse
+
+Pegar esto completo en el Replit Agent:
+
+```
+CONTEXTO: Ceduverse (ceduverse.org) — plataforma EdTech de capacitación laboral STPS 
+en México. Stack: React 19 + Express + Drizzle ORM + PostgreSQL + Vite + Tailwind.
+El proyecto ya tiene un admin dashboard, autenticación, y páginas de cursos.
+
+TAREA: Crear un blog público completo en /blog. El blog es la pieza central de 
+nuestra estrategia de content marketing — va a recibir ~35K visitantes/mes desde 
+newsletters. Debe ser rápido, SEO-optimizado, y visualmente profesional.
+
+====================================
+PARTE 1: DATABASE SCHEMA (Drizzle ORM)
+====================================
+
+Crear estas tablas (NO borrar tablas existentes):
+
+1. blog_posts:
+   - id: serial primary key
+   - title: varchar(200) NOT NULL
+   - slug: varchar(200) NOT NULL UNIQUE
+   - content_html: text NOT NULL
+   - content_text: text NOT NULL
+   - excerpt: varchar(300)
+   - category: varchar(50) NOT NULL — valores: 'stps', 'fiscal', 'ia', 'cursos', 'casos'
+   - target_sectors: jsonb DEFAULT '[]'
+   - seo_keywords: jsonb DEFAULT '[]'
+   - featured_image_url: varchar(500)
+   - author_name: varchar(100) DEFAULT 'Ceduverse'
+   - newsletter_subject: varchar(100)
+   - newsletter_sent: boolean DEFAULT false
+   - blog_views: integer DEFAULT 0
+   - status: varchar(20) DEFAULT 'draft' — valores: 'draft', 'published', 'archived'
+   - published_at: timestamp
+   - created_at: timestamp DEFAULT now()
+   - updated_at: timestamp DEFAULT now()
+
+2. newsletter_subscribers:
+   - id: serial primary key
+   - email: varchar(255) NOT NULL UNIQUE
+   - company_name: varchar(200)
+   - sector: varchar(100)
+   - municipio: varchar(100)
+   - source: varchar(50) DEFAULT 'blog' — valores: 'blog', 'denue', 'webinar', 'referral'
+   - status: varchar(20) DEFAULT 'active' — valores: 'active', 'unsubscribed', 'bounced'
+   - subscribed_at: timestamp DEFAULT now()
+   - unsubscribed_at: timestamp
+
+Índices: slug (unique), category, status, published_at DESC, subscriber email (unique).
+Ejecutar la migración después de crear el schema.
+
+====================================
+PARTE 2: API ENDPOINTS (Express)
+====================================
+
+Agregar estas rutas al servidor Express existente (revisar el patrón actual en routes.ts):
+
+PÚBLICAS (sin auth):
+
+GET /api/blog/posts
+  - Query params: page (default 1), limit (default 9), category, search
+  - Solo retorna posts con status='published'
+  - Ordenar por published_at DESC
+  - Response: { data: [...], pagination: { page, limit, total, totalPages } }
+
+GET /api/blog/posts/:slug
+  - Retorna post completo por slug
+  - Incrementar blog_views en +1 (fire-and-forget, no bloquear response)
+  - Solo si status='published'
+  - 404 si no existe
+
+GET /api/blog/categories
+  - Retorna lista de categorías con count de posts publicados
+  - Response: [{ category: 'stps', label: 'STPS y NOMs', count: 12 }, ...]
+
+POST /api/newsletter/subscribe
+  - Body: { email, company_name?, sector?, municipio? }
+  - Validar email (regex básico)
+  - Si ya existe y status='active' → 409 "Ya estás suscrito"
+  - Si ya existe y status='unsubscribed' → reactivar
+  - Response: { success: true, message: "¡Suscripción exitosa!" }
+
+GET /api/newsletter/unsubscribe
+  - Query: email (base64 encoded para no exponer en URL plain)
+  - Marcar status='unsubscribed', unsubscribed_at=now()
+  - Redirect a /blog?unsubscribed=true
+
+ADMIN (requiere auth — usar el middleware existente):
+
+POST /api/admin/blog/posts
+  - Body: { title, slug, content_html, content_text, excerpt, category, 
+    target_sectors, seo_keywords, featured_image_url, status }
+  - Si status='published' y published_at es null → set published_at=now()
+  - Response: post creado
+
+PATCH /api/admin/blog/posts/:id
+  - Actualizar cualquier campo
+  - Si cambia a status='published' y published_at es null → set published_at=now()
+
+DELETE /api/admin/blog/posts/:id
+  - Soft delete: set status='archived'
+
+GET /api/admin/blog/posts
+  - Igual que el público pero retorna TODOS los status (draft, published, archived)
+  - Incluye newsletter_sent, blog_views
+
+GET /api/admin/newsletter/subscribers
+  - Query: page, limit, status, source, search
+  - Response con paginación
+
+GET /api/admin/newsletter/stats
+  - Response: { total_active, total_unsubscribed, by_source: {...}, by_sector: {...} }
+
+====================================
+PARTE 3: FRONTEND — PÁGINAS PÚBLICAS DEL BLOG
+====================================
+
+IMPORTANTE: El blog es PÚBLICO — no requiere login. Debe tener su propio layout 
+(no el layout del admin dashboard). Usar el layout general del sitio público de 
+Ceduverse (navbar + footer) si ya existe, o crear uno limpio.
+
+DISEÑO: Editorial/magazine moderno. Colores Ceduverse: azul oscuro (#0f172a), 
+azul accent (#2563eb), gris texto (#334155), fondo (#f8fafc). 
+Tipografía: usar una Google Font serif para títulos (como "Playfair Display" o 
+"Merriweather") combinada con sans-serif para body (la que ya use Ceduverse).
+El blog debe sentirse como un recurso profesional de la industria, no como un 
+blog personal.
+
+--- Página 1: /blog (Lista de artículos) ---
+
+Layout:
+- Header con título "Blog Ceduverse" + subtítulo "Capacitación laboral inteligente"
+- Barra de filtros: 5 botones-chip de categoría + input de búsqueda
+  Categorías con labels en español:
+    stps → "STPS y NOMs"
+    fiscal → "Beneficios Fiscales"  
+    ia → "IA y Capacitación"
+    cursos → "Cursos Gratuitos"
+    casos → "Casos de Éxito"
+  Chip activo = azul filled, inactivo = outline
+  "Todos" como opción por defecto
+
+- Grid de artículos: 3 columnas desktop, 2 tablet, 1 mobile
+  Cada card:
+    - Imagen destacada (o placeholder con color de categoría si no hay imagen)
+    - Badge de categoría (color por categoría: stps=red, fiscal=green, ia=purple, cursos=blue, casos=amber)
+    - Título (truncar a 2 líneas)
+    - Excerpt (truncar a 3 líneas)
+    - Fecha (format: "15 de marzo, 2026")
+    - "Leer artículo →" link
+    - Hover: elevar card con shadow suave
+
+- Sidebar derecha (desktop, se oculta en mobile y va debajo del grid):
+  Box 1 — "Suscríbete al newsletter"
+    Formulario: email input + botón "Suscribirme"
+    Texto: "Recibe 2 artículos por semana sobre capacitación STPS, 
+    beneficios fiscales y cursos gratuitos."
+    Campos expandibles al hacer click: empresa, sector (dropdown), municipio (dropdown)
+    POST a /api/newsletter/subscribe
+    Mostrar toast de éxito/error
+
+  Box 2 — "Cursos gratuitos"
+    3 cursos destacados con nombre + "Inscríbete gratis →"
+    Link a Tutor IA / Aula Virtual
+  
+  Box 3 — "Categorías"
+    Lista de categorías con count de artículos
+
+- Paginación: "← Anterior | Página 2 de 15 | Siguiente →"
+
+- Si URL tiene ?unsubscribed=true → mostrar banner "Te has desuscrito del newsletter"
+
+--- Página 2: /blog/:slug (Artículo individual) ---
+
+Layout:
+- Breadcrumb: Blog > Categoría > Título
+- Header del artículo:
+  - Badge de categoría
+  - Título grande (32-40px, font serif)
+  - Fecha publicación + autor + tiempo estimado lectura (content_text.length / 200 words/min)
+  - Badges de sectores target si los tiene
+
+- Contenido del artículo:
+  - Renderizar content_html con dangerouslySetInnerHTML
+  - Estilos para el contenido: h2, h3, p, ul, ol, blockquote, strong, a
+    - h2: 24px bold, margin-top 32px
+    - h3: 20px bold, margin-top 24px
+    - p: 16px, line-height 1.8, margin-bottom 16px, color gris oscuro
+    - ul/ol: padding left 24px, li margin-bottom 8px
+    - blockquote: borde izquierdo azul 4px, padding 16px, fondo gris claro
+    - a: color azul, underline on hover
+    - Máximo ancho del contenido: 720px (readable)
+
+- Sidebar derecha (sticky en desktop):
+  Box 1 — CTA principal
+    Basado en categoría del artículo:
+    - stps → "Webinar gratis: Cumple NOM-035 sin multas" + botón registro
+    - fiscal → "¿Sabías que puedes deducir el 100%?" + link a diagnóstico
+    - ia → "Prueba Tutor IA: 49 cursos gratis" + botón
+    - cursos → "Explora nuestro catálogo" + link a Aula Virtual
+    - casos → "Agenda una demo personalizada" + botón
+
+  Box 2 — Suscripción newsletter (mismo formulario que /blog)
+  
+  Box 3 — Artículos relacionados (misma categoría, 3 cards pequeñas)
+
+- Footer del artículo:
+  - Barra de compartir: "Compartir:" + íconos LinkedIn, Twitter/X, WhatsApp, Copiar link
+    - LinkedIn: https://www.linkedin.com/sharing/share-offsite/?url={url}
+    - Twitter: https://twitter.com/intent/tweet?url={url}&text={title}
+    - WhatsApp: https://wa.me/?text={title}%20{url}
+    - Copiar: navigator.clipboard.writeText(url) + toast "Link copiado"
+  
+  - Divider
+  
+  - "Artículos relacionados" grid (3 cards, misma categoría, excluyendo actual)
+
+- SEO meta tags (en el <head>, usar React Helmet o equivalente):
+  <title>{title} | Blog Ceduverse</title>
+  <meta name="description" content="{excerpt}" />
+  <meta property="og:title" content="{title}" />
+  <meta property="og:description" content="{excerpt}" />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://ceduverse.org/blog/{slug}" />
+  <meta property="og:image" content="{featured_image_url}" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="canonical" href="https://ceduverse.org/blog/{slug}" />
+  
+  Schema.org Article markup (JSON-LD en script tag):
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "{title}",
+    "description": "{excerpt}",
+    "datePublished": "{published_at}",
+    "author": { "@type": "Organization", "name": "Ceduverse" },
+    "publisher": { "@type": "Organization", "name": "Ceduverse" }
+  }
+
+--- Página 3: /blog/categoria/:category (Filtro por categoría) ---
+
+- Misma UI que /blog pero:
+  - Título: "Blog > {Nombre de categoría}"
+  - Solo muestra posts de esa categoría
+  - El chip de esa categoría aparece activo
+  - Meta title: "{Categoría} | Blog Ceduverse"
+
+====================================
+PARTE 4: ADMIN — GESTIÓN DEL BLOG
+====================================
+
+Agregar una sección "Blog" en el menú del admin dashboard existente.
+Usar el mismo layout y estilo del admin (NO el layout público).
+
+--- Admin: /admin/blog (Lista de posts) ---
+- Tabla con columnas: Título, Categoría, Status (badge color), Views, 
+  Newsletter enviado (check/x), Fecha, Acciones (Editar, Publicar, Archivar)
+- Botón "Nuevo artículo" → abre editor
+- Filtros: status, categoría
+- Tabs: "Todos" | "Borradores" | "Publicados" | "Archivados"
+
+--- Admin: /admin/blog/nuevo (Editor de artículos) ---
+- Formulario con campos:
+  - Título (input text)
+  - Slug (auto-generado del título, editable)
+  - Categoría (dropdown)
+  - Excerpt (textarea, max 300 chars, counter)
+  - Contenido (textarea grande O rich text editor si ya hay uno en el proyecto)
+    Si no hay editor rich text, usar un textarea con preview al lado:
+    Left: textarea con HTML | Right: preview renderizado
+  - Sectores target (multi-select chips)
+  - Keywords SEO (input con tags)
+  - Imagen destacada URL (input text)
+  - Status: Radio buttons (Borrador / Publicar ahora / Programar)
+- Botón "Guardar borrador" + "Publicar"
+- Preview: botón que abre /blog/{slug} en nueva pestaña
+
+--- Admin: /admin/blog/editar/:id ---
+- Mismo formulario que nuevo, pre-poblado
+
+--- Admin: /admin/newsletter (Suscriptores) ---
+- Stats cards: Total activos, Nuevos (últimos 7 días), Desuscritos, Por fuente
+- Tabla: Email, Empresa, Sector, Municipio, Fuente, Status, Fecha suscripción
+- Filtros: status, source, sector
+- Exportar CSV button
+
+====================================
+PARTE 5: DATOS SEMILLA (seed data)
+====================================
+
+Después de crear todo, insertar 6 artículos de ejemplo para que el blog 
+no se vea vacío. Cada uno de una categoría diferente (2 de stps):
+
+Post 1 (stps, published):
+  title: "Las 5 multas STPS más frecuentes en empresas de Nuevo León"
+  category: stps
+  excerpt: "Conoce las infracciones más comunes que la STPS detecta en inspecciones 
+  a empresas de NL y cómo evitarlas con un programa de capacitación adecuado."
+  content_html: Generar un artículo completo de ~600 palabras con h2, p, ul sobre:
+    - Multa por falta de programa de capacitación (Art. 153-A LFT)
+    - Multa por no tener Comisión Mixta de Capacitación
+    - Multa por incumplimiento NOM-035
+    - Multa por falta de DC3 (constancias de habilidades)
+    - Multa por no registrar plan ante STPS
+    - Incluir montos en UMAs y pesos
+    - CTA: "¿Quieres saber si tu empresa está en riesgo? Solicita un diagnóstico gratuito"
+  target_sectors: ["Manufactura", "Construcción", "Servicios"]
+
+Post 2 (fiscal, published):
+  title: "Cómo deducir al 100% tu inversión en capacitación laboral"
+  category: fiscal
+  excerpt: "La LISR permite deducir completamente los gastos en capacitación. 
+  Te explicamos cómo aprovechar este beneficio fiscal en tu declaración anual."
+  content_html: ~500 palabras sobre Art. 25 LISR, requisitos de deducibilidad,
+    facturación correcta, benchmark SAT 5-8% de nómina
+
+Post 3 (ia, published):
+  title: "Inteligencia Artificial en capacitación STPS: qué es y cómo funciona"
+  category: ia
+  excerpt: "La IA está transformando la forma en que las empresas capacitan a 
+  sus colaboradores. Conoce cómo Tutor IA genera cursos personalizados."
+  content_html: ~500 palabras sobre IA generativa en EdTech, personalización,
+    49 cursos disponibles en Tutor IA, ejemplo de cómo funciona
+
+Post 4 (cursos, published):
+  title: "49 cursos gratuitos de capacitación laboral disponibles hoy"
+  category: cursos
+  excerpt: "Explora nuestro catálogo de cursos gratuitos generados por IA, 
+  ideales para onboarding y formación continua de tu equipo."
+  content_html: ~400 palabras listando categorías de cursos,
+    cómo inscribirse, diferencia entre Tutor IA (gratis) y Aula Virtual (DC3)
+
+Post 5 (casos, published):
+  title: "De cero capacitaciones a cumplimiento total en 90 días"
+  category: casos
+  excerpt: "Cómo una empresa manufacturera de Monterrey con 80 empleados 
+  implementó su programa de capacitación STPS usando Ceduverse."
+  content_html: ~500 palabras, caso basado en escenario realista,
+    problema → solución → resultados (ahorro en multas, certificaciones DC3)
+
+Post 6 (stps, published):
+  title: "Guía completa de la NOM-035: obligaciones para tu empresa"
+  category: stps  
+  excerpt: "Todo lo que necesitas saber sobre la NOM-035-STPS-2018: 
+  a quién aplica, qué exige, y cómo cumplir sin complicaciones."
+  content_html: ~600 palabras sobre NOM-035, 3 niveles de empresa,
+    cuestionarios obligatorios, política de prevención, sanciones
+
+Todos con status='published', published_at=fechas escalonadas (últimas 3 semanas).
+
+====================================
+PARTE 6: RUTAS Y NAVEGACIÓN
+====================================
+
+Agregar al router principal:
+- /blog → BlogListPage
+- /blog/:slug → BlogPostPage  
+- /blog/categoria/:category → BlogListPage (con filtro pre-aplicado)
+- /admin/blog → AdminBlogListPage
+- /admin/blog/nuevo → AdminBlogEditorPage
+- /admin/blog/editar/:id → AdminBlogEditorPage
+
+Agregar "Blog" al navbar público de Ceduverse (si tiene) como link a /blog.
+Agregar "Blog" al sidebar del admin dashboard.
+
+====================================
+NOTAS IMPORTANTES
+====================================
+
+- Usar los patrones de código EXISTENTES del proyecto (imports, hooks, componentes, 
+  estilos Tailwind). NO crear un estilo completamente nuevo — mantener coherencia.
+- Los componentes React deben usar las mismas convenciones del proyecto (TypeScript 
+  si el proyecto usa TS, JSX si usa JSX, hooks patterns, etc.)
+- Usar Drizzle ORM para todas las queries (no SQL raw)
+- El blog debe cargar rápido — no agregar dependencias pesadas innecesarias
+- Mobile-first responsive design
+- Los colores del blog deben complementar los colores existentes de Ceduverse
+- Si el proyecto ya tiene un sistema de toast/notificaciones, usarlo
+- Si el proyecto ya tiene un componente de paginación, reutilizarlo
+```

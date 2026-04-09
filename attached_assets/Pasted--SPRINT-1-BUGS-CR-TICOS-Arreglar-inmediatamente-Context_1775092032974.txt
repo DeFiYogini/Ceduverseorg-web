@@ -1,0 +1,245 @@
+# SPRINT 1: BUGS CRÍTICOS — Arreglar inmediatamente
+
+## Contexto
+El módulo de instructor y Digital Twin tiene 6 bugs críticos que afectan la experiencia core. Arreglar todos en este sprint.
+
+---
+
+## Bug 1 — Video de cámara se ve NEGRO
+
+**Problema:** En `DigitalTwinRecorder.tsx`, al iniciar la grabación, el preview de la cámara se ve completamente negro. La cámara SÍ graba correctamente (el video resultante tiene imagen), pero el elemento `<video>` no muestra el preview en vivo.
+
+**Causa:** Falta el atributo `muted` en el `<video>`. Sin `muted`, Chrome bloquea el autoplay por política de seguridad.
+
+**Fix:** Encontrar el `<video>` element que muestra el preview de la cámara y asegurar que tenga TODOS estos atributos:
+
+```tsx
+<video
+  ref={videoRef}
+  autoPlay
+  playsInline
+  muted
+  style={{ transform: 'scaleX(-1)' }}
+  className="w-full h-full object-cover rounded-lg bg-gray-900"
+/>
+```
+
+Además, en la función `startCamera()`, agregar un handler `onloadedmetadata` para forzar la reproducción:
+
+```typescript
+const startCamera = async () => {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { width: 1280, height: 720, facingMode: 'user' },
+      audio: true,
+    });
+    streamRef.current = stream;
+    if (videoRef.current) {
+      videoRef.current.srcObject = stream;
+      videoRef.current.onloadedmetadata = () => {
+        videoRef.current?.play().catch(console.error);
+      };
+    }
+  } catch (err) {
+    console.error('Error accessing camera:', err);
+    // Mostrar error al usuario
+  }
+};
+```
+
+---
+
+## Bug 2 — Cámara no se apaga al terminar de grabar
+
+**Problema:** Al dejar de grabar, el LED de la cámara sigue encendido. El stream no se detiene.
+
+**Fix:** Asegurar que `stopCamera()` se llame en TODOS los puntos de salida:
+
+```typescript
+const stopCamera = useCallback(() => {
+  if (streamRef.current) {
+    streamRef.current.getTracks().forEach(track => {
+      track.stop();
+      track.enabled = false;
+    });
+    streamRef.current = null;
+  }
+  if (videoRef.current) {
+    videoRef.current.srcObject = null;
+  }
+}, []);
+```
+
+Llamar `stopCamera()` en:
+1. Antes de pasar al paso `processing` (después de que los videos se grabaron)
+2. Al hacer clic en "Omitir" o cualquier botón que salga del flujo
+3. En el cleanup del `useEffect` → `return () => { stopCamera(); }`
+4. Al navegar fuera de la página
+5. Si `mediaRecorderRef.current?.state === 'recording'`, detener también el recorder antes del cleanup
+
+---
+
+## Bug 3 — Instructor pierde acceso a herramientas de estudiante
+
+**Problema:** Al convertirse en instructor, el usuario ya no puede acceder a cursos como alumno, ver videos, ni tomar evaluaciones.
+
+**Fix:** El rol de instructor debe ser ADITIVO, no reemplazar al de estudiante.
+
+1. **En la tabla `users`:** Agregar campo `is_instructor BOOLEAN DEFAULT false` (si no existe). NO cambiar el campo `role` del usuario cuando se acredita como instructor.
+
+2. **En la lógica de acreditación:** Cuando un usuario completa la acreditación:
+   ```typescript
+   // CORRECTO: agregar flag de instructor sin cambiar rol
+   await db.update(users).set({ is_instructor: true }).where(eq(users.id, userId));
+   
+   // INCORRECTO: no hacer esto
+   // await db.update(users).set({ role: 'instructor' }).where(eq(users.id, userId));
+   ```
+
+3. **En el middleware `requireInstructor`:** Cambiar la verificación:
+   ```typescript
+   // ANTES (probablemente):
+   if (req.user.role !== 'instructor') return res.status(403)...
+   
+   // DESPUÉS:
+   if (!req.user.is_instructor) return res.status(403)...
+   ```
+
+4. **En la navegación (sidebar/navbar):** Mostrar AMBAS opciones para usuarios que son instructores:
+   - "Mi Aprendizaje" o "Dashboard" → vista de estudiante (cursos, videos, certificados)
+   - "Panel de Instructor" → dashboard de instructor
+   
+   El usuario puede navegar libremente entre ambas vistas. Un instructor puede inscribirse en cursos de otros instructores como alumno normal.
+
+---
+
+## Bug 4 — Panel de Instructor muestra "Acceso restringido"
+
+**Problema:** La ruta `/instructor` muestra "Acceso restringido. Esta sección está disponible solo para instructores." incluso cuando el usuario YA se acreditó.
+
+**Posibles causas:**
+1. El middleware no reconoce al usuario como instructor (relacionado con Bug 3)
+2. Se requiere tener Digital Twin para acceder al panel (incorrecto)
+3. El campo de rol no se actualizó correctamente en la BD
+
+**Fix:**
+1. Verificar que el middleware `requireInstructor` use `is_instructor` (ver Bug 3)
+2. **NO requerir Digital Twin para acceder al panel.** El instructor puede acceder al panel, crear cursos con audio TTS normal, configurar sesiones, y ver estadísticas sin tener un Digital Twin. El Digital Twin es recomendado pero OPCIONAL.
+3. Verificar que la lógica de acreditación sí está seteando `is_instructor = true` en la BD
+4. Si hay algún guard en el frontend que verifica el Digital Twin antes de dejar pasar, eliminarlo
+
+---
+
+## Bug 5 — Genera NUEVO número de instructor (folio duplicado)
+
+**Problema:** Al acreditarse, el sistema genera un nuevo folio `INS-INT-MNGQIRCF` en vez de usar el folio de socio cooperativo que el usuario ya tiene.
+
+**Fix:**
+1. **Eliminar la lógica que genera el folio `INS-INT-xxx`.** Buscar en el código la función/lógica que crea este ID y eliminarla o desactivarla.
+
+2. **En la pantalla de "¡Felicidades, eres Instructor!":** Cambiar el texto de:
+   - ~~"Tu número de socio es INS-INT-MNGQIRCF"~~
+   - → "Tu número de socio es [FOLIO_SOCIO_EXISTENTE]. Ahora tienes el rol de Instructor."
+   
+   Obtener el folio de socio del campo existente en la tabla `users` (el que se asignó al registrarse como socio cooperativo).
+
+3. **En el Certificado de Instructor:** El campo "No. de Socio" debe mostrar el folio de socio original, NO el `INS-INT-xxx`.
+
+---
+
+## Bug 6 — Error al crear Digital Twin en HeyGen API
+
+**Problema:** Después de grabar y subir los dos videos, marca "Error al crear Digital Twin" sin detalles.
+
+**Fix:**
+
+1. **Agregar logging detallado** en el servicio de HeyGen para ver la respuesta exacta de la API:
+
+```typescript
+// En server/services/heygen.ts — método createDigitalTwin:
+async createDigitalTwin(trainingVideoUrl: string, consentVideoUrl: string, avatarName: string) {
+  const requestBody = {
+    training_footage_url: trainingVideoUrl,
+    video_consent_url: consentVideoUrl,
+    avatar_name: avatarName,
+  };
+  
+  console.log('[HeyGen] Creating Digital Twin with:', JSON.stringify(requestBody, null, 2));
+
+  const res = await fetch(`${HEYGEN_BASE_URL}/v2/avatars`, {
+    method: 'POST',
+    headers: this.headers,
+    body: JSON.stringify(requestBody),
+  });
+
+  const responseText = await res.text();
+  console.log('[HeyGen] Response status:', res.status);
+  console.log('[HeyGen] Response body:', responseText);
+
+  let data;
+  try {
+    data = JSON.parse(responseText);
+  } catch (e) {
+    throw new Error(`HeyGen returned non-JSON response: ${responseText.substring(0, 500)}`);
+  }
+
+  if (!res.ok || data.error) {
+    throw new Error(`HeyGen API error (${res.status}): ${JSON.stringify(data.error || data.message || data)}`);
+  }
+
+  return {
+    avatar_id: data.data?.avatar_id || data.avatar_id || '',
+    request_id: data.data?.request_id || data.request_id || '',
+  };
+}
+```
+
+2. **Verificar URLs de R2 accesibles** antes de enviarlas a HeyGen:
+
+```typescript
+// En el endpoint POST /api/heygen/avatar/create-twin:
+// Antes de llamar a createDigitalTwin, verificar que las URLs son accesibles:
+
+const testConsent = await fetch(avatar.consent_video_r2_url, { method: 'HEAD' });
+if (!testConsent.ok) {
+  return res.status(400).json({ 
+    error: `El video de consentimiento no es accesible (HTTP ${testConsent.status}). Verifica que el Public Access de R2 esté habilitado.` 
+  });
+}
+
+const testTraining = await fetch(avatar.training_video_r2_url, { method: 'HEAD' });
+if (!testTraining.ok) {
+  return res.status(400).json({ 
+    error: `El video de entrenamiento no es accesible (HTTP ${testTraining.status}). Verifica que el Public Access de R2 esté habilitado.` 
+  });
+}
+```
+
+3. **Mostrar error detallado en el frontend** — en vez de solo "Error al crear Digital Twin", mostrar el mensaje completo del backend:
+
+```tsx
+// En el componente, paso 'error':
+<p className="text-red-600 text-sm mt-2 break-words">{error}</p>
+```
+
+4. **Consultar endpoints correctos de HeyGen:** La documentación oficial está en https://docs.heygen.com/docs/video-avatars-api — verificar si los nombres de los campos son exactamente `training_footage_url` y `video_consent_url`, o si tienen otros nombres.
+
+---
+
+## Resumen de archivos a modificar
+
+| Bug | Archivo(s) | Cambio |
+|-----|-----------|--------|
+| 1. Video negro | `DigitalTwinRecorder.tsx` | Agregar `muted` a `<video>`, fix `startCamera()` |
+| 2. Cámara activa | `DigitalTwinRecorder.tsx` | `stopCamera()` en todos los exit points + cleanup |
+| 3. Pierde acceso estudiante | `users` schema, middleware auth, navbar/sidebar | `is_instructor` aditivo, navegación dual |
+| 4. Panel bloqueado | Middleware `requireInstructor`, guards frontend | No requerir Digital Twin, verificar campo correcto |
+| 5. Folio duplicado | Lógica acreditación, pantalla felicidades, certificado | Eliminar generación INS-INT-xxx, usar folio socio |
+| 6. Error HeyGen | `heygen.ts` service, `heygen.ts` routes, frontend | Logging, verificar URLs R2, error detail |
+
+## Orden de implementación
+
+1. Primero: Bug 3 + Bug 4 (acceso estudiante + panel bloqueado) — son el mismo problema de roles
+2. Segundo: Bug 1 + Bug 2 (video negro + cámara) — son el mismo componente
+3. Tercero: Bug 5 (folio duplicado) — cambio en lógica de acreditación
+4. Cuarto: Bug 6 (error HeyGen) — logging y debug

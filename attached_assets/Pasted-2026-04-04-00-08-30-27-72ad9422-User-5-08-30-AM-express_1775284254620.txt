@@ -1,0 +1,133 @@
+2026-04-04 00:08:30.27
+72ad9422
+User
+5:08:30 AM [express] GET /api/me/profile 200 in 380ms
+2026-04-04 00:08:30.31
+72ad9422
+User
+5:08:30 AM [express] GET /api/me/courses 200 in 415ms
+2026-04-04 00:08:30.34
+72ad9422
+User
+5:08:30 AM [express] GET /api/me/achievements 304 in 443ms
+2026-04-04 00:08:30.40
+72ad9422
+User
+5:08:30 AM [express] GET /api/achievements 304 in 497ms
+2026-04-04 00:08:30.43
+72ad9422
+User
+5:08:30 AM [express] GET /api/me/teams 200 in 528ms
+2026-04-04 00:08:30.54
+72ad9422
+User
+5:08:30 AM [express] GET /api/role-definition/socio_instructor 200 in 285ms
+2026-04-04 00:08:30.76
+72ad9422
+User
+5:08:30 AM [express] GET /api/learning/topics 304 in 251ms
+2026-04-04 00:08:30.89
+72ad9422
+User
+5:08:30 AM [express] GET /api/learning/interests 304 in 381ms
+2026-04-04 00:08:30.96
+72ad9422
+User
+5:08:30 AM [express] GET /api/academy/stats 200 in 440ms
+2026-04-04 00:08:31.02
+72ad9422
+User
+5:08:31 AM [express] GET /api/studio/enrollments 200 in 474ms
+2026-04-04 00:08:31.05
+72ad9422
+User
+5:08:31 AM [express] GET /api/membership/me 200 in 518ms
+2026-04-04 00:16:04.84
+72ad9422
+User
+5:16:04 AM [express] GET /api/courses 304 in 311ms
+2026-04-04 00:46:14.87
+72ad9422
+User
+5:46:14 AM [express] GET /api/courses 304 in 345ms
+2026-04-04 00:46:29.95
+72ad9422
+User
+5:46:29 AM [express] GET /api/me/account 200 in 30ms
+2026-04-04 00:46:30.09
+72ad9422
+User
+5:46:30 AM [express] GET /api/terms/pending 200 in 106ms
+2026-04-04 00:46:30.18
+72ad9422
+User
+5:46:30 AM [express] GET /api/me/account 304 in 31ms
+2026-04-04 00:46:30.47
+72ad9422
+User
+5:46:30 AM [express] GET /api/me/account 304 in 145ms
+2026-04-04 00:46:30.63
+72ad9422
+User
+5:46:30 AM [express] GET /api/me/profile 200 in 365ms
+2026-04-04 00:46:30.69
+72ad9422
+User
+5:46:30 AM [express] GET /api/achievements 304 in 424ms
+2026-04-04 00:46:30.75
+72ad9422
+User
+5:46:30 AM [express] GET /api/me/teams 200 in 481ms
+2026-04-04 00:46:30.79
+72ad9422
+User
+5:46:30 AM [express] GET /api/me/courses 200 in 520ms
+2026-04-04 00:46:30.86
+72ad9422
+User
+5:46:30 AM [express] GET /api/me/achievements 304 in 519ms
+2026-04-04 00:46:31.06
+72ad9422
+User
+5:46:31 AM [express] GET /api/role-definition/socio_comercial 304 in 407ms
+2026-04-04 00:46:31.15
+72ad9422
+User
+5:46:31 AM [express] GET /api/learning/topics 304 in 274ms
+2026-04-04 00:46:31.28
+72ad9422
+User
+5:46:31 AM [express] GET /api/learning/interests 304 in 414ms
+2026-04-04 00:46:31.34
+72ad9422
+User
+5:46:31 AM [express] GET /api/academy/stats 200 in 457ms
+2026-04-04 00:46:31.37
+72ad9422
+User
+5:46:31 AM [express] GET /api/membership/me 200 in 485ms
+2026-04-04 00:46:31.40
+72ad9422
+User
+5:46:31 AM [express] GET /api/studio/enrollments 200 in 507ms
+2026-04-04 00:46:37.07
+72ad9422
+User
+5:46:37 AM [express] GET /api/studio/courses 200 in 211ms
+
+2026-04-04 00:46:37.13
+72ad9422
+User
+5:46:37 AM [express] GET /api/studio/courses 200 in 254ms
+2026-04-04 01:12:28.90
+72ad9422
+User
+6:12:28 AM [express] POST /api/v1/login 200 in 4ms
+2026-04-04 01:23:39.33
+72ad9422
+User
+[academy-sync] Starting full course sync...
+2026-04-04 01:23:42.55
+72ad9422
+User
+[academy-sync] Fatal sync error: Unauthorized — verify ACADEMY_SECRET

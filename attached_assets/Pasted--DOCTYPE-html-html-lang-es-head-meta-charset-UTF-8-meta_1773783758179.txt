@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Propuesta de Bienestar — Pyrotech | Ceduverse</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #080f1a;
+  --bg2: #0d1824;
+  --bg3: #111f2e;
+  --green: #00c97a;
+  --green2: #00a362;
+  --gold: #c8a84b;
+  --gold2: #e8c870;
+  --white: #f0f4f8;
+  --muted: #6b8299;
+  --border: rgba(0,201,122,0.15);
+  --border2: rgba(200,168,75,0.2);
+  --card: rgba(13,24,36,0.8);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);
+  color:var(--white);
+  font-family:'DM Sans',sans-serif;
+  font-weight:300;
+  line-height:1.7;
+  overflow-x:hidden;
+}
+
+/* ── NOISE TEXTURE OVERLAY ── */
+body::before{
+  content:'';
+  position:fixed;
+  inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events:none;
+  z-index:0;
+  opacity:.4;
+}
+
+/* ── NAV ── */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  display:flex;justify-content:space-between;align-items:center;
+  padding:18px 48px;
+  background:rgba(8,15,26,0.85);
+  backdrop-filter:blur(12px);
+  border-bottom:0.5px solid var(--border);
+}
+.nav-brand{
+  display:flex;align-items:center;gap:10px;
+  font-family:'Playfair Display',serif;
+  font-size:18px;font-weight:600;
+  letter-spacing:.02em;
+  color:var(--white);
+}
+.nav-brand .dot{
+  width:8px;height:8px;border-radius:50%;
+  background:var(--green);
+}
+.nav-client{
+  font-size:12px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;
+}
+.nav-date{
+  font-family:'DM Mono',monospace;
+  font-size:11px;color:var(--muted);
+}
+
+/* ── HERO ── */
+.hero{
+  min-height:100vh;
+  display:flex;flex-direction:column;
+  justify-content:center;
+  padding:120px 48px 80px;
+  position:relative;
+  overflow:hidden;
+}
+.hero-bg-lines{
+  position:absolute;inset:0;
+  background:
+    repeating-linear-gradient(90deg,rgba(0,201,122,0.03) 0px,rgba(0,201,122,0.03) 1px,transparent 1px,transparent 80px),
+    repeating-linear-gradient(0deg,rgba(0,201,122,0.03) 0px,rgba(0,201,122,0.03) 1px,transparent 1px,transparent 80px);
+  pointer-events:none;
+}
+.hero-glow{
+  position:absolute;top:-200px;right:-200px;
+  width:700px;height:700px;border-radius:50%;
+  background:radial-gradient(circle,rgba(0,201,122,0.08) 0%,transparent 70%);
+  pointer-events:none;
+}
+.hero-glow2{
+  position:absolute;bottom:-200px;left:-100px;
+  width:500px;height:500px;border-radius:50%;
+  background:radial-gradient(circle,rgba(200,168,75,0.06) 0%,transparent 70%);
+  pointer-events:none;
+}
+.hero-tag{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--green);border:0.5px solid var(--border);
+  padding:6px 16px;border-radius:999px;
+  margin-bottom:28px;width:fit-content;
+  animation:fadeUp .6s ease both;
+}
+.hero-tag .pulse{
+  width:6px;height:6px;border-radius:50%;background:var(--green);
+  animation:pulse 2s ease infinite;
+}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+.hero-title{
+  font-family:'Playfair Display',serif;
+  font-size:clamp(48px,7vw,96px);
+  font-weight:700;
+  line-height:1.0;
+  margin-bottom:12px;
+  animation:fadeUp .7s ease .1s both;
+}
+.hero-title .accent{color:var(--green);}
+.hero-sub{
+  font-size:clamp(14px,2vw,18px);
+  color:var(--muted);
+  max-width:580px;
+  margin-bottom:48px;
+  animation:fadeUp .7s ease .2s both;
+}
+.hero-stats{
+  display:flex;gap:40px;flex-wrap:wrap;
+  animation:fadeUp .7s ease .3s both;
+}
+.hero-stat .num{
+  font-family:'Playfair Display',serif;
+  font-size:36px;font-weight:600;
+  color:var(--gold);
+}
+.hero-stat .label{
+  font-size:11px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;
+}
+.hero-scroll{
+  position:absolute;bottom:32px;left:48px;
+  display:flex;align-items:center;gap:8px;
+  font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;
+  animation:fadeUp .7s ease .5s both;
+}
+.hero-scroll-line{
+  width:40px;height:0.5px;background:var(--muted);
+}
+
+/* ── SECTION COMMON ── */
+section{
+  padding:100px 48px;
+  position:relative;z-index:1;
+}
+.section-tag{
+  font-size:10px;letter-spacing:.15em;text-transform:uppercase;
+  color:var(--green);margin-bottom:12px;
+}
+.section-title{
+  font-family:'Playfair Display',serif;
+  font-size:clamp(28px,4vw,48px);
+  font-weight:600;line-height:1.15;
+  margin-bottom:16px;
+}
+.section-desc{
+  font-size:15px;color:var(--muted);
+  max-width:560px;line-height:1.7;
+  margin-bottom:48px;
+}
+
+/* ── RISK SECTION ── */
+.risk-section{background:var(--bg2);}
+.risk-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+  gap:16px;
+}
+.risk-card{
+  background:var(--card);
+  border:0.5px solid var(--border);
+  border-radius:12px;
+  padding:24px;
+  transition:border-color .3s,transform .3s;
+}
+.risk-card:hover{
+  border-color:var(--green);
+  transform:translateY(-4px);
+}
+.risk-icon{font-size:28px;margin-bottom:12px;}
+.risk-title{
+  font-size:14px;font-weight:500;
+  color:var(--white);margin-bottom:6px;
+}
+.risk-desc{font-size:13px;color:var(--muted);line-height:1.5;}
+.risk-coverage{
+  display:inline-block;margin-top:12px;
+  font-family:'DM Mono',monospace;
+  font-size:11px;color:var(--green);
+  background:rgba(0,201,122,0.08);
+  padding:3px 10px;border-radius:999px;
+}
+
+/* ── PLANS SECTION ── */
+.plans-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+  gap:20px;
+}
+.plan-card{
+  background:var(--card);
+  border:0.5px solid rgba(255,255,255,0.08);
+  border-radius:16px;
+  padding:28px;
+  transition:all .3s;
+  position:relative;
+  overflow:hidden;
+}
+.plan-card::before{
+  content:'';
+  position:absolute;top:0;left:0;right:0;height:3px;
+  background:rgba(255,255,255,0.06);
+}
+.plan-card.basic::before{background:linear-gradient(90deg,transparent,rgba(107,130,153,0.4),transparent);}
+.plan-card.medio::before{background:linear-gradient(90deg,var(--green2),var(--green));}
+.plan-card.premium::before{background:linear-gradient(90deg,var(--gold),var(--gold2));}
+.plan-card.medio{border-color:rgba(0,201,122,0.3);}
+.plan-card.premium{border-color:rgba(200,168,75,0.3);}
+.plan-card:hover{transform:translateY(-6px);}
+.plan-badge{
+  display:inline-block;font-size:10px;font-weight:500;
+  letter-spacing:.08em;text-transform:uppercase;
+  padding:4px 12px;border-radius:999px;
+  margin-bottom:16px;
+}
+.badge-basic{background:rgba(107,130,153,0.15);color:var(--muted);}
+.badge-medio{background:rgba(0,201,122,0.12);color:var(--green);}
+.badge-premium{background:rgba(200,168,75,0.12);color:var(--gold);}
+.plan-rec{
+  position:absolute;top:20px;right:20px;
+  font-size:9px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--green);border:0.5px solid var(--green);
+  padding:3px 8px;border-radius:999px;
+}
+.plan-rec-gold{
+  position:absolute;top:20px;right:20px;
+  font-size:9px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--gold);border:0.5px solid var(--gold);
+  padding:3px 8px;border-radius:999px;
+}
+.plan-name{
+  font-family:'Playfair Display',serif;
+  font-size:24px;font-weight:600;
+  margin-bottom:4px;
+}
+.plan-price{
+  font-family:'Playfair Display',serif;
+  font-size:44px;font-weight:700;
+  line-height:1;
+  margin-bottom:2px;
+}
+.plan-price .currency{font-size:18px;vertical-align:top;margin-top:8px;display:inline-block;}
+.plan-price-unit{font-size:12px;color:var(--muted);margin-bottom:4px;}
+.plan-total{
+  font-family:'DM Mono',monospace;
+  font-size:12px;color:var(--muted);
+  padding-bottom:20px;margin-bottom:20px;
+  border-bottom:0.5px solid rgba(255,255,255,0.06);
+}
+.plan-total strong{color:var(--white);}
+.plan-features{list-style:none;display:flex;flex-direction:column;gap:10px;}
+.plan-features li{
+  display:flex;align-items:flex-start;gap:10px;
+  font-size:13px;color:var(--muted);line-height:1.4;
+}
+.plan-features li .check{
+  flex-shrink:0;width:16px;height:16px;
+  border-radius:50%;display:flex;align-items:center;justify-content:center;
+  margin-top:1px;font-size:9px;
+}
+.check-green{background:rgba(0,201,122,0.15);color:var(--green);}
+.check-gold{background:rgba(200,168,75,0.15);color:var(--gold);}
+.check-gray{background:rgba(107,130,153,0.1);color:var(--muted);}
+.plan-features li strong{color:var(--white);}
+.plan-cta{
+  display:block;width:100%;margin-top:24px;
+  padding:13px;border-radius:8px;
+  text-align:center;font-size:13px;font-weight:500;
+  letter-spacing:.03em;text-decoration:none;
+  transition:all .25s;cursor:pointer;border:none;
+}
+.cta-basic{background:rgba(107,130,153,0.1);color:var(--muted);border:0.5px solid rgba(107,130,153,0.2);}
+.cta-medio{background:rgba(0,201,122,0.12);color:var(--green);border:0.5px solid var(--green);}
+.cta-medio:hover{background:var(--green);color:#000;}
+.cta-premium{background:rgba(200,168,75,0.12);color:var(--gold);border:0.5px solid var(--gold);}
+.cta-premium:hover{background:var(--gold);color:#000;}
+
+/* ── COMPARISON TABLE ── */
+.table-wrap{overflow-x:auto;border-radius:12px;border:0.5px solid var(--border);}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+thead tr{background:var(--bg3);}
+th{
+  padding:14px 16px;text-align:left;
+  font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--muted);font-weight:500;
+  border-bottom:0.5px solid var(--border);
+  white-space:nowrap;
+}
+th.th-plan{text-align:center;min-width:110px;}
+td{
+  padding:12px 16px;
+  border-bottom:0.5px solid rgba(255,255,255,0.04);
+  color:var(--muted);
+}
+td.td-label{
+  color:var(--white);font-weight:400;font-size:13px;
+  background:var(--bg2);white-space:nowrap;
+  position:sticky;left:0;
+}
+td.td-val{text-align:center;}
+.val-yes{color:var(--green);font-size:15px;}
+.val-no{color:rgba(107,130,153,0.4);font-size:15px;}
+.val-amount{color:var(--white);font-family:'DM Mono',monospace;font-size:12px;}
+.val-na{color:rgba(107,130,153,0.3);font-size:12px;}
+tr.tr-section td{
+  background:#0a1520;color:var(--green);
+  font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+  font-weight:500;padding:8px 16px;
+}
+tr.tr-section td.td-label{background:#0a1520;color:var(--green);}
+tr:hover td{background:rgba(0,201,122,0.03);}
+tr.tr-section:hover td{background:#0a1520;}
+.col-medio{background:rgba(0,201,122,0.03);}
+.col-premium{background:rgba(200,168,75,0.03);}
+
+/* ── OBJECTIONS ── */
+.obj-grid{display:flex;flex-direction:column;gap:16px;}
+.obj-card{
+  background:var(--bg2);
+  border:0.5px solid rgba(255,255,255,0.06);
+  border-radius:12px;
+  padding:24px 28px;
+  transition:border-color .3s;
+}
+.obj-card:hover{border-color:var(--border);}
+.obj-q{
+  font-family:'Playfair Display',serif;
+  font-size:16px;font-weight:600;
+  color:var(--white);margin-bottom:10px;
+  display:flex;gap:12px;align-items:flex-start;
+}
+.obj-q .q-mark{
+  color:var(--gold);font-size:20px;line-height:1;flex-shrink:0;
+}
+.obj-a{font-size:14px;color:var(--muted);line-height:1.7;padding-left:30px;}
+.obj-a strong{color:var(--white);}
+
+/* ── NEXT STEPS ── */
+.steps-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:16px;
+}
+.step-card{
+  background:var(--bg2);
+  border:0.5px solid rgba(255,255,255,0.06);
+  border-radius:12px;padding:24px;
+  position:relative;
+}
+.step-num{
+  font-family:'Playfair Display',serif;
+  font-size:48px;font-weight:700;
+  color:rgba(0,201,122,0.12);
+  line-height:1;margin-bottom:12px;
+}
+.step-title{font-size:14px;font-weight:500;color:var(--white);margin-bottom:6px;}
+.step-desc{font-size:13px;color:var(--muted);line-height:1.5;}
+
+/* ── FOOTER ── */
+footer{
+  background:var(--bg2);
+  border-top:0.5px solid var(--border);
+  padding:40px 48px;
+  display:flex;justify-content:space-between;align-items:center;
+  flex-wrap:wrap;gap:16px;
+}
+.footer-brand{
+  font-family:'Playfair Display',serif;
+  font-size:20px;font-weight:600;
+  color:var(--white);
+}
+.footer-brand span{color:var(--green);}
+.footer-meta{font-size:12px;color:var(--muted);}
+.footer-vigencia{
+  font-family:'DM Mono',monospace;
+  font-size:11px;color:var(--gold);
+  background:rgba(200,168,75,0.08);
+  padding:6px 14px;border-radius:999px;
+  border:0.5px solid var(--border2);
+}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp{
+  from{opacity:0;transform:translateY(24px)}
+  to{opacity:1;transform:translateY(0)}
+}
+.reveal{opacity:0;transform:translateY(30px);transition:opacity .7s ease,transform .7s ease;}
+.reveal.visible{opacity:1;transform:translateY(0);}
+
+/* ── DIVIDER ── */
+.divider{
+  border:none;
+  border-top:0.5px solid rgba(255,255,255,0.05);
+  margin:0;
+}
+
+/* ── HIGHLIGHT BAR ── */
+.highlight-bar{
+  background:linear-gradient(135deg,rgba(0,201,122,0.08),rgba(200,168,75,0.05));
+  border:0.5px solid var(--border);
+  border-radius:12px;
+  padding:24px 32px;
+  display:flex;align-items:center;gap:20px;
+  flex-wrap:wrap;
+  margin-bottom:48px;
+}
+.hb-icon{font-size:24px;}
+.hb-text{font-size:14px;color:var(--muted);line-height:1.6;}
+.hb-text strong{color:var(--white);}
+
+/* ── RESPONSIVE ── */
+@media(max-width:768px){
+  nav{padding:14px 20px;}
+  section{padding:70px 20px;}
+  .hero{padding:100px 20px 60px;}
+  footer{padding:30px 20px;}
+  .hero-stats{gap:24px;}
+  .plans-grid{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-brand">
+    <div class="dot"></div>
+    Ceduverse
+  </div>
+  <div class="nav-client">Propuesta para Pyrotech</div>
+  <div class="nav-date">12 / 03 / 2026</div>
+</nav>
+
+<!-- HERO -->
+<section class="hero" style="padding-top:120px">
+  <div class="hero-bg-lines"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-glow2"></div>
+
+  <div class="hero-tag">
+    <div class="pulse"></div>
+    Propuesta de bienestar laboral · Betterfly + MetLife
+  </div>
+
+  <h1 class="hero-title">
+    Bienestar que<br>
+    protege lo que<br>
+    <span class="accent">más importa.</span>
+  </h1>
+  <p class="hero-sub">
+    Tres planes diseñados para el perfil operativo de Pyrotech — con coberturas reales
+    ante los riesgos reales de la industria pirotécnica.
+  </p>
+
+  <div class="hero-stats">
+    <div class="hero-stat">
+      <div class="num">35</div>
+      <div class="label">Colaboradores</div>
+    </div>
+    <div class="hero-stat">
+      <div class="num">9</div>
+      <div class="label">Propuestas</div>
+    </div>
+    <div class="hero-stat">
+      <div class="num">$118</div>
+      <div class="label">Desde / mes</div>
+    </div>
+    <div class="hero-stat">
+      <div class="num">$1M+</div>
+      <div class="label">Suma asegurada GMM</div>
+    </div>
+  </div>
+
+  <div class="hero-scroll">
+    <div class="hero-scroll-line"></div>
+    Desplaza para ver la propuesta
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- RISK SECTION -->
+<section class="risk-section reveal">
+  <div class="section-tag">Contexto de riesgo</div>
+  <h2 class="section-title">Pyrotech no es una empresa estándar.</h2>
+  <p class="section-desc">
+    La industria pirotécnica implica exposición directa a materiales explosivos, quemaduras y ambientes de alta siniestralidad.
+    Los beneficios correctos no son un "plus" — son una necesidad operativa.
+  </p>
+
+  <div class="risk-grid">
+    <div class="risk-card reveal">
+      <div class="risk-icon">🔥</div>
+      <div class="risk-title">Quemaduras graves</div>
+      <div class="risk-desc">Riesgo permanente en líneas de producción y manejo de materiales pirotécnicos.</div>
+      <div class="risk-coverage">Cobertura $5,000 MXN — Plan Medio y Premiun</div>
+    </div>
+    <div class="risk-card reveal">
+      <div class="risk-icon">🦴</div>
+      <div class="risk-title">Fracturas óseas</div>
+      <div class="risk-desc">Caídas, explosiones controladas y manejo de cargas representan riesgo diario.</div>
+      <div class="risk-coverage">Cobertura $5,000 MXN — Plan Medio y Premiun</div>
+    </div>
+    <div class="risk-card reveal">
+      <div class="risk-icon">🏥</div>
+      <div class="risk-title">Hospitalización por accidente</div>
+      <div class="risk-desc">Un accidente grave puede requerir días o semanas de hospitalización especializada.</div>
+      <div class="risk-coverage">$1,000/día Medio · GMM completo Premiun</div>
+    </div>
+    <div class="risk-card reveal">
+      <div class="risk-icon">💊</div>
+      <div class="risk-title">Gastos médicos mayores</div>
+      <div class="risk-desc">El costo real de un accidente grave supera los $100,000 MXN fácilmente.</div>
+      <div class="risk-coverage">Hasta $1,031,838 MXN — Plan Premiun</div>
+    </div>
+    <div class="risk-card reveal">
+      <div class="risk-icon">❤️</div>
+      <div class="risk-title">Enfermedades graves</div>
+      <div class="risk-desc">Exposición a humos, pólvoras y químicos puede detonar condiciones a largo plazo.</div>
+      <div class="risk-coverage">$50,000 MXN — Plan Medio (90 días espera)</div>
+    </div>
+    <div class="risk-card reveal">
+      <div class="risk-icon">🧠</div>
+      <div class="risk-title">Salud mental</div>
+      <div class="risk-desc">Estrés y ansiedad en entornos de alto riesgo afectan productividad y seguridad.</div>
+      <div class="risk-coverage">Psicología vía Telemedicina — todos los planes</div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- PLANS SECTION -->
+<section style="background:var(--bg)" class="reveal">
+  <div class="section-tag">Los tres planes para Pirotecnia</div>
+  <h2 class="section-title">Elige el nivel de protección.</h2>
+  <p class="section-desc">
+    Todos los planes incluyen la plataforma Betterfly completa, telemedicina y seguro de vida MetLife.
+    La diferencia está en la profundidad de cobertura ante accidentes y gastos médicos.
+  </p>
+
+  <div class="highlight-bar reveal">
+    <div class="hb-icon">⚡</div>
+    <div class="hb-text">
+      <strong>Recomendación Ceduverse:</strong> Para el giro pirotécnico, el Plan Básico no cubre quemaduras ni fracturas.
+      El <strong>Plan Medio es el mínimo recomendable</strong> — el Plan Premiun es el blindaje total ante accidentes mayores.
+    </div>
+  </div>
+
+  <div class="plans-grid">
+
+    <!-- BÁSICO -->
+    <div class="plan-card basic reveal">
+      <span class="plan-badge badge-basic">Básico</span>
+      <div class="plan-name">Pirotecnia Básico</div>
+      <div class="plan-price"><span class="currency">$</span>118</div>
+      <div class="plan-price-unit">MXN por colaborador / mes (s/IVA)</div>
+      <div class="plan-total">Total mensual: <strong>$4,130 MXN</strong> · 35 colaboradores</div>
+      <ul class="plan-features">
+        <li><span class="check check-green">✓</span><span>Plataforma Betterfly completa</span></li>
+        <li><span class="check check-green">✓</span><span>Telemedicina (MG, Psicología, Nutrición, Vet.)</span></li>
+        <li><span class="check check-green">✓</span><span>Seguro de vida MetLife <strong>$200K accidental</strong></span></li>
+        <li><span class="check check-green">✓</span><span>Dental Odontoprev <strong>$10,000</strong></span></li>
+        <li><span class="check check-green">✓</span><span>1 beneficio flexible</span></li>
+        <li><span class="check check-green">✓</span><span>Asistencia Mawdy (titular)</span></li>
+        <li><span class="check check-gray">✗</span><span style="opacity:.5">Sin cobertura de accidentes</span></li>
+        <li><span class="check check-gray">✗</span><span style="opacity:.5">Sin quemaduras ni fracturas</span></li>
+        <li><span class="check check-gray">✗</span><span style="opacity:.5">Sin Gastos Médicos Mayores</span></li>
+      </ul>
+      <button class="plan-cta cta-basic" onclick="scrollTo({top:document.getElementById('tabla').offsetTop-80,behavior:'smooth'})">Ver detalle completo ↓</button>
+    </div>
+
+    <!-- MEDIO -->
+    <div class="plan-card medio reveal">
+      <span class="plan-badge badge-medio">Medio</span>
+      <div class="plan-rec">Recomendado</div>
+      <div class="plan-name">Pirotecnia Medio</div>
+      <div class="plan-price"><span class="currency">$</span>243</div>
+      <div class="plan-price-unit">MXN por colaborador / mes (s/IVA)</div>
+      <div class="plan-total">Total mensual: <strong>$8,505 MXN</strong> · 35 colaboradores</div>
+      <ul class="plan-features">
+        <li><span class="check check-green">✓</span><span>Todo lo del Plan Básico</span></li>
+        <li><span class="check check-green">✓</span><span>Dental ampliada <strong>$30,000</strong> + Endodoncia</span></li>
+        <li><span class="check check-green">✓</span><span><strong>Quemaduras graves $5,000</strong></span></li>
+        <li><span class="check check-green">✓</span><span><strong>Fractura de huesos $5,000</strong></span></li>
+        <li><span class="check check-green">✓</span><span><strong>Hospitalización x acc. $1,000/día</strong></span></li>
+        <li><span class="check check-green">✓</span><span>Reemb. gastos médicos x acc. <strong>$15,000</strong></span></li>
+        <li><span class="check check-green">✓</span><span>Enfermedades graves <strong>$50,000</strong></span></li>
+        <li><span class="check check-green">✓</span><span>2 beneficios flexibles</span></li>
+        <li><span class="check check-gray">✗</span><span style="opacity:.5">Sin Gastos Médicos Mayores</span></li>
+      </ul>
+      <button class="plan-cta cta-medio" onclick="scrollTo({top:document.getElementById('tabla').offsetTop-80,behavior:'smooth'})">Ver detalle completo ↓</button>
+    </div>
+
+    <!-- PREMIUN -->
+    <div class="plan-card premium reveal">
+      <span class="plan-badge badge-premium">Premiun</span>
+      <div class="plan-rec-gold">Máxima protección</div>
+      <div class="plan-name">Pirotecnia Premiun</div>
+      <div class="plan-price"><span class="currency">$</span>795</div>
+      <div class="plan-price-unit">MXN por colaborador / mes (s/IVA)</div>
+      <div class="plan-total">Total mensual: <strong>$27,825 MXN</strong> · 35 colaboradores</div>
+      <ul class="plan-features">
+        <li><span class="check check-gold">✓</span><span>Todo lo del Plan Básico</span></li>
+        <li><span class="check check-gold">✓</span><span><strong>GMM $1,031,838 MXN</strong> — 300 UMAM</span></li>
+        <li><span class="check check-gold">✓</span><span>Red hospitalaria básica + Tabulador GUA</span></li>
+        <li><span class="check check-gold">✓</span><span>Medicamentos, visión y dental Dentegra</span></li>
+        <li><span class="check check-gold">✓</span><span>Maternidad <strong>$51,591</strong> (10 meses espera)</span></li>
+        <li><span class="check check-gold">✓</span><span>Miopía y astigmatismo cubiertos</span></li>
+        <li><span class="check check-gold">✓</span><span>Preexistencias (2 años espera)</span></li>
+        <li><span class="check check-gold">✓</span><span>Asistencia Integral MetLife</span></li>
+        <li><span class="check check-gold">✓</span><span>Dependientes disponibles a <strong>$700/mes</strong></span></li>
+      </ul>
+      <button class="plan-cta cta-premium" onclick="scrollTo({top:document.getElementById('tabla').offsetTop-80,behavior:'smooth'})">Ver detalle completo ↓</button>
+    </div>
+
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- FULL COMPARISON TABLE -->
+<section id="tabla" style="background:var(--bg2)" class="reveal">
+  <div class="section-tag">Comparativa completa</div>
+  <h2 class="section-title">Los 9 planes, lado a lado.</h2>
+  <p class="section-desc">Todos los perfiles cotizados para CEDUVERSE — Administrativo, Logística y Pirotecnia.</p>
+
+  <div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th style="position:sticky;left:0;background:var(--bg3);min-width:180px">Concepto</th>
+        <th class="th-plan">Adm. Básico</th>
+        <th class="th-plan">Adm. Medio</th>
+        <th class="th-plan">Adm. Premiun</th>
+        <th class="th-plan">Log. Básico</th>
+        <th class="th-plan">Log. Medio</th>
+        <th class="th-plan">Log. Premiun</th>
+        <th class="th-plan" style="color:var(--green)">Piro. Básico</th>
+        <th class="th-plan" style="color:var(--green)">Piro. Medio</th>
+        <th class="th-plan" style="color:var(--gold)">Piro. Premiun</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="tr-section"><td class="td-label" colspan="10">Precio</td></tr>
+      <tr>
+        <td class="td-label">$/col/mes (s/IVA)</td>
+        <td class="td-val val-amount">$106</td><td class="td-val val-amount">$219</td><td class="td-val val-amount">$783</td>
+        <td class="td-val val-amount">$110</td><td class="td-val val-amount">$236</td><td class="td-val val-amount">$787</td>
+        <td class="td-val val-amount col-medio">$118</td><td class="td-val val-amount col-medio">$243</td><td class="td-val val-amount col-premium">$795</td>
+      </tr>
+      <tr>
+        <td class="td-label">Total mensual</td>
+        <td class="td-val val-amount">$5,300</td><td class="td-val val-amount">$10,950</td><td class="td-val val-amount">$39,150</td>
+        <td class="td-val val-amount">$11,000</td><td class="td-val val-amount">$23,600</td><td class="td-val val-amount">$78,700</td>
+        <td class="td-val val-amount col-medio">$4,130</td><td class="td-val val-amount col-medio">$8,505</td><td class="td-val val-amount col-premium">$27,825</td>
+      </tr>
+      <tr>
+        <td class="td-label">No. colaboradores</td>
+        <td class="td-val" colspan="3">50</td>
+        <td class="td-val" colspan="3">100</td>
+        <td class="td-val col-medio">35</td><td class="td-val col-medio">35</td><td class="td-val col-premium">35</td>
+      </tr>
+      <tr>
+        <td class="td-label">Beneficios flexibles</td>
+        <td class="td-val">1</td><td class="td-val">2</td><td class="td-val">2</td>
+        <td class="td-val">1</td><td class="td-val">2</td><td class="td-val">2</td>
+        <td class="td-val col-medio">1</td><td class="td-val col-medio">2</td><td class="td-val col-premium">2</td>
+      </tr>
+
+      <tr class="tr-section"><td class="td-label" colspan="10">Dental — Odontoprev</td></tr>
+      <tr>
+        <td class="td-label">Suma asegurada</td>
+        <td class="td-val val-amount">$10K</td><td class="td-val val-amount">$30K</td><td class="td-val val-na">—</td>
+        <td class="td-val val-amount">$10K</td><td class="td-val val-amount">$30K</td><td class="td-val val-na">—</td>
+        <td class="td-val val-amount col-medio">$10K</td><td class="td-val val-amount col-medio">$30K</td><td class="td-val val-na col-premium">—</td>
+      </tr>
+      <tr>
+        <td class="td-label">Endodoncia y periodoncia</td>
+        <td class="td-val val-no">✗</td><td class="td-val val-yes">✓</td><td class="td-val val-na">—</td>
+        <td class="td-val val-no">✗</td><td class="td-val val-yes">✓</td><td class="td-val val-na">—</td>
+        <td class="td-val val-no col-medio">✗</td><td class="td-val val-yes col-medio">✓</td><td class="td-val val-na col-premium">—</td>
+      </tr>
+
+      <tr class="tr-section"><td class="td-label" colspan="10">Vida — MetLife (igual en todos)</td></tr>
+      <tr>
+        <td class="td-label">Muerte natural</td>
+        <td class="td-val val-amount" colspan="9" style="text-align:center">$100,000 MXN</td>
+      </tr>
+      <tr>
+        <td class="td-label">Muerte accidental</td>
+        <td class="td-val val-amount" colspan="9" style="text-align:center">$200,000 MXN</td>
+      </tr>
+      <tr>
+        <td class="td-label">Pérdidas orgánicas</td>
+        <td class="td-val val-amount" colspan="9" style="text-align:center">$200,000 MXN</td>
+      </tr>
+      <tr>
+        <td class="td-label">Invalidez total</td>
+        <td class="td-val val-amount" colspan="9" style="text-align:center">$100,000 MXN</td>
+      </tr>
+
+      <tr class="tr-section"><td class="td-label" colspan="10">Accidentes — MetLife</td></tr>
+      <tr>
+        <td class="td-label">Enfermedades graves</td>
+        <td class="td-val val-no">✗</td><td class="td-val val-amount">$50K</td><td class="td-val val-no">✗</td>
+        <td class="td-val val-no">✗</td><td class="td-val val-amount">$50K</td><td class="td-val val-no">✗</td>
+        <td class="td-val val-no col-medio">✗</td><td class="td-val val-amount col-medio">$50K</td><td class="td-val val-no col-premium">✗</td>
+      </tr>
+      <tr>
+        <td class="td-label">Reemb. gastos x accidente</td>
+        <td class="td-val val-no">✗</td><td class="td-val val-amount">$15K</td><td class="td-val val-no">✗</td>
+        <td class="td-val val-no">✗</td><td class="td-val val-amount">$15K</td><td class="td-val val-no">✗</td>
+        <td class="td-val val-no col-medio">✗</td><td class="td-val val-amount col-medio">$15K</td><td class="td-val val-no col-premium">✗</td>
+      </tr>
+      <tr>
+        <td class="td-label">Quemaduras graves</td>
+        <td class="td-val val-no">✗</td><td class="td-val val-amount">$5K</td><td class="td-val val-no">✗</td>
+        <td class="td-val val-no">✗</td><td class="td-val val-amount">$5K</td><td class="td-val val-no">✗</td>
+        <td class="td-val val-no col-medio">✗</td><td class="td-val val-amount col-medio">$5K</td><td class="td-val val-no col-premium">✗</td>
+      </tr>
+      <tr>
+        <td class="td-label">Fractura de huesos</td>
+        <td class="td-val val-no">✗</td><td class="td-val val-amount">$5K</td><td class="td-val val-no">✗</td>
+        <td class="td-val val-no">✗</td><td class="td-val val-amount">$5K</td><td class="td-val val-no">✗</td>
+        <td class="td-val val-no col-medio">✗</td><td class="td-val val-amount col-medio">$5K</td><td class="td-val val-no col-premium">✗</td>
+      </tr>
+      <tr>
+        <td class="td-label">Hospitalización x accidente</td>
+        <td class="td-val val-no">✗</td><td class="td-val val-amount">$1K/día</td><td class="td-val val-no">✗</td>
+        <td class="td-val val-no">✗</td><td class="td-val val-amount">$1K/día</td><td class="td-val val-no">✗</td>
+        <td class="td-val val-no col-medio">✗</td><td class="td-val val-amount col-medio">$1K/día</td><td class="td-val val-no col-premium">✗</td>
+      </tr>
+
+      <tr class="tr-section"><td class="td-label" colspan="10">Gastos Médicos Mayores (GMM) — solo Premiun</td></tr>
+      <tr>
+        <td class="td-label">Suma asegurada</td>
+        <td class="td-val val-na">—</td><td class="td-val val-na">—</td><td class="td-val val-amount">$1,031,838</td>
+        <td class="td-val val-na">—</td><td class="td-val val-na">—</td><td class="td-val val-amount">$1,031,838</td>
+        <td class="td-val val-na col-medio">—</td><td class="td-val val-na col-medio">—</td><td class="td-val val-amount col-premium">$1,031,838</td>
+      </tr>
+      <tr>
+        <td class="td-label">Deducible</td>
+        <td class="td-val val-na">—</td><td class="td-val val-na">—</td><td class="td-val val-amount">$10,318</td>
+        <td class="td-val val-na">—</td><td class="td-val val-na">—</td><td class="td-val val-amount">$10,318</td>
+        <td class="td-val val-na col-medio">—</td><td class="td-val val-na col-medio">—</td><td class="td-val val-amount col-premium">$10,318</td>
+      </tr>
+      <tr>
+        <td class="td-label">Coaseguro / tope anual</td>
+        <td class="td-val val-na">—</td><td class="td-val val-na">—</td><td class="td-val val-amount">10% / $25,300</td>
+        <td class="td-val val-na">—</td><td class="td-val val-na">—</td><td class="td-val val-amount">10% / $25,300</td>
+        <td class="td-val val-na col-medio">—</td><td class="td-val val-na col-medio">—</td><td class="td-val val-amount col-premium">10% / $25,300</td>
+      </tr>
+      <tr>
+        <td class="td-label">Maternidad / Miopía</td>
+        <td class="td-val val-na">—</td><td class="td-val val-na">—</td><td class="td-val val-amount">$51,591 c/u</td>
+        <td class="td-val val-na">—</td><td class="td-val val-na">—</td><td class="td-val val-amount">$51,591 c/u</td>
+        <td class="td-val val-na col-medio">—</td><td class="td-val val-na col-medio">—</td><td class="td-val val-amount col-premium">$51,591 c/u</td>
+      </tr>
+      <tr>
+        <td class="td-label">Dental + Visión Dentegra</td>
+        <td class="td-val val-na">—</td><td class="td-val val-na">—</td><td class="td-val val-yes">✓</td>
+        <td class="td-val val-na">—</td><td class="td-val val-na">—</td><td class="td-val val-yes">✓</td>
+        <td class="td-val val-na col-medio">—</td><td class="td-val val-na col-medio">—</td><td class="td-val val-yes col-premium">✓</td>
+      </tr>
+      <tr>
+        <td class="td-label">Dependientes adicionales</td>
+        <td class="td-val val-na">—</td><td class="td-val val-na">—</td><td class="td-val val-amount">$700/mes</td>
+        <td class="td-val val-na">—</td><td class="td-val val-na">—</td><td class="td-val val-amount">$700/mes</td>
+        <td class="td-val val-na col-medio">—</td><td class="td-val val-na col-medio">—</td><td class="td-val val-amount col-premium">$700/mes</td>
+      </tr>
+
+      <tr class="tr-section"><td class="td-label" colspan="10">Asistencias y telemedicina</td></tr>
+      <tr>
+        <td class="td-label">Telemedicina (titular)</td>
+        <td class="td-val val-yes" colspan="9" style="text-align:center">✓ Incluida en todos los planes</td>
+      </tr>
+      <tr>
+        <td class="td-label">Asistencia Mawdy</td>
+        <td class="td-val val-yes">✓</td><td class="td-val val-yes">✓</td><td class="td-val val-no">✗</td>
+        <td class="td-val val-yes">✓</td><td class="td-val val-yes">✓</td><td class="td-val val-no">✗</td>
+        <td class="td-val val-yes col-medio">✓</td><td class="td-val val-yes col-medio">✓</td><td class="td-val val-no col-premium">✗</td>
+      </tr>
+      <tr>
+        <td class="td-label">Asistencia Integral MetLife</td>
+        <td class="td-val val-no">✗</td><td class="td-val val-no">✗</td><td class="td-val val-yes">✓</td>
+        <td class="td-val val-no">✗</td><td class="td-val val-no">✗</td><td class="td-val val-yes">✓</td>
+        <td class="td-val val-no col-medio">✗</td><td class="td-val val-no col-medio">✗</td><td class="td-val val-yes col-premium">✓</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- OBJECTIONS -->
+<section style="background:var(--bg)" class="reveal">
+  <div class="section-tag">Manejo de objeciones</div>
+  <h2 class="section-title">Preguntas frecuentes.</h2>
+  <p class="section-desc">Respuestas directas a las dudas más comunes al evaluar esta propuesta.</p>
+
+  <div class="obj-grid">
+    <div class="obj-card reveal">
+      <div class="obj-q"><span class="q-mark">"</span>El Plan Básico cuesta solo $118 — ¿no es suficiente?</div>
+      <div class="obj-a">No. El Básico <strong>no cubre quemaduras, fracturas, hospitalización por accidente ni enfermedades graves</strong>. Para una empresa pirotécnica, eso significa que ante el primer accidente grave, el colaborador queda desprotegido. La diferencia con el Medio es de <strong>$125 por colaborador al mes</strong> — menos de $5 pesos diarios — con cobertura de accidentes completamente diferente.</div>
+    </div>
+    <div class="obj-card reveal">
+      <div class="obj-q"><span class="q-mark">"</span>El Premiun es muy caro comparado con el Medio.</div>
+      <div class="obj-a">La diferencia es de <strong>$552 por colaborador al mes</strong>. Un solo accidente grave con hospitalización de 5 días puede costar entre $80,000 y $300,000 MXN. El GMM de $1,031,838 absorbe ese costo por completo. En pirotecnia, <strong>no es si ocurre un accidente grave — es cuándo</strong>.</div>
+    </div>
+    <div class="obj-card reveal">
+      <div class="obj-q"><span class="q-mark">"</span>Ya tenemos IMSS, ¿para qué necesitamos esto?</div>
+      <div class="obj-a">El IMSS tiene tiempos de espera, acceso limitado a especialistas y no cubre telemedicina, dental, psicología ni reembolso inmediato de gastos. Betterfly <strong>complementa al IMSS</strong> y reduce el ausentismo al atender problemas antes de que escalen a urgencias.</div>
+    </div>
+    <div class="obj-card reveal">
+      <div class="obj-q"><span class="q-mark">"</span>¿Podemos empezar con el Básico y subir después?</div>
+      <div class="obj-a">Es posible, pero los planes Medio y Premiun tienen <strong>periodos de espera</strong>: 90 días para enfermedades graves y 2 años para preexistencias en GMM. Comenzar desde el nivel correcto significa que la cobertura está activa <strong>cuando más se necesita</strong>.</div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- NEXT STEPS -->
+<section style="background:var(--bg2)" class="reveal">
+  <div class="section-tag">Próximos pasos</div>
+  <h2 class="section-title">¿Cómo avanzamos?</h2>
+  <p class="section-desc">Un proceso simple para activar el plan elegido antes de que venza la cotización.</p>
+
+  <div class="steps-grid">
+    <div class="step-card reveal">
+      <div class="step-num">01</div>
+      <div class="step-title">Revisión interna</div>
+      <div class="step-desc">RH, Dirección General o CFO de Pyrotech revisa esta propuesta y selecciona el plan preferido.</div>
+    </div>
+    <div class="step-card reveal">
+      <div class="step-num">02</div>
+      <div class="step-title">Reunión de cierre</div>
+      <div class="step-desc">Sesión de 30 minutos con Ceduverse para resolver dudas y alinear condiciones antes de formalizar.</div>
+    </div>
+    <div class="step-card reveal">
+      <div class="step-num">03</div>
+      <div class="step-title">Lista de colaboradores</div>
+      <div class="step-desc">Pyrotech comparte el listado de los 35 colaboradores para iniciar el onboarding en Betterfly.</div>
+    </div>
+    <div class="step-card reveal">
+      <div class="step-num">04</div>
+      <div class="step-title">Activación</div>
+      <div class="step-desc">Onboarding en la app Betterfly y activación de coberturas MetLife. La cotización vence el 12/04/2026.</div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div>
+    <div class="footer-brand">Cedu<span>verse</span></div>
+    <div class="footer-meta" style="margin-top:4px">Propuesta preparada para Pyrotech · Betterfly + MetLife + Odontoprev</div>
+  </div>
+  <div class="footer-vigencia">Vigencia: 12/03/2026 — 12/04/2026</div>
+  <div class="footer-meta" style="text-align:right">Precios en MXN sin IVA<br>Ceduverse © 2026</div>
+</footer>
+
+<script>
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if(e.isIntersecting) {
+      e.target.classList.add('visible');
+      observer.unobserve(e.target);
+    }
+  });
+}, {threshold: 0.1});
+
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+
+</body>
+</html>

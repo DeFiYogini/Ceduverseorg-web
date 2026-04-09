@@ -1,0 +1,357 @@
+# Prompt para Replit Agent — Modelo Financiero + Sistema de Bonos Agresivo
+
+Pegar esto completo en el Replit Agent:
+
+```
+CONTEXTO: Ceduverse (ceduverse.org) — plataforma EdTech de capacitación laboral STPS 
+en México. Stack: React 19 + Express + Drizzle ORM + PostgreSQL + Vite + Tailwind.
+
+Necesito que construyas un MODELO FINANCIERO DINÁMICO como una sección nueva en el 
+admin dashboard (ruta: /admin/financiero). Este modelo debe calcular márgenes reales 
+en tiempo real basándose en datos de la base de datos de prospectos (tabla denue_prospects)
+y en las constantes del modelo operativo. El objetivo final: encontrar exactamente 
+cuánto margen hay para crear un sistema de bonos AGRESIVO estilo industria automotriz 
+(bonos de autos último modelo, casas, viajes).
+
+=============================================
+CONSTANTES DEL MODELO (hardcodear como configurables)
+=============================================
+
+-- VALOR UMA 2026 --
+UMA_DIARIA = 113.14  (MXN)
+
+-- PLANES EMPRESARIALES --
+PLAN_IMPULSA = {
+  umas_por_col: 6,
+  costo_col_mes: 6 * 113.14 = 678.84,
+  rango_cols: "1-10",
+  fee_ceduverse_pct: 0.15,  // 15% de la aportación
+}
+PLAN_TRANSFORMA = {
+  umas_por_col: 10,
+  costo_col_mes: 10 * 113.14 = 1131.40,
+  rango_cols: "11-99",
+  fee_ceduverse_pct: 0.08,  // 8%
+}
+PLAN_LIDERA = {
+  umas_por_col: 20,
+  costo_col_mes: 20 * 113.14 = 2262.80,
+  rango_cols: "100-500",
+  fee_ceduverse_pct: 0.05,  // 5%
+}
+
+-- CERTIFICACIONES (ingreso adicional, NO sale del fee) --
+DC3_PRECIO = 499        // precio al cliente
+DC3_PRECIO_DTO = 399    // con 20% descuento empresarial
+DC3_COSTO_ACE = 200     // costo del Agente Capacitador Externo
+DC3_MARGEN = 199        // $399 - $200
+SEP_PRECIO = 1999
+SEP_COSTO_INEC = 800
+SEP_MARGEN = 1199
+
+-- COSTOS OPERATIVOS MENSUALES --
+COSTO_OPS_MENSUAL = {
+  david_perez_gestoria: 55000,      // vía Tokapay
+  ernesto_santa_ana_legal: 15000,   // vía Tokapay
+  gladis_santos_contabilidad: 6000, // vía Tokapay
+  creatinnmedia_marketing: 14000,   // vía Tokapay ($6,500 mkt + $7,500 cursos)
+  santos_oficina_virtual: 950,      // SPEI directo
+  izzi_internet: 810,               // SPEI directo
+  hostinger_anual_prorrateado: 356, // ($2,591 + $697 dominios) / 12
+  replit_hosting: 625,              // $25 USD × ~25 MXN
+  claude_api: 1125,                 // $45 USD × ~25 MXN
+  openai_tts: 925,                  // $37 USD × ~25 MXN
+  varios_prorrateo: 66,             // extras menores
+  TOTAL: 94857                      // ~$94,857/mes
+}
+
+-- COMISIONES ACTUALES (salen del fee de Ceduverse) --
+COMISION_CONSULTOR = {
+  tier_1: { empresas: "1-3", pct_del_fee: 0.25 },
+  tier_2: { empresas: "4-7", pct_del_fee: 0.30 },
+  tier_3: { empresas: "8+",  pct_del_fee: 0.35 },
+}
+COMISION_DIRECTOR_OVERRIDE = 0.05  // 5% del fee, adicional
+COMISION_CIERRE = 0.50  // 50% del fee del primer mes
+COMISION_DC3 = 60   // por certificado (consultor)
+COMISION_SEP = 200  // por certificado (consultor)
+DC3_OVERRIDE_DIRECTOR = 15
+SEP_OVERRIDE_DIRECTOR = 50
+
+-- DISTRIBUCIÓN DEL FEE DE CEDUVERSE --
+DISTRIBUCION_FEE = {
+  operaciones_ceduverse: 0.60,  // 60%
+  comision_socio: 0.25,         // 25% (base)
+  override_director: 0.05,      // 5%
+  reserva_referidos: 0.10,      // 10%
+}
+
+-- ZONAS NACIONALES (7 zonas, 32 estados) --
+ZONAS = {
+  Sureste: { estados: 3, nombre: "Q.Roo, Yucatán, Campeche" },
+  Sur: { estados: 4, nombre: "Veracruz, Tabasco, Chiapas, Oaxaca" },
+  Centro: { estados: 6, nombre: "CDMX, EdoMex, Puebla, Tlaxcala, Hidalgo, Morelos" },
+  Bajio: { estados: 5, nombre: "Querétaro, Guanajuato, Aguascalientes, Zacatecas, SLP" },
+  Norte: { estados: 4, nombre: "Tamaulipas, NL, Coahuila, Durango" },
+  Pacifico: { estados: 6, nombre: "Guerrero, Michoacán, Colima, Jalisco, Nayarit, Sinaloa" },
+  Noroeste: { estados: 4, nombre: "BC Norte, BC Sur, Sonora, Chihuahua" },
+}
+
+-- OBJETIVOS DE CRECIMIENTO --
+OBJETIVO_1 = { socios_por_estado: 1, empresas_por_estado: 1, min_empleados: 30 }
+OBJETIVO_2 = { socios_por_estado: 2, empresas_por_estado: 2, min_empleados: 30 }
+OBJETIVO_3 = { socios_por_estado: 3, empresas_por_estado: 3, min_empleados: 30 }
+
+=============================================
+TAREA 1: CALCULADORA DE MÁRGENES EN TIEMPO REAL
+=============================================
+
+Crear la sección /admin/financiero con estas sub-páginas:
+
+--- Sub-página 1: "Simulador de Márgenes" ---
+
+Un formulario interactivo con sliders y selectores que calcule TODO en tiempo real:
+
+INPUTS (sliders/selectores):
+- Número de empresas cliente (slider: 1-500)
+- Plan predominante (selector: Impulsa/Transforma/Lidera/Mix automático)
+- Promedio de colaboradores por empresa (slider: 10-300)
+- Tasa de compra DC3 (slider: 10%-80%, default 40%)
+- Tasa de compra SEP (slider: 1%-20%, default 5%)
+- Número de socios consultores (slider: 1-100)
+- Número de socios directores (slider: 1-30)
+- Tier de comisión actual (selector: 25%/30%/35% del fee)
+
+OUTPUTS (calculados en tiempo real, organizados en secciones):
+
+--- SECCIÓN A: INGRESOS BRUTOS ---
+| Concepto | Fórmula | Resultado |
+|----------|---------|-----------|
+| Aportación total mensual | empresas × cols × UMAs × $113.14 | $_____ |
+| Aportación total anual | × 12 | $_____ |
+| Fee Ceduverse mensual | aportación × fee% | $_____ |
+| Fee Ceduverse anual | × 12 | $_____ |
+| Ingreso DC3 anual | empresas × cols × tasa_dc3 × $399 | $_____ |
+| Margen DC3 anual | cantidad_dc3 × ($399 - $200) | $_____ |
+| Ingreso SEP anual | empresas × cols × tasa_sep × $1,999 | $_____ |
+| Margen SEP anual | cantidad_sep × ($1,999 - $800) | $_____ |
+| INGRESO TOTAL CEDUVERSE/MES | fee + margen certs | $_____ |
+| INGRESO TOTAL CEDUVERSE/AÑO | × 12 | $_____ |
+
+--- SECCIÓN B: COSTOS ---
+| Concepto | Monto | % del ingreso |
+|----------|-------|---------------|
+| Costo operativo fijo mensual | $94,857 | __% |
+| Costo operativo anual | $1,138,284 | __% |
+| Comisiones consultores mensuales | socios × promedio_comision | __% |
+| Override directores mensual | directores × 5% × fee_total | __% |
+| Comisiones cierre (estimado mensual) | nuevas_empresas/mes × 50% × fee | __% |
+| Comisiones DC3 (consultores) | dc3_vendidos × $60 | __% |
+| Comisiones SEP (consultores) | sep_vendidos × $200 | __% |
+| COSTO TOTAL/MES | | $_____ |
+| COSTO TOTAL/AÑO | | $_____ |
+
+--- SECCIÓN C: MARGEN DISPONIBLE ---
+| Concepto | Monto | |
+|----------|-------|---|
+| MARGEN BRUTO MENSUAL | ingreso - costos | $_____ |
+| MARGEN BRUTO ANUAL | × 12 | $_____ |
+| % de margen | margen / ingreso | __% |
+| MARGEN DISPONIBLE PARA BONOS/MES | margen × 50% (conservador) | $_____ |
+| MARGEN DISPONIBLE PARA BONOS/AÑO | × 12 | $_____ |
+
+Debajo de la tabla, mostrar en GRANDE y VERDE:
+"Con {X} empresas tienes ${Y} disponibles al año para bonos agresivos"
+
+Y un semáforo visual:
+- 🔴 Margen < 10%: "No hay espacio para bonos, enfocarse en crecer"
+- 🟡 Margen 10-25%: "Espacio para bonos moderados"
+- 🟢 Margen 25-40%: "Espacio para bonos agresivos (autos, viajes)"
+- 🔵 Margen > 40%: "Espacio para bonos premium (casas, autos de lujo)"
+
+--- Sub-página 2: "Escenarios pre-calculados" ---
+
+Mostrar una tabla comparativa con estos escenarios usando datos REALES 
+de la base de datos (query denue_prospects para contar empresas reales por zona):
+
+| Escenario | Empresas | Cols promedio | Plan | Ingresos Ceduverse/año | Costos/año | Margen/año | Disponible bonos/año |
+|-----------|----------|--------------|------|----------------------|-----------|-----------|---------------------|
+| Break-even | [calcular] | 30 | Transforma | $1,138,284 | $1,138,284 | $0 | $0 |
+| Objetivo 1 (32 emp) | 32 | 30 | Transforma | [calc] | [calc] | [calc] | [calc] |
+| Objetivo 2 (64 emp) | 64 | 30 | Transforma | [calc] | [calc] | [calc] | [calc] |
+| Objetivo 3 (96 emp) | 96 | 30 | Transforma | [calc] | [calc] | [calc] | [calc] |
+| Potencial zona Norte (NL) | [count real de DB] | [avg real] | Mix | [calc real] | [calc] | [calc] | [calc] |
+| Potencial nacional 1% | [1% del total DB × 32 estados] | [avg] | Mix | [calc] | [calc] | [calc] | [calc] |
+| Potencial nacional 5% | [5% del total DB × 32 estados] | [avg] | [calc] | [calc] | [calc] | [calc] |
+
+Para "Potencial zona Norte (NL)", hacer query REAL a denue_prospects:
+- COUNT empresas con score >= 70 (Alta prioridad) en la zona Norte
+- AVG employee_midpoint de esas empresas
+- SUM estimated_contribution_monthly × 12
+
+--- Sub-página 3: "Diseñador de sistema de bonos" ---
+
+ESTA ES LA PARTE CLAVE. Un formulario donde el admin puede diseñar niveles de bonos 
+y el sistema calcula si son financieramente viables basado en el margen.
+
+INPUTS:
+- Budget anual para programa de bonos (auto-calculado del margen, editable)
+
+TABLA EDITABLE de niveles de bonos:
+| Nivel | Nombre | Meta (empresas) | Meta (ingreso/año) | Bono | Costo del bono | Socios que lo lograrán (estimado) | Costo total |
+|-------|--------|-----------------|-------------------|------|---------------|----------------------------------|-------------|
+| 1 | "Arranque" | 3 empresas | $XX | Bono cash $10,000 MXN | $10,000 | [slider] | [calc] |
+| 2 | "Despegue" | 6 empresas | $XX | iPhone 16 Pro | $25,000 | [slider] | [calc] |
+| 3 | "Estrella" | 10 empresas | $XX | Viaje todo incluido (Cancún 5 días) | $45,000 | [slider] | [calc] |
+| 4 | "Diamante" | 15 empresas | $XX | Auto (Nissan Versa 2026 o equiv) | $350,000 | [slider] | [calc] |
+| 5 | "Leyenda" | 25 empresas | $XX | Enganche casa ($500K) o auto de lujo | $500,000 | [slider] | [calc] |
+
+El admin puede:
+- Editar nombre del nivel, meta, bono, costo
+- Ajustar cuántos socios estima que alcanzarán cada nivel
+- El sistema calcula automáticamente:
+  - Costo total del programa de bonos = Σ(costo × socios_estimados)
+  - "% del margen anual" que representan los bonos
+  - Semáforo: viable (verde) / apretado (amarillo) / inviable (rojo)
+  - "ROI del programa": por cada $1 invertido en bonos, ¿cuánto genera 
+    en fees? (porque más empresas = más fees)
+
+RESULTADO VISUAL:
+Box grande que dice:
+"Tu programa de bonos cuesta ${TOTAL}/año 
+ y representa el {X}% de tu margen.
+ Genera ${TOTAL_FEES_ADICIONALES}/año en fees adicionales.
+ ROI del programa: {Y}x"
+
+Si el costo > margen disponible, mostrar en ROJO:
+"⚠️ Programa de bonos excede el margen. Reduce los niveles 4-5 o 
+aumenta la meta de empresas."
+
+--- Sub-página 4: "Análisis de potencial real" (cruzado con DB) ---
+
+Query la tabla denue_prospects y mostrar:
+
+CARD 1: "Mercado total identificado"
+- Total empresas en base de datos: [COUNT(*)]
+- Con 11+ empleados: [COUNT where employee_midpoint >= 11]
+- Con alta prioridad (score 70+): [COUNT]
+- Valor potencial anual (aportaciones): SUM(estimated_contribution_monthly) × 12
+- Fee Ceduverse potencial anual: SUM(estimated_contribution_monthly × fee%) × 12
+  (usar recommended_plan para determinar fee%)
+
+CARD 2: "Si captamos el X%..."
+Sliders: 0.5%, 1%, 2%, 5%, 10% del mercado
+Para cada % mostrar:
+- Empresas cliente
+- Aportación anual total
+- Fee Ceduverse anual
+- Margen después de costos y comisiones
+- Disponible para bonos
+- "¿Qué programa de bonos puedo pagar?"
+  → Match automático con los niveles definidos en sub-página 3
+
+CARD 3: "Break-even analysis"
+- ¿Cuántas empresas Transforma (30 cols) necesito para cubrir operación? → [calc]
+- ¿Cuántas para pagar operación + comisiones de 7 consultores? → [calc]
+- ¿Cuántas para pagar todo + programa de bonos nivel básico? → [calc]
+- ¿Cuántas para pagar todo + programa de bonos completo? → [calc]
+
+CARD 4: "Zona Norte (NL) — potencial real" (query a DB filtrada por zona Norte)
+- Empresas Alta prioridad: [COUNT]
+- Sector más rentable: [sector_group con mayor SUM estimated_contribution]
+- Municipio con más oportunidad: [municipio con mayor COUNT alta prioridad]
+- Si captamos 50 empresas Alta prioridad de NL:
+  → Fee anual: $XXX
+  → Margen: $XXX
+  → Alcanza para: [lista de bonos viables]
+
+=============================================
+TAREA 2: TABLA DE BONOS SUGERIDA (PRE-DISEÑADA)
+=============================================
+
+Pre-poblar la tabla de bonos con estos datos como default 
+(el admin puede editarlos después):
+
+PROGRAMA "CEDUVERSE ELITE" — Sistema de reconocimiento:
+
+NIVEL 1: "Semilla" 🌱
+  Meta: 3 empresas activas en 90 días
+  Bono: $10,000 MXN cash + certificado + pin
+  Trigger: pipeline_stage='Cliente' count >= 3
+
+NIVEL 2: "Crecimiento" 🌿
+  Meta: 6 empresas activas + $50,000 MXN en fees acumulados
+  Bono: iPhone/Samsung último modelo ($25,000 valor) + viaje fin de semana
+  Trigger: pipeline count >= 6 AND sum(fees) >= 50000
+
+NIVEL 3: "Estrella" ⭐
+  Meta: 10 empresas activas + $120,000 MXN en fees acumulados
+  Bono: Viaje todo incluido 5 días (Cancún/Los Cabos/Vallarta) para 2 personas ($50,000 valor)
+  Trigger: pipeline count >= 10 AND sum(fees) >= 120000
+
+NIVEL 4: "Diamante" 💎
+  Meta: 20 empresas activas + $300,000 MXN en fees acumulados
+  Bono: Auto nuevo (Nissan Versa/Chevrolet Aveo 2027 o equivalente, $350,000 valor)
+  Trigger: pipeline count >= 20 AND sum(fees) >= 300000
+
+NIVEL 5: "Leyenda" 👑
+  Meta: 35 empresas activas + $600,000 MXN en fees acumulados
+  Bono: Enganche para casa ($500,000) o auto premium (BMW/Audi entrada) 
+        o bono cash $500,000
+  Trigger: pipeline count >= 35 AND sum(fees) >= 600000
+
+NIVEL DIRECTOR ESPECIAL: "Arquitecto" 🏗️
+  Meta: su zona genera $1,000,000 MXN en fees anuales (todos sus consultores)
+  Bono: Override sube de 5% a 8% + viaje internacional para 2 ($80,000)
+  Trigger: zone_total_fees >= 1000000 AND role='director'
+
+Para cada nivel, el sistema debe calcular:
+- "¿Es viable?" basado en el margen actual
+- "¿Cuánto genera este socio en fees para Ceduverse?" (ROI del bono)
+  Ejemplo: socio con 20 empresas Transforma 30 cols genera:
+  20 × $2,715/mes × 12 = $651,600/año en fees
+  Bono de auto $350,000 = ROI de 1.86x en el primer año
+  Y el fee es RECURRENTE — año 2 son otros $651K sin pagar otro auto
+
+=============================================
+TAREA 3: DASHBOARD VISUAL DEL PROGRAMA DE BONOS
+=============================================
+
+Crear también una vista para que los SOCIOS vean su progreso hacia los bonos
+(agregar a /socio/comisiones o nueva ruta /socio/programa-elite):
+
+- Progress bars para cada nivel
+  Nivel actual: [Semilla/Crecimiento/Estrella...]
+  Progreso al siguiente nivel: [barra visual] 6/10 empresas (60%)
+  
+- "Tu próximo bono": Card grande con la foto/ícono del bono
+  "Te faltan X empresas para ganar [nombre del bono]"
+  
+- Tabla de niveles con el socio resaltado en su nivel actual
+  Los niveles superiores se ven pero en gris (aspiracional)
+
+- "Top socios" leaderboard (si hay más de 1 socio):
+  Ranking de socios por empresas activas, con nivel actual de cada uno
+
+=============================================
+NOTAS IMPORTANTES
+=============================================
+
+1. TODAS las fórmulas deben ser dinámicas — si cambio el valor UMA o los fees,
+   todo se recalcula automáticamente.
+
+2. Los datos de "potencial" deben venir de queries REALES a denue_prospects,
+   no de números hardcodeados.
+
+3. En ningún lugar de la interfaz visible al usuario/socio debe aparecer 
+   "DENUE", "INEGI", o la fuente de los datos. Solo en código interno.
+
+4. El semáforo de viabilidad de bonos es CRÍTICO — el admin debe poder ver 
+   inmediatamente si un programa de bonos es financieramente sostenible.
+
+5. Los triggers de bonos deben poder conectarse eventualmente con el pipeline 
+   CRM para activarse automáticamente (por ahora solo mostrar progreso).
+
+6. Usar los patrones existentes del proyecto (Drizzle ORM, componentes React,
+   Tailwind, hooks). Agregar al admin dashboard existente.
+```

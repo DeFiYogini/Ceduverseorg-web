@@ -1,0 +1,631 @@
+# Ceduverse CRM — DENUE Intelligence System
+## Replit Agent Prompts (Paste Sequentially)
+
+---
+
+## PHASE 0: DATABASE SCHEMA SETUP
+**Paste this FIRST — establishes all tables before any feature work.**
+
+```
+CONTEXT: I'm building a CRM/lead intelligence system for Ceduverse (EdTech STPS Mexico). 
+Stack: React 19 + Express + Drizzle ORM + PostgreSQL + Vite + Tailwind.
+The "Prospectos DENUE" section already exists in the admin dashboard.
+
+TASK: Create/update the database schema for the full CRM system. Use Drizzle ORM.
+
+Create these tables (if they don't already exist — check first):
+
+1. `denue_prospects` — raw DENUE data + computed fields
+   - id: serial primary key
+   - clee: varchar (DENUE unique ID)
+   - nom_estab: varchar (business name)
+   - raz_social: varchar (legal name)
+   - codigo_act: varchar (SCIAN code)
+   - nombre_act: varchar (SCIAN activity name)
+   - per_ocu: varchar (employee range string from DENUE)
+   - employee_min: integer (parsed minimum, e.g. "11 a 30" → 11)
+   - employee_max: integer (parsed maximum)
+   - employee_midpoint: integer (midpoint for scoring)
+   - full_address: text (concatenated from components)
+   - tipo_vial: varchar
+   - nom_vial: varchar
+   - numero_ext: varchar
+   - numero_int: varchar
+   - nomb_asent: varchar (colonia)
+   - cod_postal: varchar
+   - municipio: varchar
+   - localidad: varchar
+   - entidad: varchar (defaults to "Nuevo León")
+   - telefono: varchar
+   - correoelec: varchar
+   - www: varchar
+   - latitud: decimal(10,6)
+   - longitud: decimal(10,6)
+   - fecha_alta: varchar
+   - tipo_uni_eco: varchar
+   - lead_score: integer (0-100, computed)
+   - score_size: integer (component)
+   - score_risk: integer (component)
+   - score_digital: integer (component)
+   - score_economic: integer (component)
+   - priority: varchar ('Alta','Media','Baja')
+   - risk_level: varchar ('Alto','Medio','Bajo')
+   - sector_group: varchar (simplified sector from SCIAN)
+   - commercial_zone: varchar (Centro, Valle Oriente, Norte, etc.)
+   - estimated_contribution_monthly: decimal(10,2) (in MXN)
+   - recommended_plan: varchar ('Impulsa','Transforma','Lidera')
+   - applicable_noms: text (JSON array of applicable NOMs)
+   - pipeline_stage: varchar (null=prospect, 'Nuevo','Contactado','Demo','Propuesta','Negociación','Cliente','Perdido')
+   - assigned_socio_id: integer (references users table)
+   - contact_group_id: integer (references contact_groups)
+   - notes: text
+   - last_contacted_at: timestamp
+   - created_at: timestamp default now()
+   - updated_at: timestamp default now()
+
+2. `contact_groups` — named groups for campaigns
+   - id: serial primary key
+   - name: varchar (e.g. "Manufactura MTY 50+")
+   - description: text
+   - filter_criteria: jsonb (saved filter state)
+   - assigned_socio_id: integer
+   - prospect_count: integer (denormalized count)
+   - created_at: timestamp default now()
+   - updated_at: timestamp default now()
+
+3. `prospect_interactions` — interaction history
+   - id: serial primary key
+   - prospect_id: integer references denue_prospects
+   - interaction_type: varchar ('call','email','visit','demo','note')
+   - description: text
+   - performed_by: integer (user id)
+   - created_at: timestamp default now()
+
+4. `saved_filters` — reusable filter combinations
+   - id: serial primary key
+   - name: varchar
+   - filter_config: jsonb
+   - created_by: integer
+   - created_at: timestamp default now()
+
+After creating the schema, run the migration. Don't drop any existing tables.
+
+Add indexes on: lead_score, priority, municipio, commercial_zone, sector_group, 
+pipeline_stage, assigned_socio_id, contact_group_id, codigo_act.
+```
+
+---
+
+## PHASE 1: CSV IMPORT + SCORING ENGINE
+**Paste after Phase 0 completes. This loads and scores all DENUE data.**
+
+```
+CONTEXT: Ceduverse CRM. The denue_prospects table now exists (Drizzle ORM + PostgreSQL).
+The DENUE CSV for Nuevo León is already in the project (find it — likely named 
+denue_inegi_19_.csv or similar in the root or data folder).
+
+TASK: Build the CSV import + scoring pipeline as a server-side script AND an API endpoint.
+
+STEP 1 — Find and read the DENUE CSV file in the project. Identify the exact filename and path.
+
+STEP 2 — Create a script `scripts/import-denue.ts` that:
+
+a) Reads the CSV (use papaparse or csv-parse)
+b) Filters to ONLY records where:
+   - municipio is in MTY metro: Monterrey, Apodaca, Guadalupe, San Nicolás de los Garza,
+     San Pedro Garza García, General Escobedo, Santa Catarina, García, Juárez, 
+     Cadereyta Jiménez, Pesquería, Santiago, Salinas Victoria, El Carmen, 
+     Ciénega de Flores
+   - per_ocu indicates 11+ employees (parse the string: "0 a 5 personas" = skip,
+     "6 a 10 personas" = skip, "11 a 30 personas" = include, etc.)
+
+c) Parse per_ocu into employee_min/max/midpoint:
+   - "11 a 30 personas" → 11, 30, 20
+   - "31 a 50 personas" → 31, 50, 40
+   - "51 a 100 personas" → 51, 100, 75
+   - "101 a 250 personas" → 101, 250, 175
+   - "251 y más personas" → 251, 500, 375
+
+d) Compute lead_score (0-100) with these components:
+
+   SCORE_SIZE (max 25):
+   - 11-30 emp → 10
+   - 31-50 → 15
+   - 51-100 → 20
+   - 101-250 → 25
+   - 251+ → 22
+
+   SCORE_RISK (max 25) based on SCIAN codigo_act first 2 digits:
+   - Alto riesgo (25pts): 23 (construcción), 31-33 (manufactura), 
+     62 (salud), 48-49 (transporte), 21 (minería)
+   - Medio riesgo (15pts): 72 (alojamiento/alimentos), 56 (servicios), 
+     43 (comercio), 46 (comercio al por menor), 81 (otros servicios)
+   - Bajo riesgo (8pts): everything else
+
+   SCORE_DIGITAL (max 15):
+   - Has website (www not empty) → +5
+   - Has phone (telefono not empty) → +5
+   - Has email (correoelec not empty) → +5
+
+   SCORE_ECONOMIC (max 15) based on estimated monthly contribution:
+   Contribution = employee_midpoint × 10 × 113.14 × 0.08 (pesos/month)
+   - > $50,000/mo → 15
+   - > $30,000/mo → 12
+   - > $15,000/mo → 9
+   - > $5,000/mo → 6
+   - else → 3
+
+   PRIORITY:
+   - score >= 70 → "Alta"
+   - score >= 40 → "Media"
+   - score < 40 → "Baja"
+
+e) Map SCIAN codes to sector_group:
+   - 23 → "Construcción"
+   - 31,32,33 → "Manufactura"
+   - 43 → "Comercio Mayoreo"
+   - 46 → "Comercio Menudeo"
+   - 48,49 → "Transporte"
+   - 51 → "Información"
+   - 52 → "Finanzas/Seguros"
+   - 53 → "Inmobiliario"
+   - 54 → "Servicios Profesionales"
+   - 56 → "Servicios Apoyo"
+   - 61 → "Educación"
+   - 62 → "Salud"
+   - 71 → "Entretenimiento"
+   - 72 → "Alojamiento/Alimentos"
+   - 81 → "Otros Servicios"
+   - else → "Otros"
+
+f) Map municipio to commercial_zone:
+   - Monterrey → "Centro"
+   - San Pedro Garza García → "Valle Oriente"
+   - San Nicolás de los Garza, General Escobedo, Salinas Victoria → "Norte"
+   - Guadalupe → "Oriente"
+   - Apodaca, Pesquería → "Noreste"
+   - Santa Catarina, García → "Poniente"
+   - Juárez, Cadereyta Jiménez → "Sureste"
+   - Santiago, El Carmen, Ciénega de Flores → "Sur"
+
+g) Compute estimated_contribution_monthly = employee_midpoint × 10 × 113.14 × 0.08
+   Recommend plan:
+   - employee_midpoint <= 30 → "Impulsa" (6 UMAs/col)
+   - employee_midpoint <= 100 → "Transforma" (10 UMAs/col)
+   - else → "Lidera" (20 UMAs/col)
+
+h) Map applicable NOMs by sector (store as JSON array):
+   - Construcción: ["NOM-031-STPS","NOM-009-STPS","NOM-006-STPS"]
+   - Manufactura: ["NOM-004-STPS","NOM-010-STPS","NOM-011-STPS"]
+   - Salud: ["NOM-087-ECOL","NOM-005-STPS"]
+   - Transporte: ["NOM-087-SCT","NOM-012-SCT"]
+   - All: ["NOM-035-STPS","NOM-030-STPS","NOM-026-STPS","NOM-019-STPS"]
+
+i) Build full_address by concatenating: tipo_vial + nom_vial + numero_ext + 
+   (numero_int if present) + nomb_asent + municipio + cod_postal + entidad
+
+j) Insert all records in batches of 500 using Drizzle ORM.
+   Log progress: "Inserted batch X of Y (Z total records)"
+
+STEP 3 — Create API endpoint POST /api/admin/denue/import that:
+- Triggers the same import logic
+- Returns { total_processed, total_imported, total_skipped, score_distribution }
+- Requires admin auth
+
+STEP 4 — Create API endpoint GET /api/admin/denue/stats that returns:
+- total_prospects
+- avg_score
+- count_by_priority (Alta, Media, Baja)
+- count_by_zone
+- count_by_sector (top 10)
+- count_by_pipeline_stage
+- count_in_negotiation (pipeline_stage in ['Demo','Propuesta','Negociación'])
+- count_clients (pipeline_stage = 'Cliente')
+
+Run the import script after creating it. Target: ~21,000 records.
+```
+
+---
+
+## PHASE 2: API ENDPOINTS FOR PROSPECTS + FILTERS
+**Paste after Phase 1 data import completes.**
+
+```
+CONTEXT: Ceduverse CRM. The denue_prospects table is now populated with ~21K scored records.
+Stack: React 19 + Express + Drizzle ORM + PostgreSQL.
+
+TASK: Build comprehensive API endpoints for the Prospectos DENUE section.
+
+1. GET /api/admin/denue/prospects — Main listing with filters
+   Query params (all optional, combine with AND):
+   - page (default 1), limit (default 50, max 200)
+   - search (searches nom_estab, raz_social, nomb_asent, nom_vial)
+   - zone (comma-separated: "Centro,Norte")
+   - sector (comma-separated: "Manufactura,Construcción")
+   - size (comma-separated ranges: "11-30,51-100,251+")
+   - risk (comma-separated: "Alto,Medio")
+   - score_min, score_max (0-100)
+   - has_phone (boolean)
+   - has_email (boolean)
+   - has_web (boolean)
+   - pipeline_stage (comma-separated or "null" for unassigned prospects)
+   - assigned_socio_id
+   - contact_group_id
+   - sort_by (lead_score, nom_estab, employee_midpoint, municipio, estimated_contribution_monthly)
+   - sort_dir (asc, desc — default desc for score)
+   
+   Response: { 
+     data: [...prospects], 
+     pagination: { page, limit, total, total_pages },
+     aggregations: { total_filtered, avg_score, sum_estimated_contribution }
+   }
+
+2. GET /api/admin/denue/prospects/:id — Single prospect detail
+   Returns full prospect record + interactions history + assigned socio info
+
+3. PATCH /api/admin/denue/prospects/:id — Update prospect
+   Updatable: pipeline_stage, assigned_socio_id, contact_group_id, notes
+
+4. POST /api/admin/denue/prospects/bulk-update — Bulk operations
+   Body: { prospect_ids: number[], action: string, value: any }
+   Actions: 
+   - "set_stage" → value = stage name
+   - "assign_socio" → value = socio user id
+   - "add_to_group" → value = group id
+   - "remove_from_group" → removes group assignment
+
+5. POST /api/admin/denue/prospects/:id/interactions — Add interaction
+   Body: { interaction_type, description }
+
+6. GET /api/admin/denue/prospects/:id/interactions — List interactions
+
+7. CRUD for contact_groups:
+   - GET /api/admin/denue/groups — List all groups with prospect counts
+   - POST /api/admin/denue/groups — Create group
+   - GET /api/admin/denue/groups/:id — Group detail + its prospects
+   - PATCH /api/admin/denue/groups/:id — Update group
+   - DELETE /api/admin/denue/groups/:id — Delete group (unassigns prospects)
+   - POST /api/admin/denue/groups/:id/assign-socio — Assign socio to group
+
+8. CRUD for saved_filters:
+   - GET /api/admin/denue/filters — List saved filters
+   - POST /api/admin/denue/filters — Save filter { name, filter_config }
+   - DELETE /api/admin/denue/filters/:id — Delete saved filter
+
+9. GET /api/admin/denue/export — Export filtered prospects as CSV
+   Accepts same filter params as the main listing
+   Returns CSV file download
+
+All endpoints require admin authentication (check existing auth middleware pattern).
+Use the existing Drizzle query patterns in the codebase.
+```
+
+---
+
+## PHASE 3: FRONTEND — TABLE + FILTERS + BULK ACTIONS
+**Paste after Phase 2 API is ready.**
+
+```
+CONTEXT: Ceduverse CRM. The Prospectos DENUE section already exists in the admin dashboard 
+with a basic table, stats, and filter UI. APIs are now ready at /api/admin/denue/*.
+Stack: React 19 + Tailwind + existing admin layout.
+
+TASK: Upgrade the existing Prospectos DENUE section with real data and full functionality.
+
+IMPORTANT: Keep the existing admin dashboard layout, navigation, and styling. 
+Only modify the Prospectos DENUE section content.
+
+1. STATS BAR (top of section) — Wire to GET /api/admin/denue/stats
+   Show 6 cards:
+   - Total Prospectos (with icon)
+   - Score Promedio (with color indicator)
+   - Prioridad Alta (count + % of total)
+   - En Pipeline (non-null stage count)
+   - Clientes (stage=Cliente)
+   - Valor Potencial (sum of estimated_contribution_monthly, formatted as "$X.XM MXN")
+
+2. FILTER BAR — Horizontal collapsible filter panel
+   Row 1: Search input (debounced 300ms) + Quick filters (buttons: "Alta prioridad", 
+   "Con teléfono", "Sin asignar")
+   Row 2 (expandable "Filtros avanzados"):
+   - Zona comercial: multi-select dropdown (Centro, Valle Oriente, Norte, etc.)
+   - Sector: multi-select dropdown (Manufactura, Construcción, etc.)
+   - Tamaño: multi-select (11-30, 31-50, 51-100, 101-250, 251+)
+   - Riesgo STPS: multi-select (Alto, Medio, Bajo)
+   - Score: range slider (0-100) showing min-max values
+   - Etapa pipeline: multi-select (Prospecto, Nuevo, Contactado, Demo, etc.)
+   - Contacto: checkboxes (Tiene teléfono, Tiene email, Tiene web)
+   - Buttons: "Aplicar filtros", "Limpiar", "Guardar filtro"
+   
+   "Guardar filtro" opens a modal to name and save the current filter combination.
+   Show saved filters as chips/tags above the filter bar for quick recall.
+
+3. TABLE VIEW — Data table with real data from GET /api/admin/denue/prospects
+   Columns:
+   - Checkbox (for bulk selection)
+   - Empresa (nom_estab, with raz_social as subtitle)
+   - Sector (sector_group, color-coded badge)
+   - Zona (commercial_zone)
+   - Empleados (employee range, e.g. "31-50")
+   - Score (circular progress indicator colored by priority)
+   - Etapa (pipeline_stage dropdown — editable inline, or "Prospecto" if null)
+   - Contacto (icons: phone/email/web, each clickable)
+   - Aportación Est. (formatted currency)
+   - Actions: "Ver ficha" button
+   
+   Features:
+   - Click column header to sort
+   - Pagination (50 per page, show "Mostrando 1-50 de 21,341")
+   - Row click → open prospect detail panel
+   - Bulk action bar appears when checkboxes selected:
+     "X seleccionados" + buttons: "Agregar a leads", "Asignar a grupo", 
+     "Asignar a socio", "Exportar seleccionados"
+
+4. GRID VIEW — Card layout (already exists, wire to real data)
+   Each card shows: name, sector badge, score circle, employee count, zone, 
+   contact icons, estimated contribution. Click → detail panel.
+
+5. VIEW TOGGLE — Tab bar: Tabla | Grid | Mapa
+   Keep the existing toggle UI, ensure all three views share the same filter state.
+
+6. BULK ACTIONS:
+   - "Agregar a leads": Sets pipeline_stage to "Nuevo" via POST /bulk-update
+   - "Asignar a grupo": Opens modal to select/create group
+   - "Asignar a socio": Opens modal to select from socios list
+   - "Exportar seleccionados": Downloads CSV of selected prospects
+
+Use React Query (or the existing data fetching pattern in the codebase) for API calls.
+All filter state should be in URL params for shareability/back-button support.
+```
+
+---
+
+## PHASE 4: GOOGLE MAPS INTEGRATION
+**Paste after Phase 3 frontend is working.**
+
+```
+CONTEXT: Ceduverse CRM. The Prospectos DENUE section now has a working table and grid 
+with ~21K real prospects. The "Mapa" tab exists but needs Google Maps.
+Stack: React 19 + Tailwind.
+
+TASK: Implement Google Maps in the Mapa tab with clustering, colored pins, and popups.
+
+IMPORTANT: Use @react-google-maps/api (or @vis.gl/react-google-maps) library.
+You'll need a Google Maps API key — add it to .env as GOOGLE_MAPS_API_KEY and 
+expose it to the client via Vite's import.meta.env.VITE_GOOGLE_MAPS_API_KEY.
+For now, use a placeholder key that I'll replace: "YOUR_GOOGLE_MAPS_API_KEY_HERE"
+
+1. INSTALL: @react-google-maps/api @googlemaps/markerclusterer
+
+2. MAP COMPONENT:
+   - Center on Monterrey: lat 25.6866, lng -100.3161, zoom 11
+   - Full height of the content area (calc(100vh - header - filters))
+   - Use the same filter state as table/grid — when filters change, map updates
+   - Load max 2000 markers at a time (paginate or use viewport bounds)
+
+3. MARKERS:
+   - Color by priority: Alta=#EF4444 (red), Media=#F97316 (orange), Baja=#22C55E (green)
+   - Use AdvancedMarkerElement or colored SVG markers
+   - Cluster when zoomed out (show cluster count + color = majority priority)
+
+4. POPUP ON CLICK — InfoWindow with:
+   - Business name (bold) + sector badge
+   - Address (full)
+   - Employee range + Score (with priority color)
+   - Contact row: phone (tel: link), email (mailto: link), web (link)
+   - "Aportación estimada: $X,XXX MXN/mes"
+   - "Plan recomendado: Transforma"
+   - Checkbox "Seleccionar" (syncs with table selection)
+   - Button "Ver ficha completa" → opens detail panel
+   - Button "Ver en Google Maps" → window.open(https://maps.google.com/?q=lat,lng)
+
+5. MAP CONTROLS:
+   - Zone overlay toggle: show commercial zone boundaries as colored polygons
+   - Heatmap toggle: density heatmap of prospects
+   - "Solo grupo" toggle: when viewing a contact group, show only its markers
+   - Legend: color key for Alta/Media/Baja
+
+6. VIEWPORT LOADING:
+   - Only load prospects within the current map bounds
+   - Add API param: bounds (ne_lat, ne_lng, sw_lat, sw_lng) to the prospects endpoint
+   - As user pans/zooms, debounce and reload markers (300ms)
+   
+7. MAP SELECTION MODE:
+   - Button "Selección por área" → user draws rectangle on map
+   - All prospects within rectangle get selected
+   - Show "X empresas en área" count
+   - Can then bulk-add to leads, group, or socio
+
+Make sure the map shares selection state with the table — selecting on map 
+shows as checked in table and vice versa.
+```
+
+---
+
+## PHASE 5: PROSPECT DETAIL PANEL (FICHA DE EMPRESA)
+**Paste after Phase 4 map is working.**
+
+```
+CONTEXT: Ceduverse CRM. Table, grid, and map views are working with real DENUE data.
+Need the prospect detail view when clicking on any prospect.
+
+TASK: Build a slide-out detail panel (right side drawer) for prospect details.
+
+1. TRIGGER: Click "Ver ficha" or click a row in table → opens panel sliding from right
+   Panel width: 480px on desktop, full screen on mobile
+   Close: X button, Escape key, or click outside
+
+2. HEADER:
+   - Business name (large)
+   - Legal name (raz_social) subtitle
+   - Priority badge (Alta/Media/Baja with color)
+   - Score circle (large, animated fill)
+   - Pipeline stage selector (dropdown, editable)
+
+3. SECTIONS (use accordion/tabs):
+
+   a) DATOS GENERALES:
+   - CLEE ID
+   - Dirección completa (full_address)
+   - Colonia (nomb_asent)
+   - Código postal
+   - Municipio → Zona comercial
+   - Fecha de alta en DENUE
+
+   b) UBICACIÓN — Embedded Google Map (small, 300px height)
+   - Single pin on exact location
+   - Button "Abrir en Google Maps" → external link
+   - Button "Cómo llegar" → Google Maps directions
+
+   c) CONTACTO:
+   - Teléfono (clickable tel: link, with copy button)
+   - Email (clickable mailto: link, with copy button)
+   - Sitio web (clickable link, opens in new tab)
+   - If no contact info: show "Sin datos de contacto" warning
+
+   d) CLASIFICACIÓN:
+   - Sector SCIAN (codigo_act + nombre_act)
+   - Sector grupo (sector_group)
+   - Riesgo STPS (with color badge)
+   - Score breakdown: 
+     Show 4 horizontal bars: Tamaño (X/25), Riesgo (X/25), Digital (X/15), Económico (X/15)
+   - Priority with explanation
+
+   e) POTENCIAL COMERCIAL:
+   - Rango de empleados
+   - Aportación estimada mensual: "$XX,XXX MXN/mes"
+   - Aportación estimada anual: "$XXX,XXX MXN/año"
+   - Plan recomendado: Impulsa/Transforma/Lidera (with UMA detail)
+   - Projected fee for assigned socio (if any)
+
+   f) NOMS APLICABLES:
+   - List of applicable NOMs with names
+   - Each NOM as a chip/tag
+   - Explain: "Basado en sector: [sector_group]"
+
+   g) HISTORIAL DE INTERACCIONES:
+   - Timeline of interactions (from prospect_interactions table)
+   - Each entry: date, type icon, description, performed by
+   - "Agregar nota" button → opens inline form
+   - Form: type selector (Llamada/Email/Visita/Demo/Nota) + text area + submit
+
+   h) ASIGNACIÓN:
+   - Current socio (if assigned): name, type, zone
+   - "Asignar a socio" button → dropdown of socios
+   - Current group (if assigned): name, prospect count
+   - "Agregar a grupo" button → dropdown of groups
+   - "Agregar a leads" button (if pipeline_stage is null)
+
+4. FOOTER (sticky):
+   - "Agregar a leads" (if not in pipeline)
+   - "Asignar a socio"
+   - "Exportar ficha" (PDF/print of this prospect's info)
+   - Navigation: ← Previous | Next → (within current filtered list)
+```
+
+---
+
+## PHASE 6: CONTACT GROUPS + CAMPAIGN MANAGEMENT
+**Paste after Phase 5 detail panel is working.**
+
+```
+CONTEXT: Ceduverse CRM. All views (table, grid, map, detail panel) are working.
+Need the contact groups system for organizing prospects into campaign lists.
+
+TASK: Build the contact groups management interface.
+
+1. NEW SECTION: Add "Grupos de Contacto" as a sub-tab within Prospectos DENUE
+   (Tabs: Todos | Grupos | Pipeline)
+
+2. GROUPS LIST VIEW:
+   - Card grid showing all contact groups
+   - Each card: name, description, prospect count, assigned socio (if any),
+     creation date, filter criteria summary
+   - Actions per card: "Ver grupo", "Editar", "Exportar Excel", "Ver en mapa", "Eliminar"
+
+3. CREATE GROUP — Two methods:
+   
+   a) From current filter:
+   - User applies filters in the main prospect view
+   - Clicks "Guardar como grupo" 
+   - Modal: enter name + description
+   - Saves filter_criteria AND assigns all currently-matching prospects
+   
+   b) From selection:
+   - User selects prospects via checkboxes (table or map)
+   - Clicks "Crear grupo con selección"
+   - Modal: enter name + description
+   - Only selected prospects join the group
+
+4. GROUP DETAIL VIEW:
+   - Header: group name, prospect count, assigned socio, export button
+   - Same table/grid/map views but filtered to only group members
+   - Can remove individual prospects from group
+   - Can add more prospects (via filters or manual search)
+   - "Asignar socio al grupo" → assigns all prospects + the group itself
+
+5. EXPORT GROUP AS EXCEL:
+   - Downloads .xlsx file via GET /api/admin/denue/export?contact_group_id=X
+   - Columns: Empresa, Razón Social, Sector, Empleados, Score, Prioridad,
+     Dirección, Teléfono, Email, Web, Aportación Estimada, Plan Recomendado
+   - Filename: "[GroupName]_[date].xlsx"
+
+6. PIPELINE VIEW (sub-tab):
+   - Kanban board with columns: Nuevo → Contactado → Demo → Propuesta → Negociación → Cliente
+   - Plus a "Perdido" column (collapsed by default)
+   - Each card: business name, sector, score, assigned socio
+   - Drag-and-drop between columns to change stage
+   - Click card → opens detail panel
+   - Filter by assigned socio, zone, sector
+   - Stats at top: count per stage, total pipeline value (sum of estimated contributions)
+
+Maintain consistency with the existing admin dashboard design language.
+All group operations should use the API endpoints from Phase 2.
+```
+
+---
+
+## NOTES FOR PAPICHULO
+
+### Google Maps API Key
+You'll need to:
+1. Go to https://console.cloud.google.com
+2. Create or select a project
+3. Enable: Maps JavaScript API, Places API, Geocoding API
+4. Create an API key with HTTP referrer restrictions for your Replit domain
+5. Replace `YOUR_GOOGLE_MAPS_API_KEY_HERE` in .env
+
+### Execution Order
+Paste each phase **one at a time** and wait for it to complete before pasting the next. Each phase builds on the previous. If the Agent asks questions, answer them — it may need clarification on existing file locations or patterns.
+
+### Estimated Scope
+- Phase 0: ~15 min (schema only)
+- Phase 1: ~30 min (CSV processing + 21K inserts)
+- Phase 2: ~30 min (9 API endpoint groups)
+- Phase 3: ~45 min (full frontend rebuild)
+- Phase 4: ~30 min (Google Maps integration)
+- Phase 5: ~30 min (detail panel)
+- Phase 6: ~30 min (groups + kanban)
+
+### If Something Breaks
+If a phase fails, paste this diagnostic prompt:
+```
+Check the current state of the Prospectos DENUE system:
+1. Run: SELECT COUNT(*) FROM denue_prospects;
+2. List all API routes that start with /api/admin/denue
+3. Show me the current Prospectos DENUE React component tree
+4. Check for any TypeScript errors in the denue-related files
+Report what's working and what's not.
+```
+
+### After All Phases Complete
+Test with the demo admin account: demoadmin@ceduverse.org / Demo1234!
+Navigate to the Prospectos DENUE section and verify:
+- Stats show real numbers
+- Table loads with 50 prospects per page
+- Filters narrow results
+- Map shows colored pins
+- Click prospect → detail panel opens
+- Can select + bulk add to leads
+- Can create contact group
+- Pipeline kanban works

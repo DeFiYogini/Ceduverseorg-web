@@ -1,0 +1,46 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+server/public/
+
+# Environment variables
+.env
+.env.local
+.env.production
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Large binary assets (use cloud storage / CDN in production)
+audio-cache/
+attached_assets/*.zip
+server/data/*.csv.gz
+server/data/*.csv
+uploads/
+
+# Replit / platform-specific
+.config/
+.local/
+.replit
+replit.nix
+vite.config.ts.*
+
+# Temp files
+*.tar.gz
+/tmp/
+PROMPT-*.html
+attached_assets/Pasted--*PROMPT*
+attached_assets/Pasted--*MEGA-PROMPT*
+
+# Logs
+*.log
+npm-debug.log*

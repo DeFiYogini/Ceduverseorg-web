@@ -1,0 +1,628 @@
+import OpenAI from "openai";
+import sanitizeHtml from "sanitize-html";
+
+export interface StudentProfileContext {
+  jobTitle?: string;
+  industry?: string;
+  companySize?: string;
+  experienceLevel?: string;
+  learningGoals?: string[];
+  preferredStyle?: string;
+}
+
+export interface GeneratedModuleContent {
+  lectureHtml: string;
+  mindMap: {
+    central: string;
+    branches: { label: string; color?: string; children: { label: string; detail?: string }[] }[];
+  };
+  reflections: string[];
+  adaptiveQuiz: {
+    question: string;
+    options: string[];
+    correctIndex: number;
+    explanation: string;
+  }[];
+  suggestedSources: {
+    title: string;
+    url: string;
+    type: string;
+  }[];
+  classScript?: string;
+  isStub?: boolean;
+}
+
+export interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
+  timestamp: string;
+}
+
+export interface ChatResponse {
+  message: string;
+  suggestedQuestions: string[];
+}
+
+function buildCall1SystemPrompt(
+  courseTitle: string,
+  moduleTitle: string,
+  moduleDescription: string,
+  moduleContentHtml: string,
+  moduleReferences: string,
+  profile: StudentProfileContext | null,
+): string {
+  const jobTitle = profile?.jobTitle || "profesionista";
+  const industry = profile?.industry || "general";
+  const companySize = profile?.companySize || "mediana";
+  const experienceLevel = profile?.experienceLevel || "intermedio";
+  const learningGoal = profile?.learningGoals?.join(", ") || "desarrollo profesional";
+
+  return `Eres el Tutor IA de Ceduverse. Generas CONTENIDO EDUCATIVO EXTENSO y PERSONALIZADO para trabajadores mexicanos.
+
+DATOS DEL MÓDULO:
+Curso: ${courseTitle}
+Módulo: ${moduleTitle}
+Descripción: ${moduleDescription}
+Contenido base para EXPANDIR (no copiar, sino usar como esqueleto):
+${moduleContentHtml}
+Referencias base: ${moduleReferences}
+
+PERFIL DEL ESTUDIANTE — PERSONALIZA TODO A ESTE CONTEXTO:
+Puesto: ${jobTitle}
+Industria: ${industry}
+Empresa de: ${companySize} personas
+Experiencia: ${experienceLevel}
+Objetivo: ${learningGoal}
+
+INSTRUCCIONES PARA lectureHtml (3,000-5,000 palabras en HTML):
+
+ESTRUCTURA OBLIGATORIA:
+1. <h2>Introducción personalizada</h2> — Conecta el tema con el puesto e industria del estudiante. "Como ${jobTitle} en ${industry}, esto te afecta directamente porque..."
+
+2. <h2>Desarrollo del Tema 1</h2> — Explicación profunda con teoría fundamentada. Incluir una <h3>En tu contexto</h3> con ejemplo específico para su puesto.
+
+3. <h2>Desarrollo del Tema 2</h2> — Incluir tabla comparativa o framework práctico cuando aplique.
+
+4. <h2>Desarrollo del Tema 3</h2> — Caso de estudio o escenario relevante a su industria.
+
+5. <h2>Marco Legal y Normativo</h2> — NOMs con número específico, artículos de la LFT, reglamentos. NO inventar normatividad.
+
+6. <h2>Aplicación Inmediata</h2> — "Mañana en tu trabajo puedes..." con 3-5 acciones concretas para su puesto.
+
+REGLAS DE CALIDAD:
+- MÍNIMO 3,000 palabras. Si escribes menos, NO cumples.
+- Usa <h2>, <h3>, <p>, <ul>, <ol>, <li>, <strong>, <em>, <table>, <blockquote>, <hr>
+- Incluir al menos 1 tabla comparativa o de datos
+- Incluir al menos 2 ejemplos específicos al puesto del estudiante
+- Cada sección con mínimo 3 párrafos sustanciales
+- NO uses jerga innecesaria pero SÍ usa terminología técnica correcta
+- Citar artículos específicos de leyes (ej: "LFT Art. 153-A", "NOM-035 numeral 5.1")
+- Tono: mentor experto que tutea, profesional pero accesible
+
+INSTRUCCIONES PARA mindMap:
+- JSON con central (tema) y 4-6 branches
+- Cada branch con 2-4 children
+- Cada child con label y detail (1-2 líneas)
+- Colores: usa #1b5adf, #f28023, #7c3aed, #00b87a
+
+INSTRUCCIONES PARA reflections:
+- 3 preguntas PERSONALIZADAS al puesto
+- NO genéricas: "¿Qué opinas de la comunicación?" ❌
+- SÍ específicas: "Como ${jobTitle} en ${industry}, ¿cómo manejas..." ✅
+
+INSTRUCCIONES PARA suggestedSources:
+- 5-8 fuentes REALES (NOMs del DOF, artículos LFT, guías STPS)
+- Formato: {title, url, type: "NOM"|"LFT"|"guia"|"articulo"}
+- URLs reales cuando sea posible, si no estás seguro de la URL usa "Consultar en dof.gob.mx" o "Disponible en stps.gob.mx"
+
+RESPONDE SOLO JSON VÁLIDO (sin markdown, sin backticks):
+{
+  "lectureHtml": "<h2>...</h2>...",
+  "mindMap": {"central":"...","branches":[...]},
+  "reflections": ["...","...","..."],
+  "suggestedSources": [{"title":"...","url":"...","type":"..."}]
+}`;
+}
+
+function buildCall2SystemPrompt(
+  lectureHtml: string,
+  profile: StudentProfileContext | null,
+  courseTitle: string,
+  moduleTitle: string,
+): string {
+  const jobTitle = profile?.jobTitle || "profesionista";
+  const industry = profile?.industry || "general";
+  const experienceLevel = profile?.experienceLevel || "intermedio";
+
+  const lecturePlain = lectureHtml.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().slice(0, 4000);
+
+  return `Eres el Tutor IA de Ceduverse. Basándote en el contenido de lectura proporcionado, crea un quiz y un guion de clase.
+
+CURSO: ${courseTitle}
+MÓDULO: ${moduleTitle}
+
+RESUMEN DEL CONTENIDO DE LECTURA (usa como base):
+${lecturePlain}
+
+PERFIL DEL ESTUDIANTE:
+Puesto: ${jobTitle} | Industria: ${industry} | Experiencia: ${experienceLevel}
+
+=== INSTRUCCIONES PARA adaptiveQuiz ===
+
+7 preguntas de opción múltiple:
+- Basadas en el CONTENIDO ESPECÍFICO de la lectura (no genéricas)
+- Incluir al menos 2 preguntas situacionales del puesto del estudiante
+- 4 opciones por pregunta
+- Explicación detallada de la respuesta correcta
+- Progresión: 2 fáciles → 3 medias → 2 difíciles
+
+=== INSTRUCCIONES PARA classScript ===
+
+Guion narrativo conversacional de 2,000-3,000 palabras.
+Esto NO es el mismo texto de la lectura reescrito — es un guion de CLASE ORAL como si un instructor mexicano profesional de la Ciudad de México estuviera dando la clase presencial.
+
+ESTILO OBLIGATORIO:
+- Habla como un instructor mexicano profesional de la Ciudad de México. Usa español mexicano natural, no español de España ni acento americano.
+- Inicia con: "¡Qué tal! Vamos a hablar hoy de [tema]. Y esto te importa especialmente a ti como ${jobTitle} en ${industry} porque..."
+- Usa lenguaje oral natural mexicano (no formal, no slang excesivo). Usa expresiones mexicanas naturales como "órale", "fíjense", "a ver", "¿verdad?", "la neta".
+- Incluye preguntas retóricas: "¿Y saben qué? Resulta que..."
+- Incluye simulación de interacción con aula:
+  "A ver, imagínense que son ${jobTitle} y les cae una inspección..."
+- Incluye anécdotas o casos ilustrativos
+- Marca conceptos clave con énfasis
+- Incluye transiciones naturales entre temas
+- Cierra con motivación
+
+MARCADORES DE SECCIÓN (incluir en el texto):
+[INTRO] — al inicio
+[CONCEPTO:nombre] — al iniciar cada concepto principal
+[EJEMPLO] — antes de cada ejemplo o caso
+[CLAVE] — antes de puntos importantes
+[INTERACCION] — simulación de pregunta al aula
+[CIERRE] — al final
+
+ESTRUCTURA OBLIGATORIA DEL CIERRE [CIERRE]:
+El cierre debe incluir EXACTAMENTE estos 4 elementos en este orden:
+1. RESUMEN DE 3 PUNTOS: "Bueno, para cerrar, quiero que se lleven estas tres ideas clave: Primero... Segundo... Y tercero..."
+2. AGRADECIMIENTO: "Les agradezco mucho su atención y su tiempo. Ha sido un gusto compartir este tema con ustedes."
+3. INVITACIÓN DC-3 / TUTOR IA: "Recuerden que pueden obtener su constancia DC-3 con validez oficial ante la STPS, y si quieren profundizar más en este tema, los invito a tomar el curso completo con el Tutor IA de Ceduverse, donde van a tener una experiencia personalizada con contenido adaptado a su perfil profesional."
+4. DESPEDIDA DEL INSTRUCTOR: "¡Mucho éxito en todo lo que emprendan! Nos vemos en la siguiente sesión. ¡Órale, a darle!"
+
+LONGITUD: 2,000-3,000 palabras (equivale a 8-15 minutos de audio)
+NO incluir instrucciones de audio como "(pausa)" o "(tono serio)" — usa puntuación natural: puntos suspensivos para pausas... signos de exclamación para énfasis! y preguntas retóricas para cambio de tono.
+
+RESPONDE SOLO JSON VÁLIDO (sin markdown, sin backticks):
+{
+  "adaptiveQuiz": [
+    {"question":"...","options":["A","B","C","D"],"correctIndex":0,"explanation":"..."}
+  ],
+  "classScript": "El texto completo del guion de clase..."
+}`;
+}
+
+function buildChatSystemPrompt(
+  courseTitle: string,
+  moduleTitle: string,
+  lectureContent: string,
+  profile: StudentProfileContext | null,
+): string {
+  const jobTitle = profile?.jobTitle || "profesionista";
+  const industry = profile?.industry || "general";
+  const companySize = profile?.companySize || "mediana";
+  const experienceLevel = profile?.experienceLevel || "intermedio";
+
+  const contentPreview = lectureContent.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().slice(0, 2000);
+
+  return `Eres el Tutor IA de Ceduverse. El estudiante está en el curso "${courseTitle}", módulo "${moduleTitle}".
+
+Perfil del estudiante:
+- Puesto: ${jobTitle}
+- Industria: ${industry}
+- Empresa: ${companySize} personas
+- Nivel: ${experienceLevel}
+
+Contenido que acaba de estudiar:
+${contentPreview}
+
+REGLAS:
+- Español de México, tutea
+- Respuestas de 200-500 palabras (conciso pero completo)
+- SIEMPRE personaliza al puesto e industria
+- Si pregunta sobre el tema → responde con profundidad
+- Si pregunta algo relacionado al curso → responde
+- Si pregunta algo fuera de tema → redirige amablemente: "Eso está fuera del tema de este módulo, pero te sugiero..."
+- Usa ejemplos de SU contexto laboral
+- Referencia normas mexicanas cuando aplique
+- Puedes usar listas, negritas y estructura
+- Si no sabes algo, dilo honestamente
+
+Debes devolver un JSON válido (sin markdown, sin backticks) con esta estructura:
+{
+  "message": "Tu respuesta aquí en texto plano o con HTML ligero (<strong>, <em>, <ul>, <li>)",
+  "suggestedQuestions": [
+    "Pregunta sugerida 1 personalizada a ${jobTitle}",
+    "Pregunta sugerida 2",
+    "Pregunta sugerida 3"
+  ]
+}`;
+}
+
+function getOpenAIClient(): OpenAI | null {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) return null;
+  return new OpenAI({ apiKey });
+}
+
+function parseClaudeJSON(rawText: string): any {
+  let cleaned = rawText
+    .replace(/^```json\s*/i, '')
+    .replace(/^```\s*/i, '')
+    .replace(/\s*```$/i, '')
+    .trim();
+
+  const jsonStart = cleaned.indexOf("{");
+  const jsonEnd = cleaned.lastIndexOf("}");
+  if (jsonStart !== -1 && jsonEnd !== -1 && jsonStart < jsonEnd) {
+    cleaned = cleaned.slice(jsonStart, jsonEnd + 1);
+  }
+
+  try {
+    return JSON.parse(cleaned);
+  } catch (e1) {
+    console.log('[ai-engine] Direct parse failed, attempting repair...');
+
+    try {
+      let repaired = cleaned;
+      const openQuotes = (repaired.match(/(?<!\\)"/g) || []).length;
+      if (openQuotes % 2 !== 0) {
+        repaired += '"';
+      }
+
+      const opens: Record<string, number> = { '{': 0, '[': 0 };
+      const closes: Record<string, string> = { '}': '{', ']': '[' };
+      let inString = false;
+      let prevChar = '';
+
+      for (const char of repaired) {
+        if (char === '"' && prevChar !== '\\') {
+          inString = !inString;
+        }
+        if (!inString) {
+          if (char in opens) opens[char]++;
+          if (char in closes) opens[closes[char]]--;
+        }
+        prevChar = char;
+      }
+
+      for (let i = 0; i < opens['[']; i++) repaired += ']';
+      for (let i = 0; i < opens['{']; i++) repaired += '}';
+
+      return JSON.parse(repaired);
+    } catch (e2) {
+      console.log('[ai-engine] Repair parse failed, attempting partial extraction...');
+
+      try {
+        const lectureMatch = cleaned.match(/"lectureHtml"\s*:\s*"([\s\S]*?)(?:"\s*,\s*"mindMap|"\s*,\s*"reflections|"\s*})/);
+        const mindMapMatch = cleaned.match(/"mindMap"\s*:\s*(\{[\s\S]*?\})\s*,/);
+
+        if (lectureMatch) {
+          return {
+            lectureHtml: lectureMatch[1].replace(/\\"/g, '"').replace(/\\n/g, '\n'),
+            mindMap: mindMapMatch ? JSON.parse(mindMapMatch[1]) : null,
+            reflections: [],
+            adaptiveQuiz: [],
+            suggestedSources: [],
+            _partial: true,
+          };
+        }
+      } catch (e3) {
+        // fall through
+      }
+
+      console.error('[ai-engine] All parse attempts failed');
+      return null;
+    }
+  }
+}
+
+const ALLOWED_HTML_OPTIONS: sanitizeHtml.IOptions = {
+  allowedTags: [
+    "h1", "h2", "h3", "h4", "h5", "h6",
+    "p", "br", "hr",
+    "ul", "ol", "li",
+    "strong", "em", "b", "i", "u", "s",
+    "blockquote", "pre", "code",
+    "table", "thead", "tbody", "tr", "th", "td",
+    "div", "span", "section", "article",
+    "a", "img",
+    "sup", "sub", "mark",
+  ],
+  allowedAttributes: {
+    a: ["href", "title", "target", "rel"],
+    img: ["src", "alt", "title", "width", "height"],
+    td: ["colspan", "rowspan"],
+    th: ["colspan", "rowspan"],
+  },
+  allowedSchemes: ["http", "https"],
+  transformTags: {
+    a: (tagName: string, attribs: sanitizeHtml.Attributes) => ({
+      tagName,
+      attribs: { ...attribs, rel: "noopener noreferrer", target: "_blank" },
+    }),
+  },
+};
+
+function sanitizeLectureHtml(html: string): string {
+  return sanitizeHtml(html, ALLOWED_HTML_OPTIONS);
+}
+
+function stubGenerateContent(
+  moduleTitle: string,
+  moduleContentHtml: string,
+): GeneratedModuleContent {
+  return {
+    lectureHtml: moduleContentHtml,
+    mindMap: {
+      central: moduleTitle,
+      branches: [
+        { label: "Conceptos Clave", color: "#1b5adf", children: [{ label: "Definición", detail: "Base teórica del tema" }, { label: "Principios", detail: "Fundamentos aplicables" }, { label: "Marco teórico", detail: "Contexto académico" }] },
+        { label: "Aplicación Práctica", color: "#f28023", children: [{ label: "En tu puesto", detail: "Cómo aplica directamente" }, { label: "En tu equipo", detail: "Impacto grupal" }, { label: "En tu organización", detail: "Beneficios institucionales" }] },
+        { label: "Normatividad", color: "#34d399", children: [{ label: "Leyes aplicables", detail: "Marco legal vigente" }, { label: "NOMs relevantes", detail: "Normas oficiales" }, { label: "Obligaciones", detail: "Responsabilidades legales" }] },
+        { label: "Herramientas", color: "#7c3aed", children: [{ label: "Técnicas", detail: "Métodos de implementación" }, { label: "Formatos", detail: "Documentos útiles" }, { label: "Recursos", detail: "Material de apoyo" }] },
+      ],
+    },
+    reflections: [
+      "¿Cómo se aplica este tema en tu contexto laboral actual?",
+      "¿Qué cambiarías en tu organización con base en lo aprendido?",
+      "¿Qué obstáculos podrías encontrar al implementar estos conceptos?",
+    ],
+    adaptiveQuiz: [],
+    suggestedSources: [
+      { title: "STPS — Normatividad vigente", url: "https://www.gob.mx/stps", type: "NOM" },
+      { title: "OIT — Recursos sobre trabajo decente", url: "https://www.ilo.org/es", type: "guia" },
+    ],
+    isStub: true,
+  };
+}
+
+async function callOpenAIWithRetry(
+  client: OpenAI,
+  systemPrompt: string,
+  userPrompt: string,
+  maxTokens: number,
+  label: string,
+  maxRetries: number = 1,
+): Promise<any> {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`[ai-engine] ${label} attempt ${attempt + 1}/${maxRetries + 1}`);
+
+      const response = await client.chat.completions.create({
+        model: "gpt-4o",
+        max_tokens: maxTokens,
+        temperature: 0.7,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+      });
+
+      const text = response.choices[0]?.message?.content || "";
+      const finishReason = response.choices[0]?.finish_reason;
+
+      console.log(`[ai-engine] ${label} response: ${response.usage?.prompt_tokens} in / ${response.usage?.completion_tokens} out`);
+      console.log(`[ai-engine] ${label} finish_reason: ${finishReason}`);
+
+      const parsed = parseClaudeJSON(text);
+
+      if (parsed && !parsed._partial) {
+        console.log(`[ai-engine] ${label} parse: success`);
+        return parsed;
+      }
+
+      if (parsed && parsed._partial && attempt < maxRetries) {
+        console.log(`[ai-engine] ${label} partial result, retrying...`);
+        continue;
+      }
+
+      if (parsed && parsed._partial) {
+        console.log(`[ai-engine] ${label} returning partial result (last attempt)`);
+        return parsed;
+      }
+
+      if (finishReason === 'length' && attempt < maxRetries) {
+        console.log(`[ai-engine] ${label} hit max_tokens, retrying with more tokens...`);
+        maxTokens = Math.min(maxTokens + 4096, 16384);
+        continue;
+      }
+
+      console.error(`[ai-engine] ${label} parse returned null`);
+      return null;
+    } catch (error: any) {
+      console.error(`[ai-engine] ${label} attempt ${attempt + 1} failed:`, error.message);
+      if (attempt === maxRetries) throw error;
+    }
+  }
+  return null;
+}
+
+export async function generateModuleContent(
+  moduleTitle: string,
+  moduleContentHtml: string,
+  profile: StudentProfileContext | null,
+  courseTitle?: string,
+  moduleDescription?: string,
+  moduleReferences?: string,
+): Promise<GeneratedModuleContent> {
+  const client = getOpenAIClient();
+  if (!client) {
+    console.log("[ai-engine] No OPENAI_API_KEY configured, using stub content");
+    return stubGenerateContent(moduleTitle, moduleContentHtml);
+  }
+
+  const contentPreview = moduleContentHtml.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().slice(0, 3000);
+
+  console.log(`[ai-engine] Generating for: ${courseTitle || moduleTitle}`);
+  console.log(`[ai-engine] Profile: ${profile?.jobTitle || 'none'} / ${profile?.industry || 'none'}`);
+
+  try {
+    const call1System = buildCall1SystemPrompt(
+      courseTitle || moduleTitle,
+      moduleTitle,
+      moduleDescription || "",
+      contentPreview,
+      moduleReferences || "",
+      profile,
+    );
+
+    const call1Result = await callOpenAIWithRetry(
+      client,
+      call1System,
+      `Genera el contenido personalizado completo para este módulo. Recuerda: MÍNIMO 3,000 palabras en la lectura, y TODO personalizado para el perfil del estudiante. Devuelve SOLO el JSON válido, sin markdown ni backticks.`,
+      10000,
+      "Call1-Content",
+    );
+
+    if (!call1Result || !call1Result.lectureHtml) {
+      console.error("[ai-engine] Call 1 failed, using stub");
+      return stubGenerateContent(moduleTitle, moduleContentHtml);
+    }
+
+    const sanitizedLecture = sanitizeLectureHtml(call1Result.lectureHtml);
+    console.log(`[ai-engine] Lecture length: ${sanitizedLecture.length} chars`);
+
+    let adaptiveQuiz: any[] = [];
+    let classScript: string | undefined = undefined;
+
+    try {
+      const call2System = buildCall2SystemPrompt(
+        sanitizedLecture,
+        profile,
+        courseTitle || moduleTitle,
+        moduleTitle,
+      );
+
+      const call2Result = await callOpenAIWithRetry(
+        client,
+        call2System,
+        `Genera el quiz adaptativo de 7 preguntas y el guion de clase basándote en el contenido de lectura proporcionado. Devuelve SOLO el JSON válido.`,
+        12000,
+        "Call2-Quiz+Script",
+      );
+
+      if (call2Result) {
+        adaptiveQuiz = call2Result.adaptiveQuiz || [];
+        classScript = call2Result.classScript || undefined;
+        console.log(`[ai-engine] Quiz: ${adaptiveQuiz.length} questions, ClassScript: ${classScript ? classScript.length + ' chars' : 'none'}`);
+      }
+    } catch (err: any) {
+      console.error("[ai-engine] Call 2 failed (quiz+script), continuing without:", err.message);
+    }
+
+    return {
+      lectureHtml: sanitizedLecture,
+      mindMap: call1Result.mindMap || {
+        central: moduleTitle,
+        branches: [],
+      },
+      reflections: call1Result.reflections || [],
+      adaptiveQuiz,
+      suggestedSources: call1Result.suggestedSources || [],
+      classScript,
+      isStub: false,
+    };
+  } catch (err: any) {
+    console.error("[ai-engine] Generation failed:", err.message);
+    return stubGenerateContent(moduleTitle, moduleContentHtml);
+  }
+}
+
+export async function chatWithModule(
+  _courseSlug: string,
+  _moduleIndex: number,
+  moduleTitle: string,
+  moduleContent: string,
+  userMessage: string,
+  history: ChatMessage[],
+  profile: StudentProfileContext | null,
+  courseTitle?: string,
+): Promise<ChatResponse> {
+  const client = getOpenAIClient();
+  if (!client) {
+    return {
+      message: "El chat con IA estará disponible próximamente. Por ahora, revisa el contenido del módulo y las preguntas de reflexión para profundizar en el tema.",
+      suggestedQuestions: [
+        "¿Cómo aplico este tema en mi trabajo diario?",
+        "¿Qué dice la normatividad mexicana al respecto?",
+        "¿Puedes darme un ejemplo práctico?",
+      ],
+    };
+  }
+
+  const systemPrompt = buildChatSystemPrompt(
+    courseTitle || moduleTitle,
+    moduleTitle,
+    moduleContent,
+    profile,
+  );
+
+  const messages: { role: "system" | "user" | "assistant"; content: string }[] = [
+    { role: "system", content: systemPrompt },
+  ];
+  for (const msg of history.slice(-10)) {
+    messages.push({ role: msg.role, content: msg.content });
+  }
+  messages.push({ role: "user", content: userMessage });
+
+  try {
+    const response = await client.chat.completions.create({
+      model: "gpt-4o",
+      max_tokens: 1024,
+      temperature: 0.7,
+      messages,
+    });
+
+    const text = response.choices[0]?.message?.content || "";
+    if (!text) {
+      return {
+        message: "Lo siento, no pude procesar tu pregunta. Intenta de nuevo.",
+        suggestedQuestions: ["¿Puedes explicar el tema principal?"],
+      };
+    }
+
+    try {
+      const parsed = parseClaudeJSON(text);
+      if (parsed) {
+        return {
+          message: sanitizeLectureHtml(parsed.message || text),
+          suggestedQuestions: parsed.suggestedQuestions || [
+            "¿Puedes explicar más sobre este tema?",
+            "¿Cómo aplico esto en la práctica?",
+            "¿Qué normatividad mexicana aplica?",
+          ],
+        };
+      }
+    } catch {
+      // fallthrough
+    }
+
+    return {
+      message: sanitizeLectureHtml(text),
+      suggestedQuestions: [
+        "¿Puedes explicar más sobre este tema?",
+        "¿Cómo aplico esto en la práctica?",
+        "¿Qué normatividad mexicana aplica?",
+      ],
+    };
+  } catch (err: any) {
+    console.error("[ai-engine] OpenAI chat error:", err.message);
+    return {
+      message: "Hubo un error al procesar tu pregunta. Por favor intenta de nuevo en unos momentos.",
+      suggestedQuestions: [
+        "¿Puedes explicar el tema principal del módulo?",
+        "¿Qué ejemplos prácticos hay?",
+        "¿Cuáles son los puntos clave?",
+      ],
+    };
+  }
+}

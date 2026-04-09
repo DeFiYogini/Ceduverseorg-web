@@ -1,0 +1,152 @@
+NECESITO UN DIAGNÓSTICO COMPLETO DEL PROYECTO. No cambies nada, solo 
+reporta TODO lo que encuentres. Sé exhaustivo.
+
+=== 1. BASE DE DATOS ===
+
+a) Ejecuta y muéstrame el resultado de CADA uno de estos queries:
+
+-- Listar TODAS las tablas con conteo de registros
+SELECT schemaname, tablename, n_live_tup as row_count
+FROM pg_stat_user_tables 
+ORDER BY n_live_tup DESC;
+
+-- Tamaño total de la base de datos
+SELECT pg_size_pretty(pg_database_size(current_database())) as db_size;
+
+-- Tamaño de CADA tabla (datos + índices)
+SELECT 
+  tablename,
+  pg_size_pretty(pg_total_relation_size(quote_ident(tablename))) as total_size,
+  pg_size_pretty(pg_relation_size(quote_ident(tablename))) as data_size,
+  pg_size_pretty(pg_indexes_size(quote_ident(tablename))) as index_size,
+  n_live_tup as rows
+FROM pg_stat_user_tables 
+JOIN pg_tables USING (tablename)
+WHERE schemaname = 'public'
+ORDER BY pg_total_relation_size(quote_ident(tablename)) DESC;
+
+-- Listar TODOS los índices
+SELECT indexname, tablename, indexdef 
+FROM pg_indexes WHERE schemaname = 'public'
+ORDER BY tablename;
+
+-- ¿Existe PostGIS?
+SELECT PostGIS_Version();
+-- Si da error, reportar "PostGIS NO instalado"
+
+-- Para la tabla de prospectos/empresas (buscar el nombre exacto):
+-- Puede ser denue_prospects, prospects, empresas, o similar
+SELECT column_name, data_type, is_nullable, column_default
+FROM information_schema.columns 
+WHERE table_name = 'denue_prospects'  -- AJUSTAR si se llama diferente
+ORDER BY ordinal_position;
+
+-- Muestra de datos de prospectos
+SELECT * FROM denue_prospects LIMIT 3;  -- AJUSTAR nombre si es diferente
+
+-- Distribución de prospectos por estado/entidad
+SELECT entidad, COUNT(*) FROM denue_prospects GROUP BY entidad ORDER BY COUNT(*) DESC;
+
+-- Distribución por municipio (top 20)
+SELECT municipio, COUNT(*) FROM denue_prospects GROUP BY municipio ORDER BY COUNT(*) DESC LIMIT 20;
+
+-- ¿Hay datos de más estados o solo NL?
+SELECT DISTINCT entidad FROM denue_prospects;
+
+-- ¿Hay tabla de API keys?
+SELECT * FROM api_keys LIMIT 5;
+-- Si no existe, reportar "tabla api_keys NO existe"
+
+-- ¿Hay tabla de API request logs?
+SELECT COUNT(*) FROM api_request_logs;
+-- Si no existe, reportar "tabla api_request_logs NO existe"
+
+-- ¿Hay tablas de blog?
+SELECT * FROM blog_posts LIMIT 3;
+-- Si no existe, reportar "tabla blog_posts NO existe"
+
+-- ¿Hay tablas de newsletter?
+SELECT * FROM newsletter_subscribers LIMIT 3;
+
+-- ¿Hay tablas de outreach/campaigns?
+SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename LIKE '%outreach%';
+SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename LIKE '%campaign%';
+
+-- ¿Hay tablas de contact groups?
+SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename LIKE '%group%';
+
+-- ¿Hay tablas de saved filters?
+SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename LIKE '%filter%';
+
+b) Muéstrame el schema completo de Drizzle (el archivo schema.ts o shared/schema.ts):
+   - Nombre del archivo exacto
+   - TODAS las tablas definidas
+   - Relaciones
+
+=== 2. API ROUTES ===
+
+a) Abre el archivo principal de rutas (routes.ts o similar) y lista 
+TODAS las rutas registradas. Para cada una muestra:
+   - Método (GET/POST/PATCH/DELETE)
+   - Path (/api/...)
+   - Descripción breve de qué hace (lee el handler)
+
+b) ¿Hay rutas que empiecen con /api/v1/external/ ? Listar todas.
+c) ¿Hay rutas que empiecen con /api/admin/apis/ ? Listar todas.
+d) ¿Hay rutas que empiecen con /api/admin/denue/ ? Listar todas.
+e) ¿Hay rutas que empiecen con /api/admin/blog/ ? Listar todas.
+f) ¿Hay rutas que empiecen con /api/socio/ ? Listar todas.
+g) ¿Hay middleware de autenticación? ¿Cuáles roles existen?
+
+=== 3. FRONTEND PAGES ===
+
+a) Lista TODAS las rutas/páginas del frontend que existen:
+   - Busca en el router principal (App.tsx o similar)
+   - Lista cada path → componente
+   - Indica cuáles requieren auth y cuáles son públicas
+
+b) ¿Existe sección /admin/apis en el frontend?
+c) ¿Existe sección /admin/blog en el frontend?
+d) ¿Existe sección /socio/ en el frontend?
+e) ¿Existe /blog (público) en el frontend?
+f) ¿Existe la página /empresas (landing B2B)?
+g) ¿Existe la página /socios (landing socios)?
+
+=== 4. ARCHIVOS Y ESTRUCTURA ===
+
+a) Lista el árbol de directorios del proyecto (2 niveles de profundidad):
+   ls -la en la raíz del proyecto
+
+b) ¿Hay CSVs de datos en el proyecto?
+   find . -name "*.csv" -type f 2>/dev/null
+
+c) ¿Hay scripts de importación?
+   find . -name "*import*" -o -name "*seed*" -o -name "*migrate*" 2>/dev/null
+
+d) ¿Hay archivos de configuración de API externa?
+   find . -name "*api-key*" -o -name "*external*" -o -name "*webhook*" 2>/dev/null
+
+=== 5. VARIABLES DE ENTORNO ===
+
+Lista TODOS los nombres de variables de entorno configuradas 
+(SOLO nombres, NO valores):
+   env | grep -E "^[A-Z]" | cut -d= -f1 | sort
+
+¿Hay alguna variable que referencie Neon, Supabase, o base de datos externa?
+
+=== 6. DEPENDENCIAS ===
+
+Muestra las dependencias relevantes del package.json:
+   - ¿Tiene drizzle-orm? ¿Versión?
+   - ¿Tiene @neondatabase/serverless?
+   - ¿Tiene postgis o pg-promise?
+   - ¿Tiene resend?
+   - ¿Tiene algún SDK de IA (anthropic, openai)?
+   - ¿Tiene papaparse o csv-parse?
+
+=== FORMATO DE RESPUESTA ===
+
+Responde ORGANIZADO con headers claros para cada sección.
+Si un query da error, muestra el error exacto.
+Si una tabla no existe, dilo explícitamente.
+No asumas nada — ejecuta los queries y muestra resultados reales.

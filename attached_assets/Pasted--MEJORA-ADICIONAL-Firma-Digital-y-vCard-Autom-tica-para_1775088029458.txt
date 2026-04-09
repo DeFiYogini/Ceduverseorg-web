@@ -1,0 +1,272 @@
+# MEJORA ADICIONAL: Firma Digital y vCard Automática para Instructores
+
+## Contexto
+
+Ceduverse ya tiene un sistema de firma digital y vCard en `/contacto/{slug}`. Ejemplos existentes:
+- www.ceduverse.org/contacto/davidperez
+- www.ceduverse.org/contacto/danielzavala
+- www.ceduverse.org/contacto/leonardoherrera
+
+Estas páginas actualmente se crean manualmente. La mejora es que **cada perfil de instructor (y de socio) genere automáticamente su página de firma digital y vCard** al registrarse o acreditarse.
+
+---
+
+## Diseño actual de la firma digital (replicar exactamente)
+
+La página `/contacto/{slug}` tiene este diseño:
+
+```
+┌─────────────────────────────────────────┐
+│         Header azul degradado           │
+│         Logo "C Ceduverse"              │
+├─────────────────────────────────────────┤
+│                                         │
+│         [Avatar circular]               │
+│          Iniciales "DP"                 │
+│          (fondo púrpura)                │
+│                                         │
+│       Nombre Completo                   │
+│     🏛️ Cargo (texto azul/verde)        │
+│         CEDUVERSE                       │
+│                                         │
+│  ┌─ 📞 Teléfono ─────────────────┐     │
+│  │    +52 998 593 3232            │     │
+│  └────────────────────────────────┘     │
+│  ┌─ ✉️ Email ─────────────────────┐     │
+│  │    nombre@ceduverse.org        │     │
+│  └────────────────────────────────┘     │
+│  ┌─ 🌐 Sitio web ────────────────┐     │
+│  │    ceduverse.org               │     │
+│  └────────────────────────────────┘     │
+│                                         │
+│       "Escanea para guardar"            │
+│         [Código QR]                     │
+│       "Descargar imagen QR"             │
+│                                         │
+│  [🔽 Guardar en contactos] (botón azul) │
+│  [🔗 Compartir tarjeta]                │
+│                                         │
+│       ← ceduverse.org                   │
+└─────────────────────────────────────────┘
+```
+
+---
+
+## Implementación: Generación automática de firma digital
+
+### 1. Nueva tabla (o campos en tabla existente)
+
+```sql
+CREATE TABLE user_contact_cards (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  slug VARCHAR(100) NOT NULL UNIQUE,     -- ej: 'davidperez' (auto-generado del nombre)
+  display_name VARCHAR(255) NOT NULL,
+  title VARCHAR(255),                    -- 'Socio y Director Operativo', 'Instructor Interno', etc.
+  organization VARCHAR(255) DEFAULT 'Ceduverse',
+  phone VARCHAR(50),
+  email VARCHAR(255),
+  website VARCHAR(255) DEFAULT 'ceduverse.org',
+  avatar_url TEXT,                       -- URL de foto de perfil o NULL (usa iniciales)
+  avatar_initials VARCHAR(5),            -- 'DP', 'DZ', 'LH' etc.
+  avatar_color VARCHAR(7) DEFAULT '#7C3AED', -- Color del círculo de iniciales
+  is_active BOOLEAN DEFAULT true,
+  social_links JSONB DEFAULT '{}',       -- { linkedin: '...', twitter: '...', etc. }
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+### 2. Generación automática del slug
+
+Al registrarse como socio o acreditarse como instructor:
+
+```typescript
+function generateSlug(firstName: string, lastName: string): string {
+  // 'David Pérez Villaseñor' → 'davidperez'
+  // Quitar acentos, espacios, caracteres especiales
+  const clean = `${firstName}${lastName}`
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // quitar acentos
+    .replace(/[^a-z0-9]/g, '');      // solo alfanumérico
+
+  return clean;
+}
+
+// Si ya existe el slug, agregar número: 'davidperez2'
+```
+
+### 3. Título automático según rol
+
+```typescript
+function getContactTitle(user: User): string {
+  if (user.is_instructor && user.has_dc5) return 'Instructor Acreditado STPS (DC-5)';
+  if (user.is_instructor) return 'Instructor Interno';
+  if (user.is_admin) return 'Socio y Director Operativo';
+  return 'Socio Cooperativo';
+}
+```
+
+### 4. Ruta pública: `GET /contacto/:slug`
+
+Esta ruta debe ser **pública** (sin autenticación) para que cualquiera pueda ver la tarjeta de contacto:
+
+```typescript
+// server/routes/contact.ts
+router.get('/contacto/:slug', async (req, res) => {
+  const { slug } = req.params;
+  const card = await db.select().from(userContactCards)
+    .where(eq(userContactCards.slug, slug))
+    .limit(1);
+
+  if (!card[0] || !card[0].is_active) {
+    return res.status(404).render('404'); // o redirect
+  }
+
+  // Renderizar página de contacto (SSR o servir React component)
+  res.render('contact-card', { card: card[0] });
+});
+```
+
+### 5. Generación de vCard (.vcf)
+
+```typescript
+// GET /api/contact/:slug/vcard
+router.get('/api/contact/:slug/vcard', async (req, res) => {
+  const card = await getCardBySlug(req.params.slug);
+  if (!card) return res.status(404).json({ error: 'Not found' });
+
+  const vcard = [
+    'BEGIN:VCARD',
+    'VERSION:3.0',
+    `FN:${card.display_name}`,
+    `ORG:${card.organization}`,
+    `TITLE:${card.title}`,
+    card.phone ? `TEL;TYPE=CELL:${card.phone}` : '',
+    card.email ? `EMAIL:${card.email}` : '',
+    card.website ? `URL:https://${card.website}` : '',
+    `NOTE:Contacto de Ceduverse - Plataforma de Capacitación Laboral STPS`,
+    'END:VCARD',
+  ].filter(Boolean).join('\r\n');
+
+  res.setHeader('Content-Type', 'text/vcard');
+  res.setHeader('Content-Disposition', `attachment; filename="${card.slug}.vcf"`);
+  res.send(vcard);
+});
+```
+
+### 6. Generación de código QR
+
+Usar librería `qrcode` para generar el QR dinámicamente:
+
+```bash
+npm install qrcode
+```
+
+```typescript
+// GET /api/contact/:slug/qr
+import QRCode from 'qrcode';
+
+router.get('/api/contact/:slug/qr', async (req, res) => {
+  const card = await getCardBySlug(req.params.slug);
+  if (!card) return res.status(404).json({ error: 'Not found' });
+
+  const url = `https://www.ceduverse.org/contacto/${card.slug}`;
+  const qrDataUrl = await QRCode.toDataURL(url, {
+    width: 300,
+    margin: 2,
+    color: { dark: '#1E40AF', light: '#FFFFFF' }, // Azul Ceduverse
+  });
+
+  // Retornar como imagen o como data URL
+  const buffer = Buffer.from(qrDataUrl.split(',')[1], 'base64');
+  res.setHeader('Content-Type', 'image/png');
+  res.send(buffer);
+});
+```
+
+### 7. Componente React: `client/src/pages/ContactCard.tsx`
+
+Replicar exactamente el diseño existente de la firma digital:
+
+```tsx
+// Estructura del componente:
+// - Header azul degradado con logo Ceduverse
+// - Card blanca centrada con:
+//   - Avatar circular (foto de perfil o iniciales con color de fondo)
+//   - Nombre, cargo, organización
+//   - Campos de contacto: teléfono, email, sitio web (con íconos)
+//   - Código QR generado dinámicamente (apunta a la URL de la tarjeta)
+//   - Botón "Descargar imagen QR" (descarga PNG del QR)
+//   - Botón "Guardar en contactos" (descarga .vcf)
+//   - Botón "Compartir tarjeta" (Web Share API o copiar URL)
+//   - Footer: "← ceduverse.org"
+
+// Paleta:
+// Header: gradiente azul (#1E40AF → #3B82F6)
+// Avatar default: púrpura (#7C3AED)
+// Cargo: verde/azul (#059669 o #2563EB)
+// Íconos contacto: verde (#10B981), naranja (#F59E0B), azul (#3B82F6)
+// QR: azul (#1E40AF)
+// Botón guardar: azul (#2563EB)
+// Texto: gris oscuro (#1F2937)
+```
+
+### 8. Cuándo se genera automáticamente la tarjeta
+
+| Evento | Acción |
+|--------|--------|
+| Usuario se registra como socio cooperativo | Crear tarjeta con título "Socio Cooperativo" |
+| Usuario se acredita como instructor | Actualizar título a "Instructor Interno" |
+| Instructor obtiene DC-5 | Actualizar título a "Instructor Acreditado STPS (DC-5)" |
+| Admin configura rol especial | Actualizar título manualmente (ej: "Socio y Director Operativo") |
+| Usuario actualiza su perfil (teléfono, email, foto) | Actualizar tarjeta automáticamente |
+
+### 9. Acceso a "Mi Tarjeta" desde el perfil
+
+En el perfil del usuario (tanto estudiante como instructor), agregar:
+- Botón "Ver mi tarjeta digital" → abre `/contacto/{slug}` en nueva pestaña
+- Botón "Copiar link de mi tarjeta" → copia URL al clipboard
+- Botón "Descargar mi QR" → descarga PNG del código QR
+- Preview miniatura de la tarjeta en el perfil
+
+### 10. En el listado de instructores (vista alumno)
+
+Cuando el alumno ve el perfil de un instructor (para contratar sesión privada o ver cursos), mostrar:
+- Badge de "Instructor Interno" o "Instructor DC-5"
+- Link "Ver tarjeta de contacto" → abre `/contacto/{slug}`
+- Rating promedio (si tiene reviews)
+
+---
+
+## Resumen de archivos
+
+### Nuevos:
+1. `server/routes/contact.ts` — Rutas públicas de tarjeta de contacto
+2. `client/src/pages/ContactCard.tsx` — Página de firma digital
+3. Tabla `user_contact_cards` en schema
+
+### Modificar:
+4. Lógica de registro de socio → auto-crear tarjeta
+5. Lógica de acreditación de instructor → actualizar tarjeta
+6. Perfil de usuario → agregar sección "Mi Tarjeta Digital"
+7. Listado de instructores → mostrar link a tarjeta
+8. `server/routes.ts` → registrar rutas de contacto
+9. `package.json` → agregar `qrcode`
+
+---
+
+## Notas para Replit Agent
+
+1. **La ruta `/contacto/:slug` debe ser pública** — no requiere autenticación. Es la tarjeta de presentación que el instructor comparte con alumnos, colegas, y empleadores.
+
+2. **Compatibilidad con las tarjetas existentes** (davidperez, danielzavala, leonardoherrera): Si estas tarjetas están hardcodeadas en el sitio de WordPress (ceduverse.org), la nueva implementación en la app de React (ceduverse.replit.app) debe replicar el mismo diseño exactamente. A futuro, migrar las tarjetas existentes a la BD.
+
+3. **El QR code apunta a la URL pública de la tarjeta**, no al vCard. Al escanear el QR, el usuario llega a la página web de la tarjeta donde puede guardar el contacto.
+
+4. **Web Share API** para el botón "Compartir tarjeta": `navigator.share({ url, title })`. Funciona en móvil. En desktop, fallback a copiar URL al clipboard.
+
+5. **El slug debe ser único.** Si hay dos "David Pérez", el segundo será `davidperez2`. Permitir al usuario personalizar su slug desde su perfil.
+
+6. **Foto de perfil:** Si el usuario sube foto de perfil, se usa en la tarjeta. Si no, se muestran las iniciales en un círculo de color.
