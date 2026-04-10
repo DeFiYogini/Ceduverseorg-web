@@ -870,6 +870,11 @@ export async function seedModulesAndQuizzes() {
     const existingQuiz = await db.select().from(courseQuizzes).where(eq(courseQuizzes.courseId, course.id));
     if (existingQuiz.length > 0) continue;
 
+    if (!quizData.title || !quizData.questions?.length) {
+      console.log(`[seed] Skipping quiz for "${slug}" — missing title or questions`);
+      continue;
+    }
+
     const [quiz] = await db.insert(courseQuizzes).values({
       courseId: course.id,
       title: quizData.title,
