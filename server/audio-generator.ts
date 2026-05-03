@@ -3,7 +3,12 @@ import fs from "fs";
 import path from "path";
 import { storage } from "./storage";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+function getOpenAIClient(): OpenAI | null {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) return null;
+  return new OpenAI({ apiKey });
+}
+
 const AUDIO_DIR = path.join(process.cwd(), "audio-cache");
 
 if (!fs.existsSync(AUDIO_DIR)) {
@@ -21,6 +26,15 @@ export async function generateAudioAsync(
   moduleIndex: number,
   userId: string
 ): Promise<void> {
+  const openai = getOpenAIClient();
+  if (!openai) {
+    console.warn("[audio] OPENAI_API_KEY not configured — TTS audio generation unavailable. Audio files are pre-generated on R2.");
+    await storage.updateGeneratedContent(generatedContentId, {
+      generationStatus: "partial",
+    } as any);
+    return;
+  }
+
   try {
     console.log(`[audio] Starting generation for ${courseSlug}/m${moduleIndex} (user ${userId.slice(0, 8)})`);
 

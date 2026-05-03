@@ -4576,7 +4576,7 @@ function AdminTiendaTab({ isSuperadmin }: { isSuperadmin: boolean }) {
                         )}
                         {orderDetail.order.mpPaymentId && (
                           <div>
-                            <p className="text-sm font-medium text-cedu-ink">MercadoPago</p>
+                            <p className="text-sm font-medium text-cedu-ink">Stripe</p>
                             <p className="text-xs text-cedu-ink-muted">ID: {orderDetail.order.mpPaymentId}</p>
                             {orderDetail.order.mpStatus && (
                               <p className="text-xs text-cedu-ink-muted">Estado: {orderDetail.order.mpStatus}</p>

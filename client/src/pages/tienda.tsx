@@ -198,7 +198,7 @@ function Disclosures() {
           <p><strong className="text-cedu-ink">4. PLD/FT:</strong> Ceduverse cumple LGSC, LFPIORPI y disposiciones PLD/FT. Rechazamos lavado de dinero, financiamiento al terrorismo, evasión fiscal y toda actividad ilícita.</p>
           <p><strong className="text-cedu-ink">5.</strong> El usuario declara fondos de fuentes lícitas. Incumplimiento = cancelación inmediata + reporte a autoridades.</p>
           <p><strong className="text-cedu-ink">6.</strong> Nada aquí es asesoría financiera, fiscal o legal.</p>
-          <p><strong className="text-cedu-ink">7.</strong> Tokapay, Tangem, MercadoPago, Envia.com, OpenSea, Polygon, Visa, Mastercard son marcas de sus titulares.</p>
+          <p><strong className="text-cedu-ink">7.</strong> Tokapay, Tangem, Stripe, Envia.com, OpenSea, Polygon, Visa, Mastercard son marcas de sus titulares.</p>
           <p><strong className="text-cedu-ink">8.</strong> Ceduverse no es responsable por pérdida de fondos, fallas blockchain, hackeos o cambios regulatorios.</p>
           <p><strong className="text-cedu-ink">9.</strong> Pagos procesados por pasarela de pago segura. Ceduverse no almacena datos de tarjetas. Envíos vía servicio de paquetería.</p>
           <p><strong className="text-cedu-ink">10.</strong> Tangem: producto importado, entrega 30–60 días, garantía del fabricante (25 años).</p>
@@ -335,8 +335,8 @@ function TiendaContent() {
       });
       return res.json();
     },
-    onSuccess: (data: { init_point: string }) => {
-      if (data.init_point) window.location.href = data.init_point;
+    onSuccess: (data: { checkout_url: string }) => {
+      if (data.checkout_url) window.location.href = data.checkout_url;
     },
   });
 
@@ -557,7 +557,7 @@ function TiendaContent() {
               <button onClick={() => createOrderMutation.mutate()} disabled={createOrderMutation.isPending} data-testid="btn-pay"
                 className="w-full px-5 py-3.5 bg-cedu-blue text-white rounded-xl text-sm font-bold cursor-pointer border-none hover:bg-cedu-blue-dark transition-colors flex items-center justify-center gap-2">
                 {createOrderMutation.isPending ? <Loader2 size={16} className="animate-spin" /> : <CreditCard size={16} />}
-                Pagar con MercadoPago
+                Pagar con tarjeta
               </button>
               {createOrderMutation.isError && (
                 <div className="mt-3 bg-red-50 border border-red-200/60 rounded-lg p-2 text-red-500 text-xs flex items-center gap-1">
@@ -764,7 +764,7 @@ function FaqsSection() {
     { q: "¿Qué es autocustodia?", a: "Es cuando TÚ controlas tus llaves privadas y tu frase semilla, sin depender de un banco, exchange o fintech. Si una empresa centralizada quiebra (como FTX), tus fondos en autocustodia están a salvo. 'Not your keys, not your coins' — si no tienes las llaves, no son tus monedas." },
     { q: "¿Cómo funciona el código de referido?", a: "Si un socio Ceduverse te comparte su código, ingrésalo en la tienda antes de pagar y obtendrás un 15% de descuento en tu compra. El código debe tener al menos 4 caracteres. El socio que te refirió también recibe beneficios." },
     { q: "¿Cuánto tarda el envío?", a: "La Vault Card es edición especial limitada con entrega de 30 a 45 días. Los Tangem son producto importado con entrega de 30 a 60 días. Ambos se procesan al confirmar el pago y se envían a tu domicilio vía paquetería." },
-    { q: "¿Puedo pagar con tarjeta de crédito o débito?", a: "Sí. La tienda acepta tarjetas de crédito y débito a través de MercadoPago. Ceduverse nunca almacena los datos de tu tarjeta. El pago se procesa de forma cifrada y segura." },
+    { q: "¿Puedo pagar con tarjeta de crédito o débito?", a: "Sí. La tienda acepta tarjetas de crédito y débito a través de Stripe. Ceduverse nunca almacena los datos de tu tarjeta. El pago se procesa de forma cifrada y segura." },
     { q: "¿Es legal tener criptomonedas en México?", a: "Sí. La Ley Fintech de 2018 regula activos virtuales en México. CNBV y Banxico supervisan a las instituciones que operan con cripto. Tener criptomonedas como persona física es completamente legal. Lo que SÍ debes hacer es declararlas ante el SAT si superas ciertos montos." },
   ];
 

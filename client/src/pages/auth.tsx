@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Loader2, ArrowLeft, Mail, ShieldCheck, Award, ChevronDown, ChevronUp, AlertCircle } from "lucide-react";
+import { Loader2, ArrowLeft, Mail, ShieldCheck, Award, ChevronDown, ChevronUp, AlertCircle, Lock } from "lucide-react";
 import { Link } from "wouter";
 
 class AuthErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error: string }> {
@@ -58,7 +58,7 @@ class AuthErrorBoundary extends Component<{ children: ReactNode }, { hasError: b
   }
 }
 
-type Step = "email" | "code";
+type Step = "email" | "code" | "admin";
 
 export default function AuthPage() {
   return (
@@ -75,7 +75,8 @@ function AuthPageContent() {
   const [fullName, setFullName] = useState("");
   const [code, setCode] = useState(["", "", "", "", "", ""]);
   const [loading, setLoading] = useState(false);
-  const { sendCode, verifyCode, user, isLoading } = useAuth();
+  const [adminPassword, setAdminPassword] = useState("");
+  const { sendCode, verifyCode, adminLogin, user, isLoading } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -129,12 +130,12 @@ function AuthPageContent() {
   };
 
   function redirectByRole() {
-    const authToken = localStorage.getItem("cedu_token");
-    if (authToken && inviteToken && !inviteAcceptedRef.current) {
+    if (user && inviteToken && !inviteAcceptedRef.current) {
       inviteAcceptedRef.current = true;
       fetch(`/api/invitations/accept/${inviteToken}`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${authToken}`, "Content-Type": "application/json" },
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
       })
         .then(r => {
           if (!r.ok) {
@@ -275,6 +276,24 @@ function AuthPageContent() {
       });
       setCode(["", "", "", "", "", ""]);
       inputRefs.current[0]?.focus();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAdminLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !adminPassword) return;
+    setLoading(true);
+    try {
+      await adminLogin(email, adminPassword);
+      redirectByRole();
+    } catch (err: any) {
+      toast({
+        title: "Error de autenticación",
+        description: err.message || "Credenciales inválidas",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -503,13 +522,28 @@ function AuthPageContent() {
                   </button>
                 </div>
 
+                <div className="mt-3 text-center">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStep("admin");
+                      setAdminPassword("");
+                    }}
+                    className="text-xs text-cedu-ink-muted hover:text-cedu-blue transition-colors cursor-pointer"
+                    data-testid="button-admin-login"
+                  >
+                    <Lock size={12} className="inline mr-1" />
+                    Admin Login
+                  </button>
+                </div>
+
                 <div className="mt-4 flex items-center gap-2 justify-center text-xs text-cedu-ink-muted">
                   <ShieldCheck size={14} />
                   <span>Acceso seguro sin contraseña</span>
                 </div>
               </CardContent>
             </>
-          ) : (
+          ) : step === "code" ? (
             <>
               <CardHeader className="pb-4">
                 <CardTitle className="font-serif text-2xl text-cedu-ink" data-testid="text-code-title">
@@ -594,7 +628,85 @@ function AuthPageContent() {
                 </div>
               </CardContent>
             </>
-          )}
+          ) : step === "admin" ? (
+            <>
+              <CardHeader className="pb-4">
+                <CardTitle className="font-serif text-2xl text-cedu-ink" data-testid="text-admin-title">
+                  Admin Login
+                </CardTitle>
+                <CardDescription className="text-cedu-ink-muted">
+                  Acceso con contraseña para cuentas de administrador.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleAdminLogin} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="admin-email" className="text-cedu-ink-soft text-sm font-semibold">
+                      Correo electrónico
+                    </Label>
+                    <Input
+                      id="admin-email"
+                      type="email"
+                      placeholder="admin@ceduverse.org"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      className="h-11"
+                      data-testid="input-admin-email"
+                      autoFocus
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="admin-password" className="text-cedu-ink-soft text-sm font-semibold">
+                      Contraseña
+                    </Label>
+                    <Input
+                      id="admin-password"
+                      type="password"
+                      placeholder="Tu contraseña"
+                      value={adminPassword}
+                      onChange={(e) => setAdminPassword(e.target.value)}
+                      required
+                      className="h-11"
+                      data-testid="input-admin-password"
+                    />
+                  </div>
+
+                  <Button
+                    type="submit"
+                    disabled={loading || !email || !adminPassword}
+                    className="w-full h-12 bg-cedu-blue hover:bg-cedu-blue-dark text-white font-bold text-[15px] rounded-[12px] transition-all"
+                    data-testid="button-admin-submit"
+                  >
+                    {loading ? (
+                      <Loader2 className="animate-spin" size={20} />
+                    ) : (
+                      <>
+                        <Lock size={18} className="mr-2" />
+                        Iniciar sesión
+                      </>
+                    )}
+                  </Button>
+                </form>
+
+                <div className="mt-5 text-center">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStep("email");
+                      setAdminPassword("");
+                    }}
+                    className="text-sm text-cedu-ink-muted hover:text-cedu-blue transition-colors cursor-pointer"
+                    data-testid="button-back-otp"
+                  >
+                    <ArrowLeft size={14} className="inline mr-1" />
+                    Volver al acceso con código
+                  </button>
+                </div>
+              </CardContent>
+            </>
+          ) : null}
         </Card>
       </div>
     </div>

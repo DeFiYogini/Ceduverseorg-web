@@ -1,4 +1,4 @@
-import OpenAI from "openai";
+import Anthropic from "@anthropic-ai/sdk";
 import sanitizeHtml from "sanitize-html";
 
 export interface StudentProfileContext {
@@ -247,10 +247,10 @@ Debes devolver un JSON válido (sin markdown, sin backticks) con esta estructura
 }`;
 }
 
-function getOpenAIClient(): OpenAI | null {
-  const apiKey = process.env.OPENAI_API_KEY;
+function getAnthropicClient(): Anthropic | null {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return null;
-  return new OpenAI({ apiKey });
+  return new Anthropic({ apiKey });
 }
 
 function parseClaudeJSON(rawText: string): any {
@@ -385,8 +385,8 @@ function stubGenerateContent(
   };
 }
 
-async function callOpenAIWithRetry(
-  client: OpenAI,
+async function callAnthropicWithRetry(
+  client: Anthropic,
   systemPrompt: string,
   userPrompt: string,
   maxTokens: number,
@@ -397,21 +397,21 @@ async function callOpenAIWithRetry(
     try {
       console.log(`[ai-engine] ${label} attempt ${attempt + 1}/${maxRetries + 1}`);
 
-      const response = await client.chat.completions.create({
-        model: "gpt-4o",
+      const response = await client.messages.create({
+        model: "claude-sonnet-4-20250514",
         max_tokens: maxTokens,
-        temperature: 0.7,
+        system: systemPrompt,
         messages: [
-          { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
       });
 
-      const text = response.choices[0]?.message?.content || "";
-      const finishReason = response.choices[0]?.finish_reason;
+      const textBlock = response.content.find((b) => b.type === "text");
+      const text = textBlock?.text || "";
+      const stopReason = response.stop_reason;
 
-      console.log(`[ai-engine] ${label} response: ${response.usage?.prompt_tokens} in / ${response.usage?.completion_tokens} out`);
-      console.log(`[ai-engine] ${label} finish_reason: ${finishReason}`);
+      console.log(`[ai-engine] ${label} response: ${response.usage?.input_tokens} in / ${response.usage?.output_tokens} out`);
+      console.log(`[ai-engine] ${label} stop_reason: ${stopReason}`);
 
       const parsed = parseClaudeJSON(text);
 
@@ -430,7 +430,7 @@ async function callOpenAIWithRetry(
         return parsed;
       }
 
-      if (finishReason === 'length' && attempt < maxRetries) {
+      if (stopReason === 'max_tokens' && attempt < maxRetries) {
         console.log(`[ai-engine] ${label} hit max_tokens, retrying with more tokens...`);
         maxTokens = Math.min(maxTokens + 4096, 16384);
         continue;
@@ -454,9 +454,9 @@ export async function generateModuleContent(
   moduleDescription?: string,
   moduleReferences?: string,
 ): Promise<GeneratedModuleContent> {
-  const client = getOpenAIClient();
+  const client = getAnthropicClient();
   if (!client) {
-    console.log("[ai-engine] No OPENAI_API_KEY configured, using stub content");
+    console.log("[ai-engine] No ANTHROPIC_API_KEY configured, using stub content");
     return stubGenerateContent(moduleTitle, moduleContentHtml);
   }
 
@@ -475,7 +475,7 @@ export async function generateModuleContent(
       profile,
     );
 
-    const call1Result = await callOpenAIWithRetry(
+    const call1Result = await callAnthropicWithRetry(
       client,
       call1System,
       `Genera el contenido personalizado completo para este módulo. Recuerda: MÍNIMO 3,000 palabras en la lectura, y TODO personalizado para el perfil del estudiante. Devuelve SOLO el JSON válido, sin markdown ni backticks.`,
@@ -502,7 +502,7 @@ export async function generateModuleContent(
         moduleTitle,
       );
 
-      const call2Result = await callOpenAIWithRetry(
+      const call2Result = await callAnthropicWithRetry(
         client,
         call2System,
         `Genera el quiz adaptativo de 7 preguntas y el guion de clase basándote en el contenido de lectura proporcionado. Devuelve SOLO el JSON válido.`,
@@ -547,7 +547,7 @@ export async function chatWithModule(
   profile: StudentProfileContext | null,
   courseTitle?: string,
 ): Promise<ChatResponse> {
-  const client = getOpenAIClient();
+  const client = getAnthropicClient();
   if (!client) {
     return {
       message: "El chat con IA estará disponible próximamente. Por ahora, revisa el contenido del módulo y las preguntas de reflexión para profundizar en el tema.",
@@ -566,23 +566,22 @@ export async function chatWithModule(
     profile,
   );
 
-  const messages: { role: "system" | "user" | "assistant"; content: string }[] = [
-    { role: "system", content: systemPrompt },
-  ];
+  const messages: { role: "user" | "assistant"; content: string }[] = [];
   for (const msg of history.slice(-10)) {
     messages.push({ role: msg.role, content: msg.content });
   }
   messages.push({ role: "user", content: userMessage });
 
   try {
-    const response = await client.chat.completions.create({
-      model: "gpt-4o",
+    const response = await client.messages.create({
+      model: "claude-sonnet-4-20250514",
       max_tokens: 1024,
-      temperature: 0.7,
+      system: systemPrompt,
       messages,
     });
 
-    const text = response.choices[0]?.message?.content || "";
+    const textBlock = response.content.find((b) => b.type === "text");
+    const text = textBlock?.text || "";
     if (!text) {
       return {
         message: "Lo siento, no pude procesar tu pregunta. Intenta de nuevo.",
@@ -615,7 +614,7 @@ export async function chatWithModule(
       ],
     };
   } catch (err: any) {
-    console.error("[ai-engine] OpenAI chat error:", err.message);
+    console.error("[ai-engine] Anthropic chat error:", err.message);
     return {
       message: "Hubo un error al procesar tu pregunta. Por favor intenta de nuevo en unos momentos.",
       suggestedQuestions: [

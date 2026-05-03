@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 
 const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID || "";
 const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID || "";
@@ -34,6 +34,28 @@ export class R2StorageService {
 
     await s3Client.send(command);
     return `${R2_PUBLIC_URL}/${key}`;
+  }
+
+  async getObject(key: string): Promise<{ body: NodeJS.ReadableStream; contentType: string; contentLength: number } | null> {
+    if (!this.isConfigured) return null;
+    try {
+      const command = new GetObjectCommand({
+        Bucket: R2_BUCKET_NAME,
+        Key: key,
+      });
+      const response = await s3Client.send(command);
+      if (!response.Body) return null;
+      return {
+        body: response.Body as unknown as NodeJS.ReadableStream,
+        contentType: response.ContentType || "audio/mpeg",
+        contentLength: response.ContentLength || 0,
+      };
+    } catch (err: any) {
+      if (err.name === "NoSuchKey" || err.$metadata?.httpStatusCode === 404) {
+        return null;
+      }
+      throw err;
+    }
   }
 
   async deleteObject(key: string): Promise<void> {

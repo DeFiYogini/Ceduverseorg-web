@@ -1,44 +1,11 @@
 import { Switch, Route } from "wouter";
-import { Component } from "react";
-import type { ErrorInfo, ReactNode } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ThemeProvider } from "@/components/ThemeProvider";
-
-class AppErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error: string }> {
-  constructor(props: { children: ReactNode }) {
-    super(props);
-    this.state = { hasError: false, error: "" };
-  }
-  static getDerivedStateFromError(error: Error) {
-    return { hasError: true, error: error.message || "Error desconocido" };
-  }
-  componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error("[app] Render error:", error, info.componentStack);
-  }
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#faf8f4", padding: "1rem", fontFamily: "sans-serif" }}>
-          <div style={{ maxWidth: 420, width: "100%", background: "#fff", borderRadius: 16, border: "1px solid rgba(0,0,0,0.06)", padding: "2rem", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
-            <h2 style={{ margin: "0 0 0.5rem", color: "#1a1a2e", fontSize: "1.25rem" }}>Error de carga</h2>
-            <p style={{ color: "#7a7a99", fontSize: "0.875rem", margin: "0 0 1rem" }}>{this.state.error}</p>
-            <button
-              onClick={() => window.location.reload()}
-              style={{ width: "100%", padding: "0.75rem", background: "#1b5adf", color: "#fff", border: "none", borderRadius: 12, fontWeight: 700, fontSize: "0.9rem", cursor: "pointer" }}
-            >
-              Reintentar
-            </button>
-          </div>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
+import ErrorBoundary from "@/components/ErrorBoundary";
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/landing";
 import Empresas from "@/pages/empresas";
@@ -129,19 +96,21 @@ function Router() {
 
 function App() {
   return (
-    <AppErrorBoundary>
+    <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
           <AuthProvider>
             <TooltipProvider>
               <Toaster />
               <PendingTermsModal />
-              <Router />
+              <ErrorBoundary>
+                <Router />
+              </ErrorBoundary>
             </TooltipProvider>
           </AuthProvider>
         </ThemeProvider>
       </QueryClientProvider>
-    </AppErrorBoundary>
+    </ErrorBoundary>
   );
 }
 

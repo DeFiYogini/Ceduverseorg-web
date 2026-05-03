@@ -1,0 +1,90 @@
+services:
+  - type: web
+    name: ceduverse
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    region: oregon
+    plan: starter
+    healthCheckPath: /__health
+    autoDeploy: true
+    envVars:
+      # Core runtime
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "3000"
+      - key: BASE_URL
+        value: https://ceduverse.org
+
+      # Database (Supabase pooler) — paste from current LaunchAgent plist
+      - key: DB_URL
+        sync: false
+
+      # JWT signing secret — REUSE existing value from LaunchAgent plist
+      # (do NOT regenerate, or all current users get logged out)
+      - key: SESSION_SECRET
+        sync: false
+
+      # Supabase (used by some client paths)
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+
+      # Superadmin password
+      - key: SUPERADMIN_PASSWORD
+        sync: false
+
+      # Cloudflare R2 storage (audio + assets)
+      - key: R2_ACCOUNT_ID
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_BUCKET_NAME
+        value: ceduverse
+      - key: R2_PUBLIC_URL
+        sync: false
+
+      # Email (Resend)
+      - key: RESEND_API_KEY
+        sync: false
+
+      # Payments (Stripe) — set when keys are issued
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+
+      # Shipping (Envia.com) — optional
+      - key: ENVIA_API_KEY
+        sync: false
+
+      # AI (optional, used by tutor / content generation)
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+
+      # Avatar / video (optional)
+      - key: HEYGEN_API_KEY
+        sync: false
+      - key: DAILY_API_KEY
+        sync: false
+
+      # Invoicing (optional)
+      - key: FACTURAPI_API_KEY
+        sync: false
+
+      # Bank info for SAM payments (optional)
+      - key: BANK_NAME
+        sync: false
+      - key: BANK_CLABE
+        sync: false
+      - key: BANK_BENEFICIARY
+        sync: false
+
+      # Admin endpoints — REQUIRED to enable migration/import endpoints
+      - key: ADMIN_API_KEY
+        sync: false

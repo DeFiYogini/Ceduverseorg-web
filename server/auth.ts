@@ -5,7 +5,32 @@ import { users, accounts, profiles, teamUsers, teams, cooperativeMemberships, te
 import { eq, and, sql, lte, inArray, notInArray } from "drizzle-orm";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
+import rateLimit from "express-rate-limit";
 import { sendOtpEmail } from "./email";
+
+// Cap how many OTP requests/verifications a single IP can make. Belt-and-suspenders
+// alongside the existing 30s send cooldown and progressive verify lockout in this file.
+const sendCodeLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Demasiadas solicitudes de código. Espera unos minutos." },
+});
+const verifyCodeLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Demasiados intentos de verificación. Espera unos minutos." },
+});
+const adminLoginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Demasiados intentos de inicio de sesión. Espera unos minutos." },
+});
 
 // Demo accounts — loaded from DEMO_ACCOUNTS env var (JSON array) or empty if not set
 type DemoAccount = { email: string; fullName: string; role: "socio_estudiante" | "admin" | "socio_comercial" | "superadmin" | "socio_instructor" | "empresa"; isOrgAdmin?: boolean };
@@ -13,6 +38,10 @@ type DemoAccount = { email: string; fullName: string; role: "socio_estudiante" |
 function loadDemoAccounts(): DemoAccount[] {
   const raw = process.env.DEMO_ACCOUNTS;
   if (!raw) return [];
+  if (process.env.NODE_ENV === "production") {
+    console.error("[FATAL] DEMO_ACCOUNTS must NOT be set in production — these accounts bypass OTP verification");
+    process.exit(1);
+  }
   try {
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
@@ -35,7 +64,43 @@ if (!process.env.SESSION_SECRET) {
   process.exit(1);
 }
 const OTP_EXPIRY_MS = 10 * 60 * 1000;
-const JWT_EXPIRY = "7d";
+const JWT_EXPIRY = "24h";
+const AUTH_COOKIE_NAME = "cedu_token";
+const AUTH_COOKIE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+const JWT_REFRESH_AGE_MS = 12 * 60 * 60 * 1000; // refresh cookie when token is older than this
+
+function authCookieOptions() {
+  return {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax" as const,
+    maxAge: AUTH_COOKIE_MAX_AGE_MS,
+    path: "/",
+  };
+}
+
+function setAuthCookie(res: Response, token: string) {
+  res.cookie(AUTH_COOKIE_NAME, token, authCookieOptions());
+}
+
+function clearAuthCookie(res: Response) {
+  res.clearCookie(AUTH_COOKIE_NAME, { path: "/" });
+}
+
+function getTokenFromRequest(req: Request): string | null {
+  const authHeader = req.headers.authorization;
+  if (authHeader?.startsWith("Bearer ")) {
+    const headerToken = authHeader.slice(7).trim();
+    if (headerToken && headerToken !== "null" && headerToken !== "undefined") {
+      return headerToken;
+    }
+  }
+  const cookieToken = (req as any).cookies?.[AUTH_COOKIE_NAME];
+  if (typeof cookieToken === "string" && cookieToken.length > 0) {
+    return cookieToken;
+  }
+  return null;
+}
 
 declare global {
   namespace Express {
@@ -58,16 +123,59 @@ function generateOtp(): string {
   return crypto.randomInt(100000, 999999).toString();
 }
 
+// Track failed OTP attempts per IP for progressive lockout
+const otpFailedAttempts = new Map<string, { count: number; lastAttempt: number }>();
+function checkOtpLockout(ip: string): { locked: boolean; waitSeconds: number } {
+  const entry = otpFailedAttempts.get(ip);
+  if (!entry) return { locked: false, waitSeconds: 0 };
+  const delays = [0, 0, 0, 30, 60, 300, 600]; // progressive delays after 3rd failure
+  const delay = delays[Math.min(entry.count, delays.length - 1)] * 1000;
+  const elapsed = Date.now() - entry.lastAttempt;
+  if (elapsed < delay) return { locked: true, waitSeconds: Math.ceil((delay - elapsed) / 1000) };
+  return { locked: false, waitSeconds: 0 };
+}
+function recordOtpFailure(ip: string) {
+  const entry = otpFailedAttempts.get(ip) || { count: 0, lastAttempt: 0 };
+  entry.count++;
+  entry.lastAttempt = Date.now();
+  otpFailedAttempts.set(ip, entry);
+}
+function clearOtpFailures(ip: string) { otpFailedAttempts.delete(ip); }
+// Clean up old entries every 10 minutes
+setInterval(() => {
+  const cutoff = Date.now() - 3600_000;
+  for (const [ip, entry] of otpFailedAttempts) {
+    if (entry.lastAttempt < cutoff) otpFailedAttempts.delete(ip);
+  }
+}, 600_000);
+
 function signJwt(userId: string, email: string): string {
   return jwt.sign({ userId, email }, JWT_SECRET, { expiresIn: JWT_EXPIRY });
 }
 
-function verifyJwt(token: string): { userId: string; email: string } | null {
+function verifyJwt(token: string): { userId: string; email: string; iat?: number } | null {
   try {
-    const payload = jwt.verify(token, JWT_SECRET) as { userId: string; email: string };
+    const payload = jwt.verify(token, JWT_SECRET) as { userId: string; email: string; iat?: number };
     return payload;
   } catch {
     return null;
+  }
+}
+
+// Refresh the auth cookie if the token is past the refresh threshold. Silent on errors.
+// Only refreshes JWTs (not admin sa_ tokens, which have server-side TTL tracking).
+function maybeRefreshAuthCookie(req: Request, res: Response, token: string): void {
+  if (!token || token.startsWith("sa_")) return;
+  try {
+    const payload = jwt.verify(token, JWT_SECRET) as { userId: string; email: string; iat?: number };
+    if (!payload.iat) return;
+    const ageMs = Date.now() - payload.iat * 1000;
+    if (ageMs > JWT_REFRESH_AGE_MS) {
+      const fresh = signJwt(payload.userId, payload.email);
+      setAuthCookie(res, fresh);
+    }
+  } catch {
+    // ignore: invalid tokens won't pass auth anyway
   }
 }
 
@@ -90,7 +198,7 @@ async function ensureLocalUser(userId: string, email: string, fullName?: string)
 }
 
 export function setupAuth(app: Express): void {
-  app.post("/api/auth/send-code", async (req: Request, res: Response) => {
+  app.post("/api/auth/send-code", sendCodeLimiter, async (req: Request, res: Response) => {
     try {
       const { email, fullName, joinCoop, phone, curp } = req.body;
       if (!email || typeof email !== "string") {
@@ -121,6 +229,7 @@ export function setupAuth(app: Express): void {
           }
         }
         const token = signJwt(userId, normalizedEmail);
+        setAuthCookie(res, token);
         const profile = await db.select().from(profiles).where(eq(profiles.id, userId));
         const account = await storage.getAccount(userId);
         return res.json({
@@ -162,11 +271,17 @@ export function setupAuth(app: Express): void {
     }
   });
 
-  app.post("/api/auth/verify-code", async (req: Request, res: Response) => {
+  app.post("/api/auth/verify-code", verifyCodeLimiter, async (req: Request, res: Response) => {
     try {
       const { email, code } = req.body;
       if (!email || !code) {
         return res.status(400).json({ message: "Correo y código requeridos" });
+      }
+
+      const clientIp = req.ip || req.socket.remoteAddress || "unknown";
+      const lockout = checkOtpLockout(clientIp);
+      if (lockout.locked) {
+        return res.status(429).json({ message: `Demasiados intentos. Espera ${lockout.waitSeconds} segundos.` });
       }
 
       const normalizedEmail = email.trim().toLowerCase();
@@ -185,14 +300,16 @@ export function setupAuth(app: Express): void {
       }
 
       const newAttempts = entry.attempts + 1;
-      if (newAttempts > 5) {
+      if (newAttempts > 3) {
         await db.delete(otpCodes).where(eq(otpCodes.email, normalizedEmail));
+        recordOtpFailure(clientIp);
         return res.status(429).json({ message: "Demasiados intentos. Solicita un nuevo código." });
       }
 
       await db.update(otpCodes).set({ attempts: newAttempts }).where(eq(otpCodes.id, entry.id));
 
       if (entry.code !== code.toString().trim()) {
+        recordOtpFailure(clientIp);
         return res.status(400).json({ message: "Código incorrecto" });
       }
 
@@ -251,7 +368,9 @@ export function setupAuth(app: Express): void {
         }
       }
 
+      clearOtpFailures(clientIp);
       const token = signJwt(userId, normalizedEmail);
+      setAuthCookie(res, token);
 
       const profile = await db.select().from(profiles).where(eq(profiles.id, userId));
       const account = await storage.getAccount(userId);
@@ -272,14 +391,55 @@ export function setupAuth(app: Express): void {
     }
   });
 
+  app.post("/api/auth/admin-login", adminLoginLimiter, async (req: Request, res: Response) => {
+    try {
+      const { email, password } = req.body;
+      if (!email || !password) {
+        return res.status(400).json({ message: "Correo y contraseña requeridos" });
+      }
+
+      const normalizedEmail = email.trim().toLowerCase();
+      const result = await adminLogin(normalizedEmail, password);
+      if (!result) {
+        return res.status(401).json({ message: "Credenciales inválidas" });
+      }
+
+      const profile = await db.select().from(profiles).where(eq(profiles.id, result.userId));
+      const account = await storage.getAccount(result.userId);
+
+      setAuthCookie(res, result.token);
+
+      res.json({
+        token: result.token,
+        user: {
+          id: result.userId,
+          email: normalizedEmail,
+          fullName: profile[0]?.fullName || null,
+          role: account?.userRole || "superadmin",
+        },
+      });
+    } catch (err: any) {
+      console.error("[auth] admin-login error:", err.message);
+      res.status(500).json({ message: "Error al iniciar sesión" });
+    }
+  });
+
+  app.post("/api/auth/logout", (req: Request, res: Response) => {
+    const token = getTokenFromRequest(req);
+    if (token && token.startsWith("sa_")) {
+      adminTokens.delete(token);
+    }
+    clearAuthCookie(res);
+    res.json({ success: true });
+  });
+
   app.get("/api/auth/me", async (req: Request, res: Response) => {
     try {
-      const authHeader = req.headers.authorization;
-      if (!authHeader?.startsWith("Bearer ")) {
+      const token = getTokenFromRequest(req);
+      if (!token) {
         return res.status(401).json({ message: "No autenticado" });
       }
 
-      const token = authHeader.slice(7);
       const session = resolveToken(token);
       if (!session) {
         return res.status(401).json({ message: "Token inválido o expirado" });
@@ -318,12 +478,12 @@ function resolveToken(token: string): { userId: string } | null {
 
 export const optionalAuth: RequestHandler = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const authHeader = req.headers.authorization;
-    if (authHeader?.startsWith("Bearer ")) {
-      const token = authHeader.slice(7);
+    const token = getTokenFromRequest(req);
+    if (token) {
       const session = resolveToken(token);
       if (session) {
         req.supabaseUserId = session.userId;
+        maybeRefreshAuthCookie(req, res, token);
       }
     }
     next();
@@ -334,12 +494,11 @@ export const optionalAuth: RequestHandler = async (req: Request, res: Response, 
 
 export const requireAuth: RequestHandler = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader?.startsWith("Bearer ")) {
+    const token = getTokenFromRequest(req);
+    if (!token) {
       return res.status(401).json({ message: "No autenticado" });
     }
 
-    const token = authHeader.slice(7);
     const session = resolveToken(token);
     if (!session) {
       return res.status(401).json({ message: "Token inválido o expirado" });
@@ -354,12 +513,11 @@ export const requireAuth: RequestHandler = async (req: Request, res: Response, n
 
 export const requireAdmin: RequestHandler = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader?.startsWith("Bearer ")) {
+    const token = getTokenFromRequest(req);
+    if (!token) {
       return res.status(401).json({ message: "No autenticado" });
     }
 
-    const token = authHeader.slice(7);
     const session = resolveToken(token);
     if (!session) {
       return res.status(401).json({ message: "Token inválido o expirado" });
@@ -380,12 +538,11 @@ export const requireAdmin: RequestHandler = async (req: Request, res: Response, 
 
 export const requireSuperadmin: RequestHandler = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader?.startsWith("Bearer ")) {
+    const token = getTokenFromRequest(req);
+    if (!token) {
       return res.status(401).json({ message: "No autenticado" });
     }
 
-    const token = authHeader.slice(7);
     const session = resolveToken(token);
     if (!session) {
       return res.status(401).json({ message: "Token inválido o expirado" });
@@ -406,12 +563,11 @@ export const requireSuperadmin: RequestHandler = async (req: Request, res: Respo
 
 export const requireAdminOrPartner: RequestHandler = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader?.startsWith("Bearer ")) {
+    const token = getTokenFromRequest(req);
+    if (!token) {
       return res.status(401).json({ message: "No autenticado" });
     }
 
-    const token = authHeader.slice(7);
     const session = resolveToken(token);
     if (!session) {
       return res.status(401).json({ message: "Token inválido o expirado" });
@@ -432,12 +588,11 @@ export const requireAdminOrPartner: RequestHandler = async (req: Request, res: R
 
 export const requirePartner: RequestHandler = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader?.startsWith("Bearer ")) {
+    const token = getTokenFromRequest(req);
+    if (!token) {
       return res.status(401).json({ message: "No autenticado" });
     }
 
-    const token = authHeader.slice(7);
     const session = resolveToken(token);
     if (!session) {
       return res.status(401).json({ message: "Token inválido o expirado" });
@@ -512,12 +667,11 @@ function verifyAdminToken(token: string): { userId: string } | null {
 
 export const requireInstructor: RequestHandler = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader?.startsWith("Bearer ")) {
+    const token = getTokenFromRequest(req);
+    if (!token) {
       return res.status(401).json({ message: "No autenticado" });
     }
 
-    const token = authHeader.slice(7);
     const session = resolveToken(token);
     if (!session) {
       return res.status(401).json({ message: "Token inválido o expirado" });
@@ -557,9 +711,13 @@ export async function adminLogin(email: string, password: string): Promise<{ tok
   if (!passwordValid) return null;
 
   const account = await storage.getAccount(user.id);
-  if (!account || account.userRole !== "superadmin") return null;
+  if (!account) return null;
 
-  const token = generateAdminToken(user.id);
+  // Allow password login for superadmin and empresa roles (accounts with passwords set)
+  const allowedRoles = ["superadmin", "admin", "empresa", "empresa_rh"];
+  if (!allowedRoles.includes(account.userRole || "")) return null;
+
+  const token = account.userRole === "superadmin" ? generateAdminToken(user.id) : signJwt(user.id, email);
   return { token, userId: user.id };
 }
 

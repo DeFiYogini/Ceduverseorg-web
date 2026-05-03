@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { MercadoPagoConfig, Preference, Payment } from "mercadopago";
+import Stripe from "stripe";
 import { eq, and, sql, inArray } from "drizzle-orm";
 import { db } from "./db";
 import { requireAdmin } from "./auth";
@@ -15,19 +15,22 @@ import {
 
 const router = Router();
 
-const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN || "";
+const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || "";
+const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || "";
 const ENVIA_API_KEY = process.env.ENVIA_API_KEY || "";
 const ENVIA_URL = "https://api.envia.com";
 const BASE_URL = process.env.BASE_URL || "https://ceduverse.org";
 
-let mpClient: MercadoPagoConfig | null = null;
-let mpPreference: Preference | null = null;
-let mpPayment: Payment | null = null;
+// If Stripe is configured, the webhook secret is required to verify incoming events.
+// Without it, payments would silently never get marked as paid.
+if (STRIPE_SECRET_KEY && !STRIPE_WEBHOOK_SECRET) {
+  console.error("[FATAL] STRIPE_SECRET_KEY is set but STRIPE_WEBHOOK_SECRET is missing. Webhook verification cannot run; payments would silently fail. Set STRIPE_WEBHOOK_SECRET or unset STRIPE_SECRET_KEY.");
+  process.exit(1);
+}
 
-if (MP_ACCESS_TOKEN) {
-  mpClient = new MercadoPagoConfig({ accessToken: MP_ACCESS_TOKEN });
-  mpPreference = new Preference(mpClient);
-  mpPayment = new Payment(mpClient);
+let stripe: Stripe | null = null;
+if (STRIPE_SECRET_KEY) {
+  stripe = new Stripe(STRIPE_SECRET_KEY);
 }
 
 const ORIGIN = {
@@ -168,8 +171,8 @@ router.post("/shipping-quote", async (req, res) => {
 
 router.post("/create-order", async (req, res) => {
   try {
-    if (!mpPreference) {
-      return res.status(503).json({ message: "MercadoPago no configurado. Configura MP_ACCESS_TOKEN." });
+    if (!stripe) {
+      return res.status(503).json({ message: "Stripe no configurado. Configura STRIPE_SECRET_KEY." });
     }
 
     const { items, payer, shipping, shippingQuote, referralCode, seedPhraseWords } = req.body;
@@ -262,53 +265,53 @@ router.post("/create-order", async (req, res) => {
         .where(eq(storeStock.productId, prod.id));
     }
 
-    const mpItems = orderItems.map((oi, idx) => {
+    const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = orderItems.map((oi, idx) => {
       const item = items[idx];
       const prod = prodMap[item.product_id];
       return {
-        id: prod.slug,
-        title: prod.name + (prod.slug === "vault_kit" ? ` | ${seedPhraseWords || 12} palabras` : ""),
-        description: prod.description || "",
+        price_data: {
+          currency: "mxn",
+          product_data: {
+            name: prod.name + (prod.slug === "vault_kit" ? ` | ${seedPhraseWords || 12} palabras` : ""),
+            description: prod.description || undefined,
+          },
+          unit_amount: oi.unitPrice * 100, // Stripe uses centavos
+        },
         quantity: oi.quantity,
-        unit_price: oi.unitPrice,
-        currency_id: "MXN" as const,
       };
     });
+
     if (shippingCost > 0) {
-      mpItems.push({
-        id: "shipping",
-        title: `Envío ${shippingQuote?.carrier || "nacional"}`,
-        description: shippingQuote?.days || "",
+      lineItems.push({
+        price_data: {
+          currency: "mxn",
+          product_data: {
+            name: `Envío ${shippingQuote?.carrier || "nacional"}`,
+          },
+          unit_amount: shippingCost * 100,
+        },
         quantity: 1,
-        unit_price: shippingCost,
-        currency_id: "MXN" as const,
       });
     }
 
-    const preference = await mpPreference.create({
-      body: {
-        items: mpItems,
-        payer: { name: payer.name, email: payer.email, phone: { number: payer.phone } },
-        back_urls: {
-          success: `${BASE_URL}/tienda/success?order=${orderNumber}`,
-          failure: `${BASE_URL}/tienda/failure?order=${orderNumber}`,
-          pending: `${BASE_URL}/tienda/pending?order=${orderNumber}`,
-        },
-        auto_return: "approved",
-        notification_url: `${BASE_URL}/api/store/webhook`,
-        external_reference: orderNumber,
-      },
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
+      line_items: lineItems,
+      mode: "payment",
+      customer_email: payer.email,
+      metadata: { orderNumber, orderId: String(order.id) },
+      success_url: `${BASE_URL}/tienda/success?order=${orderNumber}&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${BASE_URL}/tienda/failure?order=${orderNumber}`,
     });
 
     await db.update(storeOrders)
-      .set({ mpPreferenceId: preference.id })
+      .set({ mpPreferenceId: session.id })
       .where(eq(storeOrders.id, order.id));
 
     res.json({
       order_number: orderNumber,
-      preference_id: preference.id,
-      init_point: preference.init_point,
-      sandbox_init_point: preference.sandbox_init_point,
+      checkout_url: session.url,
+      session_id: session.id,
     });
   } catch (err: any) {
     console.error("Create order error:", err);
@@ -318,16 +321,28 @@ router.post("/create-order", async (req, res) => {
 
 router.post("/webhook", async (req, res) => {
   try {
-    if (!mpPayment) {
-      console.error("Webhook received but MP_ACCESS_TOKEN not configured");
+    if (!stripe) {
+      console.error("Webhook received but STRIPE_SECRET_KEY not configured");
       return res.sendStatus(200);
     }
 
-    const { type, data } = req.body;
-    if (type !== "payment") return res.sendStatus(200);
+    if (!STRIPE_WEBHOOK_SECRET) {
+      console.error("[store] STRIPE_WEBHOOK_SECRET not configured — rejecting unverified webhook");
+      return res.status(403).json({ message: "Webhook verification not configured" });
+    }
 
-    const payment = await mpPayment.get({ id: data.id });
-    const orderNumber = payment.external_reference;
+    let event: Stripe.Event;
+    const sig = req.headers["stripe-signature"] as string;
+    if (!sig) {
+      console.error("[store] Missing stripe-signature header");
+      return res.status(400).json({ message: "Missing signature" });
+    }
+    event = stripe.webhooks.constructEvent(req.rawBody as string, sig, STRIPE_WEBHOOK_SECRET);
+
+    if (event.type !== "checkout.session.completed") return res.sendStatus(200);
+
+    const session = event.data.object as Stripe.Checkout.Session;
+    const orderNumber = session.metadata?.orderNumber;
 
     const [order] = await db.select().from(storeOrders)
       .where(eq(storeOrders.orderNumber, orderNumber!))
@@ -336,12 +351,12 @@ router.post("/webhook", async (req, res) => {
     if (!order) { console.error("Order not found:", orderNumber); return res.sendStatus(200); }
 
     await db.update(storeOrders).set({
-      mpPaymentId: String(payment.id),
-      mpStatus: payment.status || "unknown",
+      mpPaymentId: session.payment_intent as string || session.id,
+      mpStatus: session.payment_status || "unknown",
       updatedAt: new Date(),
     }).where(eq(storeOrders.id, order.id));
 
-    if (payment.status === "approved" && order.status === "pending_payment") {
+    if (session.payment_status === "paid" && order.status === "pending_payment") {
       await db.update(storeOrders).set({
         status: "paid",
         paidAt: new Date(),
@@ -371,13 +386,68 @@ router.post("/webhook", async (req, res) => {
         }
       }
 
-      // TODO: Generate Envia.com shipment label
-      // TODO: Send confirmation email via Resend
-      // TODO: Mint NFT certificate if vault_kit ordered
+      // Generate Envia.com shipment label (if API key configured)
+      if (ENVIA_API_KEY) {
+        try {
+          const orderItemsList2 = await db.select({ slug: storeProducts.slug, name: storeProducts.name, quantity: storeOrderItems.quantity, weightKg: storeProducts.weightKg, dimensionsJson: storeProducts.dimensionsJson })
+            .from(storeOrderItems)
+            .leftJoin(storeProducts, eq(storeOrderItems.productId, storeProducts.id))
+            .where(eq(storeOrderItems.orderId, order.id));
+
+          const packages = orderItemsList2.map((item) => {
+            const dims = (item.dimensionsJson as any) || { length: 15, width: 10, height: 5 };
+            return { content: item.name || "Producto", amount: item.quantity, type: "box", weight: Number(item.weightKg || 0.3) * item.quantity, insurance: 0, declaredValue: order.totalMxn, weightUnit: "KG", lengthUnit: "CM", dimensions: dims };
+          });
+
+          const shipResponse = await fetch(`${ENVIA_URL}/ship/generate/`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${ENVIA_API_KEY}` },
+            body: JSON.stringify({
+              origin: ORIGIN,
+              destination: { name: order.payerName, email: order.payerEmail, phone: order.payerPhone || "", street: order.shipStreet, number: "S/N", district: order.shipColony || "", city: order.shipCity, state: order.shipState, country: "MX", postalCode: order.shipZip },
+              packages,
+              shipment: { carrier: "estafeta", type: 1 },
+            }),
+          });
+          const shipData = await shipResponse.json();
+
+          if (shipData.data?.[0]?.trackingNumber) {
+            await db.insert(storeShipments).values({
+              orderId: order.id,
+              carrier: shipData.data[0].carrier || "Estafeta",
+              trackingNumber: shipData.data[0].trackingNumber,
+              labelUrl: shipData.data[0].label || null,
+              status: "label_created",
+            });
+            console.log(`📦 Shipment label created for ${orderNumber}: ${shipData.data[0].trackingNumber}`);
+          }
+        } catch (shipErr: any) {
+          console.error(`[store] Shipment label error for ${orderNumber}:`, shipErr.message);
+        }
+      }
+
+      // Send confirmation email via Resend
+      try {
+        const { sendOrderConfirmationEmail } = await import("./email-store");
+        await sendOrderConfirmationEmail(order.payerEmail, order.payerName, orderNumber!, order.totalMxn, order.shippingMxn || 0);
+        console.log(`📧 Confirmation email sent for ${orderNumber}`);
+      } catch (emailErr: any) {
+        console.error(`[store] Confirmation email error for ${orderNumber}:`, emailErr.message);
+      }
+
+      // Mint NFT certificate if vault_kit ordered
+      const vaultItems = await db.select({ slug: storeProducts.slug })
+        .from(storeOrderItems)
+        .leftJoin(storeProducts, eq(storeOrderItems.productId, storeProducts.id))
+        .where(and(eq(storeOrderItems.orderId, order.id), eq(storeProducts.slug, "vault_kit")));
+      if (vaultItems.length > 0) {
+        console.log(`🔐 NFT certificate pending for ${orderNumber} — vault_kit ordered (manual mint required)`);
+        await db.update(storeOrders).set({ shipNotes: (order.shipNotes || "") + " | NFT certificate pending mint" }).where(eq(storeOrders.id, order.id));
+      }
 
       console.log(`✅ Order ${orderNumber} PAID — $${order.totalMxn} MXN`);
 
-    } else if ((payment.status === "rejected" || payment.status === "cancelled") && order.status === "pending_payment") {
+    } else if (session.payment_status !== "paid" && order.status === "pending_payment") {
       await db.update(storeOrders).set({ status: "cancelled" }).where(eq(storeOrders.id, order.id));
       const orderItemsList = await db.select().from(storeOrderItems).where(eq(storeOrderItems.orderId, order.id));
       for (const oi of orderItemsList) {

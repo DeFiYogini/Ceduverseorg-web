@@ -119,6 +119,27 @@ export const roleChangeLog = pgTable("role_change_log", {
   index("idx_role_change_log_user").on(table.userId),
 ]);
 
+// General-purpose audit log for admin/sensitive actions. Complements the
+// role-specific `role_change_log` table. Append-only — nothing should ever
+// UPDATE or DELETE from this table.
+export const auditLogs = pgTable("audit_logs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").references(() => users.id),     // null = system / unauthenticated action
+  action: text("action").notNull(),                        // e.g. "config.update", "prospectos.import", "order.refund"
+  targetType: text("target_type"),                         // e.g. "user", "order", "product"
+  targetId: text("target_id"),                             // string-encoded id of the target entity
+  before: jsonb("before"),                                 // optional snapshot of state before the change
+  after: jsonb("after"),                                   // optional snapshot of state after the change
+  metadata: jsonb("metadata"),                             // extra context (request body, query params, etc.)
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("idx_audit_logs_user").on(table.userId),
+  index("idx_audit_logs_action").on(table.action),
+  index("idx_audit_logs_created").on(table.createdAt),
+]);
+
 export const globalConfig = pgTable("global_config", {
   key: text("key").primaryKey(),
   value: jsonb("value").notNull(),

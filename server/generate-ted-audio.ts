@@ -5,9 +5,15 @@ import { execFileSync } from "child_process";
 import { yuridiaModules } from "./data/yuridia-courses";
 import { MEDINA_MODULES_DATA } from "./seed-medina-data";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+function getOpenAIClient(): OpenAI {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error("[ted-audio] OPENAI_API_KEY not configured — TTS audio generation requires an OpenAI API key. Audio files are already pre-generated on R2.");
+  }
+  return new OpenAI({ apiKey });
+}
+
+const openai = getOpenAIClient();
 
 const AUDIO_DIR = path.join(process.cwd(), "audio-cache");
 const CHUNKS_DIR = path.join(AUDIO_DIR, "chunks");

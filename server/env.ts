@@ -14,14 +14,28 @@ const ENV_VARS: EnvVar[] = [
   { name: "DB_URL", required: true, description: "PostgreSQL connection string" },
   { name: "SESSION_SECRET", required: true, description: "JWT signing secret" },
 
-  // Admin — separate secret for admin API endpoints
-  { name: "ADMIN_API_KEY", required: false, description: "Admin API key for migration/import endpoints (falls back to SESSION_SECRET if not set)" },
+  // Public base URL — used for absolute links in emails, webhooks, OAuth callbacks
+  { name: "BASE_URL", required: false, description: "Public base URL of the deployment (e.g. https://ceduverse.org)" },
+
+  // Supabase — client-side auth + some server paths
+  { name: "SUPABASE_URL", required: false, description: "Supabase project URL" },
+  { name: "SUPABASE_ANON_KEY", required: false, description: "Supabase anon (public) API key" },
+
+  // Cloudflare R2 — object storage for audio, video, uploads
+  { name: "R2_ACCOUNT_ID", required: false, description: "Cloudflare R2 account ID (audio/video storage; falls back to local disk if unset)" },
+  { name: "R2_ACCESS_KEY_ID", required: false, description: "Cloudflare R2 access key ID" },
+  { name: "R2_SECRET_ACCESS_KEY", required: false, description: "Cloudflare R2 secret access key" },
+  { name: "R2_BUCKET_NAME", required: false, description: "Cloudflare R2 bucket name" },
+  { name: "R2_PUBLIC_URL", required: false, description: "Cloudflare R2 public URL prefix for served objects" },
+
+  // Admin — separate secret for admin API endpoints. NO fallback. If unset, admin import/export endpoints are disabled.
+  { name: "ADMIN_API_KEY", required: false, description: "Admin API key for migration/import endpoints. If unset, those endpoints reject all requests (no fallback)." },
 
   // Email
   { name: "RESEND_API_KEY", required: false, description: "Resend email API key" },
 
   // AI services
-  { name: "OPENAI_API_KEY", required: false, description: "OpenAI API key for AI tutoring" },
+  { name: "OPENAI_API_KEY", required: false, description: "OpenAI API key for TTS audio generation (optional fallback)" },
   { name: "ANTHROPIC_API_KEY", required: false, description: "Anthropic API key for Claude AI" },
 
   // Video/Avatar
@@ -29,7 +43,8 @@ const ENV_VARS: EnvVar[] = [
   { name: "DAILY_API_KEY", required: false, description: "Daily.co video conferencing API key" },
 
   // Payments
-  { name: "MP_ACCESS_TOKEN", required: false, description: "MercadoPago access token" },
+  { name: "STRIPE_SECRET_KEY", required: false, description: "Stripe secret key for payments" },
+  { name: "STRIPE_WEBHOOK_SECRET", required: false, description: "Stripe webhook signing secret" },
 
   // Invoicing
   { name: "FACTURAPI_API_KEY", required: false, description: "FacturAPI invoicing key" },
@@ -75,9 +90,14 @@ export function validateEnv(): void {
   console.log("[env] Environment validation passed");
 }
 
-/** Get the admin API key — uses dedicated ADMIN_API_KEY, falls back to SESSION_SECRET */
+/** Get the admin API key — requires dedicated ADMIN_API_KEY, no fallback */
 export function getAdminApiKey(): string {
-  return process.env.ADMIN_API_KEY || process.env.SESSION_SECRET || "";
+  const key = process.env.ADMIN_API_KEY;
+  if (!key) {
+    console.warn("[env] ADMIN_API_KEY not set — admin import/export endpoints are disabled");
+    return "";
+  }
+  return key;
 }
 
 /** Get bank info from env vars with defaults */

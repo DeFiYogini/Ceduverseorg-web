@@ -350,49 +350,31 @@ function FlujoSection() {
         </motion.p>
       </div>
 
-      <HoverCard className="mb-[18px] !bg-cedu-warm">
-        <h3 className="text-[17px] font-serif text-cedu-ink mb-3">Paso 1 — Asociación de la Comisión Mixta</h3>
-        <p className="text-[13px] text-cedu-ink-soft leading-[1.7] mb-3.5">
-          La empresa inscribe a su <strong className="text-cedu-ink">Comisión Mixta de Capacitación</strong> (Art. 153-A LFT) en la cooperativa. Los integrantes se asocian como <strong className="text-cedu-blue">socios cooperativistas</strong> de Ceduverse.
-        </p>
-        <div className="flex gap-2.5 flex-wrap">
-          {["Acta de Asamblea de ingreso", "Certificado de Aportación", "Alta en Registro Cooperativo", "Wallet en ceduverse.org"].map((s, i) => (
-            <div key={i} className="flex-1 min-w-[200px] py-2.5 px-3.5 bg-white rounded-[10px] border border-black/[0.06] text-xs text-cedu-ink-soft flex gap-2 items-center">
-              <span className="text-cedu-blue font-bold">{i + 1}.</span>{s}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-[18px]">
+        {[
+          { step: 1, icon: "🏢", title: "Crea tu Cuenta Empresarial", desc: "Registra tu empresa en ceduverse.org y configura tu perfil empresarial con los datos de tu organización." },
+          { step: 2, icon: "🔗", title: "Invita a tu Red de Capacitación", desc: "Usa tu código de referido empresarial para invitar a colegas a unirse a tu red de capacitación y construir tu equipo." },
+          { step: 3, icon: "💳", title: "Sube tu Pago de Nivel", desc: "Sube tu comprobante de pago para desbloquear todos los beneficios — cursos, certificaciones y membresía cooperativa." },
+          { step: 4, icon: "📦", title: "Descarga el Material de Cumplimiento", desc: "Descarga el .zip con toda la documentación y compártelo con tu oficial de cumplimiento para requisitos STPS y regulatorios." },
+        ].map((s) => (
+          <HoverCard key={s.step} className="!p-5">
+            <div className="flex items-start gap-3.5">
+              <div className="w-10 h-10 bg-cedu-blue rounded-[10px] flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                {s.step}
+              </div>
+              <div>
+                <div className="text-[10px] font-bold text-cedu-blue uppercase tracking-[2px] mb-1">Paso {s.step}</div>
+                <h3 className="text-[15px] font-serif text-cedu-ink mb-1.5">{s.title}</h3>
+                <p className="text-[12px] text-cedu-ink-soft leading-[1.6] m-0">{s.desc}</p>
+              </div>
             </div>
-          ))}
-        </div>
-      </HoverCard>
+          </HoverCard>
+        ))}
+      </div>
 
-      <HoverCard className="mb-[18px]">
-        <h3 className="text-[17px] font-serif text-cedu-ink mb-3.5">Paso 2 — Dos conceptos de facturación</h3>
-        <div className="flex gap-3.5 flex-wrap mb-4">
-          <div className="flex-1 min-w-[280px] p-[18px] bg-cedu-orange-light rounded-[14px] border border-cedu-orange/[0.12]">
-            <InlineBadge color="orange">Concepto A</InlineBadge>
-            <h4 className="text-[15px] font-bold text-cedu-orange font-serif mt-2.5 mb-1.5">Servicios de Capacitación</h4>
-            <p className="text-xs text-cedu-ink-soft leading-relaxed mb-2">Cursos STPS, DC-3, DC-5, plataforma e-learning.</p>
-            <div className="p-2 px-3 bg-cedu-orange/[0.06] rounded-lg">
-              <div className="text-[11px] font-bold text-cedu-orange">Factura con IVA 16%</div>
-              <div className="text-[10px] text-cedu-ink-muted mt-0.5">CFDI por prestación de servicio · Clave SAT 86101700</div>
-            </div>
-          </div>
-          <div className="flex-1 min-w-[280px] p-[18px] bg-cedu-blue-light rounded-[14px] border border-cedu-blue/[0.12]">
-            <InlineBadge color="blue">Concepto B</InlineBadge>
-            <h4 className="text-[15px] font-bold text-cedu-blue font-serif mt-2.5 mb-1.5">Aportación Asociación Educativa</h4>
-            <p className="text-xs text-cedu-ink-soft leading-relaxed mb-2">Cuotas o aportaciones al fondo cooperativo educativo.</p>
-            <div className="p-2 px-3 bg-cedu-blue/[0.03] rounded-lg">
-              <div className="text-[11px] font-bold text-cedu-blue">Sin IVA (Exenta)</div>
-              <div className="text-[10px] text-cedu-ink-muted mt-0.5">LIVA Art. 15, fracc. XII, inc. e): servicios a miembros por cuotas en asociaciones con fines educativos.</div>
-            </div>
-          </div>
-        </div>
-        <div className="p-2.5 px-3.5 bg-cedu-coral/[0.05] rounded-[10px] border border-cedu-coral/[0.09]">
-          <p className="text-[11px] text-cedu-ink-soft leading-relaxed m-0"><strong className="text-cedu-coral">Nota:</strong> El tratamiento fiscal depende de la naturaleza jurídica real. Consulte con su asesor fiscal profesional.</p>
-        </div>
-      </HoverCard>
 
       <HoverCard className="mb-[18px] !p-4">
-        <h3 className="text-[17px] font-serif text-cedu-ink mb-3.5 text-center">Paso 3 — Flujo de dispersión</h3>
+        <h3 className="text-[17px] font-serif text-cedu-ink mb-3.5 text-center">Flujo de dispersión</h3>
         <svg viewBox="0 0 680 360" width="100%" className="block">
           <defs>
             <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
@@ -962,8 +944,8 @@ function CeduverseDashboard() {
       <nav className="sticky top-0 z-50 bg-cedu-cream/90 backdrop-blur-xl border-b border-black/[0.06] px-4">
         <div className="max-w-[1160px] mx-auto flex items-center justify-between h-14">
           <div className="flex items-center gap-2 flex-shrink-0">
-            <div className="w-8 h-8 bg-cedu-blue rounded-lg flex items-center justify-center text-white font-serif text-base">C</div>
-            <span className="font-serif text-lg text-cedu-ink">Cedu<em className="text-cedu-blue italic">verse</em></span>
+            <div className="w-9 h-9 bg-cedu-blue rounded-[10px] flex items-center justify-center text-white font-serif text-xl">C</div>
+            <span className="font-serif text-2xl text-cedu-ink tracking-tight">Cedu<em className="text-cedu-blue not-italic italic">verse</em></span>
             <InlineBadge color="ink">Ejecutivo</InlineBadge>
           </div>
           <div className="hidden md:flex gap-0.5 overflow-x-auto">

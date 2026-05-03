@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 48" fill="none">
+  <!-- Icon: White rounded square with "C" -->
+  <rect x="0" y="4" width="40" height="40" rx="10" fill="rgba(255,255,255,0.2)"/>
+  <text x="20" y="33" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="24" font-weight="bold" fill="white">C</text>
+  <!-- Wordmark in white -->
+  <text x="52" y="34" font-family="'DM Serif Display', Georgia, serif" font-size="28" letter-spacing="-0.5" fill="white">Cedu</text>
+  <text x="117" y="34" font-family="'DM Serif Display', Georgia, serif" font-size="28" letter-spacing="-0.5" fill="white" font-style="italic">verse</text>
+</svg>

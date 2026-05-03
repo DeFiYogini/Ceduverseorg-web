@@ -1,0 +1,14 @@
+node_modules
+dist
+dist.backup.*
+.git
+.env
+.env.*
+*.md
+.replit
+replit.nix
+uploads
+audio-cache
+logs
+*.log
+.DS_Store

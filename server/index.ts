@@ -14,8 +14,35 @@ import { seedTermsVersions, migrateExistingUsersTerms, ensureMembershipSeq, seed
 import { seedInitialApiKey } from "./seed-api-key";
 import { seedStoreProducts } from "./seed-store";
 
+import helmet from "helmet";
+import cookieParser from "cookie-parser";
+
 const app = express();
 const httpServer = createServer(app);
+
+app.use(cookieParser());
+
+// Security headers — CSP tightened in production. Dev keeps unsafe-inline/eval for Vite HMR.
+const isProd = process.env.NODE_ENV === "production";
+const scriptSrc = isProd
+  ? ["'self'", "https://js.stripe.com"]
+  : ["'self'", "'unsafe-inline'", "'unsafe-eval'"];
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc,
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "blob:", "https://*.supabase.co", "https://*.r2.cloudflarestorage.com", "https://unpkg.com"],
+      connectSrc: ["'self'", "https://*.supabase.co", "https://*.r2.cloudflarestorage.com", "https://api.stripe.com", "wss:", "ws:"],
+      mediaSrc: ["'self'", "https://*.r2.cloudflarestorage.com", "blob:"],
+      frameSrc: ["'self'", "https://js.stripe.com", "https://hooks.stripe.com"],
+    },
+  },
+  crossOriginEmbedderPolicy: false,
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+}));
 
 declare module "http" {
   interface IncomingMessage {
@@ -45,12 +72,61 @@ app.use(
 
 app.use(express.urlencoded({ extended: false }));
 
-app.get("/__health", (_req, res) => {
-  res.status(200).json({ status: "ok", uptime: process.uptime() });
+app.get("/__health", async (_req, res) => {
+  // Quick DB ping. If the DB is unreachable, return 503 so Render/CF marks the
+  // instance unhealthy and reroutes/restarts.
+  try {
+    const { db } = await import("./db");
+    const { sql } = await import("drizzle-orm");
+    await db.execute(sql`SELECT 1`);
+    res.status(200).json({ status: "ok", uptime: process.uptime(), db: "ok" });
+  } catch (err: any) {
+    res.status(503).json({ status: "degraded", uptime: process.uptime(), db: "error", error: err?.message });
+  }
 });
 
-app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
-app.use("/audio", express.static(path.join(process.cwd(), "audio-cache")));
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads"), {
+  setHeaders: (res) => {
+    res.setHeader("Content-Disposition", "attachment");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+  },
+}));
+
+// Serve audio files: stream from R2 if configured, fall back to local audio-cache/
+import { r2Storage } from "./services/r2-storage";
+import fs from "fs";
+
+app.get("/audio/:filename", async (req, res, next) => {
+  const filename = req.params.filename;
+
+  // Try R2 first
+  if (r2Storage.isConfigured) {
+    try {
+      const obj = await r2Storage.getObject(`audio/${filename}`);
+      if (obj) {
+        res.set("Content-Type", obj.contentType);
+        if (obj.contentLength) {
+          res.set("Content-Length", String(obj.contentLength));
+        }
+        res.set("Cache-Control", "public, max-age=86400, immutable");
+        (obj.body as any).pipe(res);
+        return;
+      }
+    } catch (err) {
+      log(`R2 audio fetch error for ${filename}: ${(err as Error).message}`);
+      // fall through to local
+    }
+  }
+
+  // Fall back to local audio-cache directory
+  const localPath = path.join(process.cwd(), "audio-cache", filename);
+  if (fs.existsSync(localPath)) {
+    res.set("Cache-Control", "public, max-age=86400");
+    res.sendFile(localPath);
+  } else {
+    res.status(404).json({ message: "Audio file not found" });
+  }
+});
 
 setupAuth(app);
 
