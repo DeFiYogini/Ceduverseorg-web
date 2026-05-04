@@ -1,7 +1,7 @@
 import type { Express, Request, Response, NextFunction, RequestHandler } from "express";
 import { storage } from "./storage";
 import { db } from "./db";
-import { users, accounts, profiles, teamUsers, teams, cooperativeMemberships, termsVersions, userTermsAcceptances, otpCodes } from "@shared/schema";
+import { users, accounts, profiles, teamUsers, teams, cooperativeMemberships, termsVersions, userTermsAcceptances, otpCodes, auditLogs } from "@shared/schema";
 import { eq, and, sql, lte, inArray, notInArray } from "drizzle-orm";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
@@ -35,17 +35,33 @@ const adminLoginLimiter = rateLimit({
 // Demo accounts — loaded from DEMO_ACCOUNTS env var (JSON array) or empty if not set
 type DemoAccount = { email: string; fullName: string; role: "socio_estudiante" | "admin" | "socio_comercial" | "superadmin" | "socio_instructor" | "empresa"; isOrgAdmin?: boolean };
 
+// In production, demo accounts must use an email on one of these domains.
+// Prevents typo-based privilege escalation (e.g. accidentally allowing demo@gmail.com).
+const DEMO_EMAIL_DOMAIN_ALLOWLIST = ["ceduverse.org"];
+
 function loadDemoAccounts(): DemoAccount[] {
   const raw = process.env.DEMO_ACCOUNTS;
   if (!raw) return [];
-  if (process.env.NODE_ENV === "production") {
-    console.error("[FATAL] DEMO_ACCOUNTS must NOT be set in production — these accounts bypass OTP verification");
+  if (process.env.NODE_ENV === "production" && process.env.ALLOW_DEMO_ACCOUNTS_IN_PROD !== "true") {
+    console.error("[FATAL] DEMO_ACCOUNTS is set but ALLOW_DEMO_ACCOUNTS_IN_PROD is not 'true'. Demo accounts bypass OTP — explicit opt-in required in production.");
     process.exit(1);
   }
   try {
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
-    return parsed;
+    const list = parsed as DemoAccount[];
+    if (process.env.NODE_ENV === "production") {
+      const filtered = list.filter(a => {
+        const domain = (a.email || "").trim().toLowerCase().split("@")[1];
+        return domain && DEMO_EMAIL_DOMAIN_ALLOWLIST.includes(domain);
+      });
+      const rejected = list.length - filtered.length;
+      if (rejected > 0) {
+        console.warn(`[auth] ${rejected} demo account(s) rejected in production — only domains [${DEMO_EMAIL_DOMAIN_ALLOWLIST.join(", ")}] are allowed`);
+      }
+      return filtered;
+    }
+    return list;
   } catch {
     console.error("[auth] Invalid DEMO_ACCOUNTS JSON — demo accounts disabled");
     return [];
@@ -230,6 +246,17 @@ export function setupAuth(app: Express): void {
         }
         const token = signJwt(userId, normalizedEmail);
         setAuthCookie(res, token);
+        try {
+          await db.insert(auditLogs).values({
+            userId,
+            action: "auth.demo_login",
+            metadata: { email: normalizedEmail, role: demo.role, isOrgAdmin: !!demo.isOrgAdmin },
+            ipAddress: req.ip || (req.headers["x-forwarded-for"] as string) || null,
+            userAgent: req.headers["user-agent"] || null,
+          });
+        } catch (err) {
+          console.error("[auth] Failed to write demo login audit log:", err);
+        }
         const profile = await db.select().from(profiles).where(eq(profiles.id, userId));
         const account = await storage.getAccount(userId);
         return res.json({

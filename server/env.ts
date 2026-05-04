@@ -60,8 +60,11 @@ const ENV_VARS: EnvVar[] = [
   // Superadmin
   { name: "SUPERADMIN_PASSWORD", required: false, description: "Initial superadmin password" },
 
-  // Demo accounts (JSON array, optional)
-  { name: "DEMO_ACCOUNTS", required: false, description: "JSON array of demo account configs" },
+  // Demo accounts (JSON array, optional). Each entry: { email, fullName, role, isOrgAdmin? }.
+  // Demo emails bypass OTP — entering the email logs you in instantly.
+  { name: "DEMO_ACCOUNTS", required: false, description: "JSON array of demo account configs (bypasses OTP)" },
+  // Required in production if DEMO_ACCOUNTS is set — prevents accidental demo configs in prod.
+  { name: "ALLOW_DEMO_ACCOUNTS_IN_PROD", required: false, description: "Set to 'true' to allow DEMO_ACCOUNTS in production. Demo emails restricted to @ceduverse.org domain." },
 ];
 
 export function validateEnv(): void {
