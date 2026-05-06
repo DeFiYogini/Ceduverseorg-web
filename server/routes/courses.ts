@@ -8,6 +8,7 @@ import {
   insertCourseSchema,
   insertAchievementSchema,
   insertCourseUserSchema,
+  insertLeadSchema,
   courses,
   courseUsers,
   achievements,
