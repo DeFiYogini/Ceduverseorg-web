@@ -64,6 +64,12 @@ type CommissionData = {
   dc3Commission: number; sepCommission: number; residualCommission: number;
   totalCommission: number; totalEnrolled: number;
   courseBreakdown: { courseId: string; title: string }[];
+  // Optional admin-configurable rates/prices — UI falls back to hardcoded defaults if API omits them
+  dc3CommissionPct?: number;
+  dc3Price?: number;
+  sepCommissionPct?: number;
+  sepPrice?: number | string;
+  referralCommission?: number;
 };
 
 type CertificateEntry = {

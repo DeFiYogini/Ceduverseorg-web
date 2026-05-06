@@ -1745,7 +1745,7 @@ function WizardView({ application: initialApp }: { application: InstructorApplic
         case 1: return <ProfileStep application={app} onSave={handleSave} />;
         case 2: return <ExperienceStep application={app} onSave={handleSave} onBack={goBack} isDc5={false} />;
         case 3: return <QuizStep application={app} onBack={goBack} onQuizPassed={() => { saveMutation.mutate({ currentStep: 4 }); setCurrentStep(4); }} />;
-        case 4: return <TermsStep application={app} onBack={goBack} onAccepted={() => submitMutation.mutate()} />;
+        case 4: return <TermsStep application={app} onBack={goBack} onAccepted={() => submitMutation.mutate(undefined)} />;
         default: return <ProfileStep application={app} onSave={handleSave} />;
       }
     }

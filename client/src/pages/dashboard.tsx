@@ -65,6 +65,7 @@ import {
   Pencil,
   FileSpreadsheet,
   CalendarDays,
+  Download,
 } from "lucide-react";
 import { Progress as ProgressBar } from "@/components/ui/progress";
 

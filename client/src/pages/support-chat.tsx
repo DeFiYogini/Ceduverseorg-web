@@ -210,7 +210,7 @@ function ThreadListView() {
                             {thread.status === "open" ? "Abierto" : "Cerrado"}
                           </Badge>
                           <span className="text-[11px] text-cedu-ink-muted flex items-center gap-1">
-                            <Clock size={10} /> {timeAgo(thread.updatedAt || thread.createdAt)}
+                            <Clock size={10} /> {timeAgo(String(thread.updatedAt || thread.createdAt))}
                           </span>
                         </div>
                       </div>

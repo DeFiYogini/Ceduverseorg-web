@@ -507,7 +507,7 @@ function LectureView({ html, reflections, isStub, onRegenerate, isRegenerating, 
           <AudioClassPlayer
             courseSlug={courseSlug}
             moduleIndex={moduleIndex}
-            classScript={classScript}
+            classScript={classScript ?? undefined}
             moduleTitle={moduleTitle}
           />
         )}
@@ -1739,7 +1739,7 @@ export default function StudioCoursePage() {
       <ShareCourseModal
         open={showShareModal}
         onOpenChange={setShowShareModal}
-        courseTitle={courseData?.title || ""}
+        courseTitle={courseData?.course?.title || ""}
         courseSlug={slug}
         courseType="tutor-ia"
       />

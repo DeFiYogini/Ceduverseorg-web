@@ -369,7 +369,7 @@ export default function SegurosPage() {
     queryKey: ["/api/insurance/plans"],
   });
 
-  const { data: myEnrollment, isLoading: enrollLoading } = useQuery({
+  const { data: myEnrollment, isLoading: enrollLoading } = useQuery<{ enrollment?: any; plan?: any }>({
     queryKey: ["/api/insurance/my-enrollment"],
     enabled: !!user,
   });
