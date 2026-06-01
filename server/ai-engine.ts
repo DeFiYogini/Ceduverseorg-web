@@ -385,58 +385,65 @@ function stubGenerateContent(
   };
 }
 
+type AnthropicTool = { name: string; description: string; input_schema: Record<string, any> };
+
 async function callAnthropicWithRetry(
   client: Anthropic,
   systemPrompt: string,
   userPrompt: string,
   maxTokens: number,
   label: string,
+  tool: AnthropicTool,
   maxRetries: number = 1,
 ): Promise<any> {
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       console.log(`[ai-engine] ${label} attempt ${attempt + 1}/${maxRetries + 1}`);
 
+      // Force structured output via tool use: Claude must emit a schema-valid object
+      // in a tool_use block, so there is no free-form JSON text to (mis)parse. This
+      // eliminates the HTML-in-string parse failures that previously dumped good
+      // content into the generic stub.
       const response = await client.messages.create({
         model: "claude-sonnet-4-6",
         max_tokens: maxTokens,
         system: systemPrompt,
-        messages: [
-          { role: "user", content: userPrompt },
-        ],
+        messages: [{ role: "user", content: userPrompt }],
+        tools: [tool as any],
+        tool_choice: { type: "tool", name: tool.name },
       });
 
-      const textBlock = response.content.find((b) => b.type === "text");
-      const text = textBlock?.text || "";
       const stopReason = response.stop_reason;
-
       console.log(`[ai-engine] ${label} response: ${response.usage?.input_tokens} in / ${response.usage?.output_tokens} out`);
       console.log(`[ai-engine] ${label} stop_reason: ${stopReason}`);
 
-      const parsed = parseClaudeJSON(text);
+      const toolUse = response.content.find((b) => b.type === "tool_use") as
+        | { type: "tool_use"; input: any }
+        | undefined;
 
-      if (parsed && !parsed._partial) {
-        console.log(`[ai-engine] ${label} parse: success`);
-        return parsed;
+      if (toolUse && toolUse.input && typeof toolUse.input === "object") {
+        console.log(`[ai-engine] ${label} tool_use: success`);
+        return toolUse.input;
       }
 
-      if (parsed && parsed._partial && attempt < maxRetries) {
-        console.log(`[ai-engine] ${label} partial result, retrying...`);
-        continue;
-      }
-
-      if (parsed && parsed._partial) {
-        console.log(`[ai-engine] ${label} returning partial result (last attempt)`);
-        return parsed;
-      }
-
-      if (stopReason === 'max_tokens' && attempt < maxRetries) {
+      // tool_use truncated by the token cap → retry with more headroom
+      if (stopReason === "max_tokens" && attempt < maxRetries) {
         console.log(`[ai-engine] ${label} hit max_tokens, retrying with more tokens...`);
-        maxTokens = Math.min(maxTokens + 4096, 16384);
+        maxTokens = Math.min(maxTokens + 6000, 32000);
         continue;
       }
 
-      console.error(`[ai-engine] ${label} parse returned null`);
+      // Defensive fallback: if the model somehow returned text instead of a tool call
+      const textBlock = response.content.find((b) => b.type === "text") as { type: "text"; text: string } | undefined;
+      if (textBlock?.text) {
+        const parsed = parseClaudeJSON(textBlock.text);
+        if (parsed && !parsed._partial) {
+          console.log(`[ai-engine] ${label} recovered via text parse`);
+          return parsed;
+        }
+      }
+
+      console.error(`[ai-engine] ${label} no usable tool_use returned`);
       return null;
     } catch (error: any) {
       console.error(`[ai-engine] ${label} attempt ${attempt + 1} failed:`, error.message);
@@ -445,6 +452,90 @@ async function callAnthropicWithRetry(
   }
   return null;
 }
+
+const CONTENT_TOOL: AnthropicTool = {
+  name: "entregar_contenido_modulo",
+  description: "Entrega el contenido personalizado del módulo: lectura en HTML, mapa mental, preguntas de reflexión y fuentes sugeridas.",
+  input_schema: {
+    type: "object",
+    properties: {
+      lectureHtml: {
+        type: "string",
+        description: "Lectura completa en HTML (mínimo 3,000 palabras), personalizada al puesto e industria del estudiante. Usa <h2>, <p>, <ul>, <table>, etc.",
+      },
+      mindMap: {
+        type: "object",
+        properties: {
+          central: { type: "string", description: "Concepto central del módulo" },
+          branches: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                label: { type: "string" },
+                color: { type: "string", description: "Color hex, ej. #1b5adf" },
+                children: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: { label: { type: "string" }, detail: { type: "string" } },
+                    required: ["label"],
+                  },
+                },
+              },
+              required: ["label", "children"],
+            },
+          },
+        },
+        required: ["central", "branches"],
+      },
+      reflections: {
+        type: "array",
+        items: { type: "string" },
+        description: "3-4 preguntas de reflexión personalizadas al perfil del estudiante",
+      },
+      suggestedSources: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            title: { type: "string" },
+            url: { type: "string" },
+            type: { type: "string", description: "NOM, ley, guia, articulo, etc." },
+          },
+          required: ["title", "url", "type"],
+        },
+      },
+    },
+    required: ["lectureHtml", "mindMap", "reflections", "suggestedSources"],
+  },
+};
+
+const QUIZ_TOOL: AnthropicTool = {
+  name: "entregar_quiz_y_guion",
+  description: "Entrega el quiz adaptativo de 7 preguntas y el guion de clase del instructor.",
+  input_schema: {
+    type: "object",
+    properties: {
+      adaptiveQuiz: {
+        type: "array",
+        description: "7 preguntas de opción múltiple",
+        items: {
+          type: "object",
+          properties: {
+            question: { type: "string" },
+            options: { type: "array", items: { type: "string" }, description: "4 opciones" },
+            correctIndex: { type: "integer", description: "Índice (0-based) de la opción correcta" },
+            explanation: { type: "string" },
+          },
+          required: ["question", "options", "correctIndex", "explanation"],
+        },
+      },
+      classScript: { type: "string", description: "Guion hablado del instructor para la clase" },
+    },
+    required: ["adaptiveQuiz", "classScript"],
+  },
+};
 
 export async function generateModuleContent(
   moduleTitle: string,
@@ -478,9 +569,10 @@ export async function generateModuleContent(
     const call1Result = await callAnthropicWithRetry(
       client,
       call1System,
-      `Genera el contenido personalizado completo para este módulo. Recuerda: MÍNIMO 3,000 palabras en la lectura, y TODO personalizado para el perfil del estudiante. Devuelve SOLO el JSON válido, sin markdown ni backticks.`,
-      10000,
+      `Genera el contenido personalizado completo para este módulo y entrégalo con la herramienta. Recuerda: MÍNIMO 3,000 palabras en la lectura, y TODO personalizado para el perfil del estudiante.`,
+      16000,
       "Call1-Content",
+      CONTENT_TOOL,
     );
 
     if (!call1Result || !call1Result.lectureHtml) {
@@ -505,9 +597,10 @@ export async function generateModuleContent(
       const call2Result = await callAnthropicWithRetry(
         client,
         call2System,
-        `Genera el quiz adaptativo de 7 preguntas y el guion de clase basándote en el contenido de lectura proporcionado. Devuelve SOLO el JSON válido.`,
+        `Genera el quiz adaptativo de 7 preguntas y el guion de clase basándote en el contenido de lectura proporcionado, y entrégalo con la herramienta.`,
         12000,
         "Call2-Quiz+Script",
+        QUIZ_TOOL,
       );
 
       if (call2Result) {
