@@ -32,7 +32,8 @@ export class TutorAIService {
     question: string,
     courseTitle: string,
     courseContext: string,
-    messageHistory: { role: string; content: string }[]
+    messageHistory: { role: string; content: string }[],
+    onChunk?: (textDelta: string) => void,
   ): Promise<string> {
     const systemPrompt = `Eres un instructor experto en capacitación laboral STPS de México. Tu nombre es el instructor del curso "${courseTitle}" en la plataforma Ceduverse.
 
@@ -55,14 +56,29 @@ ${courseContext}`;
     }));
     messages.push({ role: "user", content: question });
 
-    const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
+    const stream = anthropic.messages.stream({
+      // Haiku 4.5 for the live tutor: concise spoken Q&A is a bounded, low-reasoning
+      // task — far cheaper per token than Sonnet with no meaningful quality loss here.
+      // (effort/output_config is an Opus/Sonnet-4.5+ control, omitted for Haiku.)
+      model: "claude-haiku-4-5-20251001",
       max_tokens: 500,
-      system: systemPrompt,
+      thinking: { type: "disabled" },
+      system: [
+        {
+          type: "text",
+          text: systemPrompt,
+          cache_control: { type: "ephemeral" },
+        },
+      ],
       messages,
     });
 
-    const textBlock = response.content.find((b) => b.type === "text");
+    if (onChunk) {
+      stream.on("text", (textDelta) => onChunk(textDelta));
+    }
+
+    const finalMessage = await stream.finalMessage();
+    const textBlock = finalMessage.content.find((b) => b.type === "text");
     return textBlock?.text || "Disculpa, no pude procesar tu pregunta. ¿Podrías reformularla?";
   }
 }

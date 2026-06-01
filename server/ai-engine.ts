@@ -398,7 +398,7 @@ async function callAnthropicWithRetry(
       console.log(`[ai-engine] ${label} attempt ${attempt + 1}/${maxRetries + 1}`);
 
       const response = await client.messages.create({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-sonnet-4-6",
         max_tokens: maxTokens,
         system: systemPrompt,
         messages: [
@@ -574,7 +574,10 @@ export async function chatWithModule(
 
   try {
     const response = await client.messages.create({
-      model: "claude-sonnet-4-20250514",
+      // Haiku 4.5: module chat is conversational Q&A with a small JSON envelope —
+      // a good fit for the cheaper/faster model. generateModuleContent (heavier
+      // structured generation) stays on Sonnet via callAnthropicWithRetry.
+      model: "claude-haiku-4-5-20251001",
       max_tokens: 1024,
       system: systemPrompt,
       messages,

@@ -677,9 +677,35 @@ export function registerHeygenRoutes(app: Express) {
         .where(eq(liveAvatarMessages.sessionId, sessionId));
 
       const courseContext = await tutorAIService.getCourseContext(session.courseId);
+      const wantsStream = req.headers.accept?.includes("text/event-stream");
+
+      if (wantsStream) {
+        res.setHeader("Content-Type", "text/event-stream");
+        res.setHeader("Cache-Control", "no-cache");
+        res.setHeader("Connection", "keep-alive");
+        res.flushHeaders?.();
+
+        const answer = await tutorAIService.generateResponse(
+          question, courseTitle || "Curso de Capacitación", courseContext,
+          history.map(m => ({ role: m.role, content: m.content })),
+          (delta) => {
+            res.write(`data: ${JSON.stringify({ delta })}\n\n`);
+          },
+        );
+
+        await db.insert(liveAvatarMessages).values({ sessionId, role: "assistant", content: answer });
+        await db.update(liveAvatarSessions)
+          .set({ messagesCount: sql`${liveAvatarSessions.messagesCount} + 2` })
+          .where(eq(liveAvatarSessions.id, sessionId));
+
+        res.write(`data: ${JSON.stringify({ done: true, answer })}\n\n`);
+        res.end();
+        return;
+      }
+
       const answer = await tutorAIService.generateResponse(
         question, courseTitle || "Curso de Capacitación", courseContext,
-        history.map(m => ({ role: m.role, content: m.content }))
+        history.map(m => ({ role: m.role, content: m.content })),
       );
 
       await db.insert(liveAvatarMessages).values({ sessionId, role: "assistant", content: answer });
