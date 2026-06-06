@@ -793,10 +793,13 @@ export function registerCrmRoutes(app: Express) {
         stage: body.stage || "nuevo",
         leadScore: body.leadScore != null ? Number(body.leadScore) : 0,
         partnerId: ownerId,
+        // Test prospects are tagged so they can be purged in one command.
+        // import_batch_id 'TEST-DATA' never collides with real CSV batch ids.
+        importBatchId: body.test === true ? "TEST-DATA" : null,
       }).returning();
 
       await db.insert(interaccionesProspectos).values({
-        empresaId: created.id, userId: actor.userId, tipo: "creado", notas: "Prospecto agregado manualmente",
+        empresaId: created.id, userId: actor.userId, tipo: "creado", notas: body.test === true ? "Prospecto de prueba (agregado manualmente)" : "Prospecto agregado manualmente",
       });
       prospectStatsCacheMap.clear();
       res.status(201).json(created);
