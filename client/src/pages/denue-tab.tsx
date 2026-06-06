@@ -2166,6 +2166,7 @@ function AddProspectDialog({ onClose, onSubmit, isSubmitting }: {
     nombreComercial: "", razonSocial: "", nombreContacto: "", telefono: "", correoElectronico: "",
     estado: "", municipio: "", empleadosEstimados: "", potencialAportacionMensual: "", planRecomendado: "", notas: "", stage: "nuevo",
   });
+  const [isTest, setIsTest] = useState(false);
   const set = (k: string, v: string) => setForm(prev => ({ ...prev, [k]: v }));
   const canSubmit = form.nombreComercial.trim().length > 0 && !isSubmitting;
 
@@ -2177,6 +2178,7 @@ function AddProspectDialog({ onClose, onSubmit, isSubmitting }: {
       if (k === "empleadosEstimados" || k === "potencialAportacionMensual") payload[k] = Number(v);
       else payload[k] = v;
     }
+    if (isTest) payload.test = true;
     onSubmit(payload);
   };
 
@@ -2249,6 +2251,10 @@ function AddProspectDialog({ onClose, onSubmit, isSubmitting }: {
             <label className="text-[11px] font-medium text-cedu-ink mb-1 block">Notas</label>
             <Textarea value={form.notas} onChange={(e) => set("notas", e.target.value)} className="text-xs min-h-[60px] bg-white" data-testid="add-input-notas" />
           </div>
+          <label className="flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 cursor-pointer" data-testid="add-test-toggle">
+            <input type="checkbox" checked={isTest} onChange={(e) => setIsTest(e.target.checked)} className="rounded border-amber-300" data-testid="add-input-test" />
+            <span className="text-[11px] text-amber-800">🧪 Prospecto de prueba — se podrá borrar después con un solo comando</span>
+          </label>
         </div>
         <div className="sticky bottom-0 bg-white border-t border-black/[0.06] px-5 py-3 flex justify-end gap-2">
           <Button size="sm" variant="ghost" className="text-xs" onClick={onClose}>Cancelar</Button>
